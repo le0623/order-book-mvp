@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Default dark theme - using #30404d as base (hsl(207, 23%, 25%)) */
+    --background: 207 23% 25%;
+    --foreground: 210 20% 98%;
+    --card: 207 23% 30%;
+    --card-foreground: 210 20% 98%;
+    --popover: 207 23% 30%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 207 23% 10%;
+    --secondary: 207 20% 35%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 207 20% 30%;
+    --muted-foreground: 215 16% 75%;
+    --accent: 207 20% 28%;
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 207 20% 35%;
+    --input: 207 20% 35%;
+    --ring: 142 71% 45%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Dark theme - using #30404d as base */
+    --background: 207 23% 25%;
+    --foreground: 210 20% 98%;
+    --card: 207 23% 30%;
+    --card-foreground: 210 20% 98%;
+    --popover: 207 23% 30%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 207 23% 10%;
+    --secondary: 207 20% 35%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 207 20% 30%;
+    --muted-foreground: 215 16% 75%;
+    --accent: 207 20% 28%;
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 207 20% 35%;
+    --input: 207 20% 35%;
+    --ring: 142 71% 45%;
+  }
+
+  .light {
+    /* Light theme */
+    --background: 0 0% 100%;
+    --foreground: 207 23% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 207 23% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 207 23% 15%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 255 255% 255%;
+    --secondary: 207 10% 96%;
+    --secondary-foreground: 207 23% 15%;
+    --muted: 207 10% 96%;
+    --muted-foreground: 207 10% 45%;
+    --accent: 207 10% 96%;
+    --accent-foreground: 207 23% 15%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 207 10% 90%;
+    --input: 207 10% 90%;
+    --ring: 142 71% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+  .smooth-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .smooth-scroll::-webkit-scrollbar-track {
+    @apply bg-muted/30;
+  }
+  .smooth-scroll::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+  .smooth-scroll::-webkit-scrollbar-thumb:hover {
+    @apply bg-border/80;
+  }
+}
+
