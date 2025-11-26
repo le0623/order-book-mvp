@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Tooltip,
   TooltipContent,
@@ -41,12 +42,17 @@ interface OrderBookProps {
   onAcceptOrder?: (id: string) => void
 }
 
+const ORDER_STATUSES: OrderStatus[] = ["Open", "Pending", "Canceled", "Failed", "Partial", "Completed"]
+
 export function OrderBook({ orders, onUpdateOrder, onCancelOrder, onAcceptOrder }: OrderBookProps) {
   const [expandedRows, setExpandedRows] = React.useState<Set<string>>(new Set())
   const [editDialogOpen, setEditDialogOpen] = React.useState<string | null>(null)
   const [editAsk, setEditAsk] = React.useState<number>(0)
   const [editBid, setEditBid] = React.useState<number>(0)
   const [copiedWalletId, setCopiedWalletId] = React.useState<string | null>(null)
+  const [selectedStatuses, setSelectedStatuses] = React.useState<Set<OrderStatus>>(
+    new Set(["Open"])
+  )
 
   const copyToClipboard = async (text: string, orderId: string) => {
     try {
@@ -122,19 +128,46 @@ export function OrderBook({ orders, onUpdateOrder, onCancelOrder, onAcceptOrder 
     }).format(num)
   }
 
-  const hasScroll = orders.length > 10
-  const maxHeight = "max-h-[600px]"
+  const handleStatusToggle = (status: OrderStatus) => {
+    const newSelected = new Set(selectedStatuses)
+    if (newSelected.has(status)) {
+      newSelected.delete(status)
+    } else {
+      newSelected.add(status)
+    }
+    setSelectedStatuses(newSelected)
+  }
+
+  const filteredOrders = orders.filter((order) => selectedStatuses.has(order.status))
 
   return (
     <Card className="w-full border-border/50 shadow-lg">
       <CardHeader className="border-b border-border/40 pb-4">
-        <CardTitle className="text-xl font-semibold tracking-tight">Order Book</CardTitle>
+        <div className="flex items-center justify-between mb-4">
+          <CardTitle className="text-xl font-semibold tracking-tight">Order Book</CardTitle>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="text-sm font-medium text-muted-foreground">Filter by Status:</span>
+          {ORDER_STATUSES.map((status) => (
+            <label
+              key={status}
+              className="flex items-center gap-2 cursor-pointer text-sm"
+            >
+              <Checkbox
+                status={status}
+                checked={selectedStatuses.has(status)}
+                onChange={() => handleStatusToggle(status)}
+              />
+              <span className="select-none">{status}</span>
+            </label>
+          ))}
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         <TooltipProvider>
-          <div className={`rounded-b-lg border-t-0 ${hasScroll ? `${maxHeight} overflow-y-auto smooth-scroll` : ""}`}>
-            <Table noWrapper={hasScroll}>
-              <TableHeader className={hasScroll ? "sticky top-0 z-10 bg-card shadow-sm border-b border-border/40" : ""}>
+          <div className="rounded-b-lg border-t-0">
+            <Table>
+              <TableHeader>
                 <TableRow className="border-border/50 hover:bg-transparent">
                   <TableHead className="w-[50px]"></TableHead>
                   <TableHead className="font-semibold">Date</TableHead>
@@ -149,7 +182,14 @@ export function OrderBook({ orders, onUpdateOrder, onCancelOrder, onAcceptOrder 
                 </TableRow>
               </TableHeader>
               <TableBody>
-              {orders.map((order) => {
+              {filteredOrders.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                    No orders found with the selected status filters.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredOrders.map((order) => {
                 const isExpanded = expandedRows.has(order.id)
                 return (
                   <React.Fragment key={order.id}>
@@ -368,7 +408,8 @@ export function OrderBook({ orders, onUpdateOrder, onCancelOrder, onAcceptOrder 
                     )}
                   </React.Fragment>
                 )
-              })}
+              })
+              )}
               </TableBody>
             </Table>
           </div>

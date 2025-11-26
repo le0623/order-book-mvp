@@ -5,7 +5,7 @@
 @layer base {
   :root {
     /* Default dark theme - using #30404d as base (hsl(207, 23%, 25%)) */
-    --background: 207 23% 25%;
+    --background: 207 23% 15%;
     --foreground: 210 20% 98%;
     --card: 207 23% 30%;
     --card-foreground: 210 20% 98%;
@@ -29,7 +29,7 @@
 
   .dark {
     /* Dark theme - using #30404d as base */
-    --background: 207 23% 25%;
+    --background: 207 23% 15%;
     --foreground: 210 20% 98%;
     --card: 207 23% 30%;
     --card-foreground: 210 20% 98%;
