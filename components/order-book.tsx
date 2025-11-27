@@ -116,6 +116,25 @@ export function OrderBook({ orders, onUpdateOrder, onCancelOrder, onAcceptOrder 
     }
   }
 
+  const getStatusTextColor = (status: OrderStatus): string => {
+    switch (status) {
+      case "Open":
+        return "text-blue-600 dark:text-blue-400"
+      case "Completed":
+        return "text-emerald-600 dark:text-emerald-400"
+      case "Canceled":
+        return "text-red-600 dark:text-red-400"
+      case "Failed":
+        return "text-rose-600 dark:text-rose-400"
+      case "Pending":
+        return "text-amber-600 dark:text-amber-400"
+      case "Partial":
+        return "text-slate-500 dark:text-slate-400"
+      default:
+        return ""
+    }
+  }
+
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
@@ -187,6 +206,7 @@ export function OrderBook({ orders, onUpdateOrder, onCancelOrder, onAcceptOrder 
                   checked={selectedStatuses.has(status)}
                   onCheckedChange={() => handleStatusToggle(status)}
                   onSelect={(e) => e.preventDefault()}
+                  className={getStatusTextColor(status)}
                 >
                   {status}
                 </DropdownMenuCheckboxItem>
