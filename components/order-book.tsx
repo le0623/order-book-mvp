@@ -172,9 +172,9 @@ export function OrderBook({ orders, onUpdateOrder, onCancelOrder, onAcceptOrder 
   const filteredOrders = orders.filter((order) => selectedStatuses.has(order.status))
 
   return (
-    <Card className="w-full border-border/50 shadow-lg">
-      <CardHeader className="sticky top-[117px] z-10 bg-card border-b border-border/40 pb-4 shadow-sm">
-        <div className="flex items-center justify-between">
+    <Card className="w-full border-border/50 shadow-lg bg-background">
+      <CardHeader className="sticky top-[117px] z-10 bg-background border-b border-border/40 pb-0 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
           <CardTitle className="text-xl font-semibold tracking-tight">Order Book</CardTitle>
           <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
@@ -214,25 +214,29 @@ export function OrderBook({ orders, onUpdateOrder, onCancelOrder, onAcceptOrder 
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        <div className="overflow-x-auto -mx-6 px-6">
+          <Table noWrapper>
+            <TableHeader>
+              <TableRow className="border-border/50 ">
+                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="font-semibold">Date</TableHead>
+                <TableHead className="font-semibold">Order</TableHead>
+                <TableHead className="font-semibold">SN</TableHead>
+                <TableHead className="font-semibold">Wallet</TableHead>
+                <TableHead className="text-right font-semibold">Size</TableHead>
+                <TableHead className="text-right font-semibold">Ask</TableHead>
+                <TableHead className="text-right font-semibold">Bid</TableHead>
+                <TableHead className="font-semibold">Partial</TableHead>
+                <TableHead className="font-semibold">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+          </Table>
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         <TooltipProvider>
           <div className="rounded-b-lg border-t-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border/50 hover:bg-transparent">
-                  <TableHead className="w-[50px]"></TableHead>
-                  <TableHead className="font-semibold">Date</TableHead>
-                  <TableHead className="font-semibold">Order</TableHead>
-                  <TableHead className="font-semibold">SN</TableHead>
-                  <TableHead className="font-semibold">Wallet</TableHead>
-                  <TableHead className="text-right font-semibold">Size</TableHead>
-                  <TableHead className="text-right font-semibold">Ask</TableHead>
-                  <TableHead className="text-right font-semibold">Bid</TableHead>
-                  <TableHead className="font-semibold">Partial</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                </TableRow>
-              </TableHeader>
+            <Table noWrapper>
               <TableBody>
               {filteredOrders.length === 0 ? (
                 <TableRow>
