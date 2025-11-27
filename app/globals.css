@@ -7,9 +7,9 @@
     /* Default dark theme - using #30404d as base (hsl(207, 23%, 25%)) */
     --background: 207 23% 15%;
     --foreground: 210 20% 98%;
-    --card: 207 23% 30%;
+    --card: 207 23% 18%;
     --card-foreground: 210 20% 98%;
-    --popover: 207 23% 30%;
+    --popover: 207 23% 18%;
     --popover-foreground: 210 20% 98%;
     --primary: 142 71% 45%;
     --primary-foreground: 207 23% 10%;
@@ -31,9 +31,9 @@
     /* Dark theme - using #30404d as base */
     --background: 207 23% 15%;
     --foreground: 210 20% 98%;
-    --card: 207 23% 30%;
+    --card: 207 23% 18%;
     --card-foreground: 210 20% 98%;
-    --popover: 207 23% 30%;
+    --popover: 207 23% 18%;
     --popover-foreground: 210 20% 98%;
     --primary: 142 71% 45%;
     --primary-foreground: 207 23% 10%;

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ChevronDown, ChevronRight, Edit2, X, Check, Copy, CheckCircle2 } from "lucide-react"
+import { ChevronDown, ChevronRight, Edit2, X, Check, Copy, CheckCircle2, Filter } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -25,7 +25,14 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Checkbox } from "@/components/ui/checkbox"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Tooltip,
   TooltipContent,
@@ -143,24 +150,34 @@ export function OrderBook({ orders, onUpdateOrder, onCancelOrder, onAcceptOrder 
   return (
     <Card className="w-full border-border/50 shadow-lg">
       <CardHeader className="border-b border-border/40 pb-4">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-semibold tracking-tight">Order Book</CardTitle>
-        </div>
-        <div className="flex flex-wrap items-center gap-4">
-          <span className="text-sm font-medium text-muted-foreground">Filter by Status:</span>
-          {ORDER_STATUSES.map((status) => (
-            <label
-              key={status}
-              className="flex items-center gap-2 cursor-pointer text-sm"
-            >
-              <Checkbox
-                status={status}
-                checked={selectedStatuses.has(status)}
-                onChange={() => handleStatusToggle(status)}
-              />
-              <span className="select-none">{status}</span>
-            </label>
-          ))}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Filter className="h-4 w-4" />
+                Filter
+                {selectedStatuses.size > 0 && (
+                  <span className="ml-1 rounded-full bg-primary text-primary-foreground px-1.5 py-0.5 text-xs">
+                    {selectedStatuses.size}
+                  </span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {ORDER_STATUSES.map((status) => (
+                <DropdownMenuCheckboxItem
+                  key={status}
+                  checked={selectedStatuses.has(status)}
+                  onCheckedChange={() => handleStatusToggle(status)}
+                >
+                  {status}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardHeader>
       <CardContent className="p-0">
