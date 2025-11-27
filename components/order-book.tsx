@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ChevronDown, ChevronRight, Edit2, X, Check, Copy, CheckCircle2, Filter } from "lucide-react"
+import { ChevronDown, ChevronRight, Edit2, X, Check, Copy, CheckCircle2, Filter, XCircle } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -60,6 +60,7 @@ export function OrderBook({ orders, onUpdateOrder, onCancelOrder, onAcceptOrder 
   const [selectedStatuses, setSelectedStatuses] = React.useState<Set<OrderStatus>>(
     new Set(["Open"])
   )
+  const [dropdownOpen, setDropdownOpen] = React.useState(false)
 
   const copyToClipboard = async (text: string, orderId: string) => {
     try {
@@ -145,14 +146,18 @@ export function OrderBook({ orders, onUpdateOrder, onCancelOrder, onAcceptOrder 
     setSelectedStatuses(newSelected)
   }
 
+  const handleClearFilters = () => {
+    setSelectedStatuses(new Set(["Open"]))
+  }
+
   const filteredOrders = orders.filter((order) => selectedStatuses.has(order.status))
 
   return (
     <Card className="w-full border-border/50 shadow-lg">
-      <CardHeader className="border-b border-border/40 pb-4">
+      <CardHeader className="sticky top-[117px] z-10 bg-card border-b border-border/40 pb-4 shadow-sm">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-semibold tracking-tight">Order Book</CardTitle>
-          <DropdownMenu>
+          <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
                 <Filter className="h-4 w-4" />
@@ -164,14 +169,24 @@ export function OrderBook({ orders, onUpdateOrder, onCancelOrder, onAcceptOrder 
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-48" onCloseAutoFocus={(e) => e.preventDefault()}>
+              <div className="flex items-center justify-between px-2 py-1.5">
+                <DropdownMenuLabel className="p-0">Filter by Status</DropdownMenuLabel>
+                <button
+                  onClick={() => setDropdownOpen(false)}
+                  className="rounded-sm p-1 hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                  title="Close filter"
+                >
+                  <XCircle className="h-4 w-4" />
+                </button>
+              </div>
               <DropdownMenuSeparator />
               {ORDER_STATUSES.map((status) => (
                 <DropdownMenuCheckboxItem
                   key={status}
                   checked={selectedStatuses.has(status)}
                   onCheckedChange={() => handleStatusToggle(status)}
+                  onSelect={(e) => e.preventDefault()}
                 >
                   {status}
                 </DropdownMenuCheckboxItem>
