@@ -3,10 +3,11 @@
 import { OrderBook } from "../components/order-book";
 import { mockOrders, Order } from "../lib/mock-data";
 import { useState, useCallback, useMemo } from "react";
-import { Activity, Wallet, Wifi, WifiOff } from "lucide-react";
+import { Activity, Wifi, WifiOff } from "lucide-react";
 import { ThemeToggle } from "../components/theme-toggle";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { WebSocketMessage } from "../lib/websocket-types";
+import { ConnectButton } from "../components/walletkit/connect";
 
 const MOCK_WS_URL = "wss://mock.orderbook.io/stream";
 
@@ -222,10 +223,7 @@ export default function Home() {
 
               <ThemeToggle />
 
-              <div className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border bg-card/50 hover:bg-card transition-colors cursor-pointer">
-                <Wallet className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Connect Wallet</span>
-              </div>
+              <ConnectButton />
             </div>
           </div>
         </header>
