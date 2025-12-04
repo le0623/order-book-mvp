@@ -1,174 +1,206 @@
 "use client";
 
-import { OrderBook } from "@/components/order-book";
-import { mockOrders, Order } from "@/lib/mock-data";
-import { useState, useCallback } from "react";
+import { OrderBook } from "../components/order-book";
+import { mockOrders, Order } from "../lib/mock-data";
+import { useState, useCallback, useMemo } from "react";
 import { Activity, Wallet, Wifi, WifiOff } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { useWebSocket } from "@/hooks/useWebSocket";
-import { WebSocketMessage } from "@/lib/websocket-types";
+import { ThemeToggle } from "../components/theme-toggle";
+import { useWebSocket } from "../hooks/useWebSocket";
+import { WebSocketMessage } from "../lib/websocket-types";
+
+const MOCK_WS_URL = "wss://mock.orderbook.io/stream";
 
 export default function Home() {
   const [orders, setOrders] = useState<Order[]>(mockOrders);
 
-  // Handle WebSocket messages
-  const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
-    // Convert date strings to Date objects
-    const normalizeOrder = (order: Order): Order => ({
+  const normalizeOrder = useCallback((order: Order): Order => {
+    if (!order) return order;
+
+    return {
       ...order,
       date: typeof order.date === "string" ? new Date(order.date) : order.date,
-      history: order.history.map((h) => ({
-        ...h,
-        timestamp:
-          typeof h.timestamp === "string"
-            ? new Date(h.timestamp)
-            : h.timestamp,
-      })),
-    });
+      history: order.history
+        ? order.history.map((h) => ({
+            ...h,
+            timestamp:
+              typeof h.timestamp === "string"
+                ? new Date(h.timestamp)
+                : h.timestamp,
+          }))
+        : [],
+    };
+  }, []);
 
+  const updateOrders = useCallback((updatedOrder: Order) => {
     setOrders((prevOrders) => {
-      switch (message.type) {
-        case "NEW_ORDER": {
-          // Check if order already exists (prevent duplicates)
-          const normalizedOrder = normalizeOrder(message.payload);
-          const exists = prevOrders.find((o) => o.id === normalizedOrder.id);
-          if (exists) {
-            return prevOrders; // Order already exists, don't add duplicate
-          }
-          // Add new order at the beginning of the list
-          return [normalizedOrder, ...prevOrders];
-        }
+      const index = prevOrders.findIndex((o) => o.id === updatedOrder.id);
 
-        case "UPDATE_ORDER": {
-          // Update existing order
-          const normalizedOrder = normalizeOrder(message.payload);
-          return prevOrders.map((order) => {
-            if (order.id === normalizedOrder.id) {
-              return {
-                ...order,
-                ...normalizedOrder,
-                // Preserve existing history and merge with new history if provided
-                history: normalizedOrder.history || order.history,
-              };
-            }
-            return order;
-          });
-        }
-
-        case "DELETE_ORDER": {
-          // Remove order from list
-          return prevOrders.filter((order) => order.id !== message.payload.id);
-        }
-
-        default:
-          return prevOrders;
+      if (index === -1) {
+        return [updatedOrder, ...prevOrders];
       }
+
+      if (
+        updatedOrder.status === "Canceled" ||
+        updatedOrder.status === "Completed" ||
+        updatedOrder.status === "Failed"
+      ) {
+        return prevOrders.filter((o) => o.id !== updatedOrder.id);
+      }
+
+      const newOrders = [...prevOrders];
+      newOrders[index] = updatedOrder;
+      return newOrders;
     });
   }, []);
 
-  // WebSocket connection
-  const { connectionState } = useWebSocket({
-    url: "ws://localhost:3001/orders", // Will use mock WebSocket for now
-    enabled: true,
-    onMessage: handleWebSocketMessage,
-    onError: (error) => {
-      console.error("WebSocket error:", error);
-    },
-  });
+  const handleWebSocketMessage = useCallback(
+    (message: WebSocketMessage) => {
+      if (!message?.payload) return;
 
-  const handleUpdateOrder = (id: string, ask: number, bid: number) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) => {
-        if (order.id === id) {
-          const newHistory = [
-            ...order.history,
-            {
-              timestamp: new Date(),
-              ask,
-              bid,
-              status: order.status,
-            },
-          ];
-          return {
-            ...order,
-            ask,
-            bid,
-            history: newHistory,
-          };
-        }
-        return order;
+      if (message.type === "BATCH_ORDERS") {
+        const incoming = (message.payload as Order[]).map(normalizeOrder);
+
+        setOrders((prev) => {
+          const map = new Map(prev.map((o) => [o.id, o]));
+
+          for (const order of incoming) {
+            if (
+              ["Canceled", "Completed", "Failed"].includes(order.status ?? "")
+            ) {
+              map.delete(order.id);
+            } else {
+              map.set(order.id, order);
+            }
+          }
+
+          return Array.from(map.values());
+        });
+
+        return;
+      }
+
+      const normalizedOrder = normalizeOrder(message.payload as Order);
+
+      switch (message.type) {
+        case "NEW_ORDER":
+        case "UPDATE_ORDER":
+          updateOrders(normalizedOrder);
+          break;
+
+        case "DELETE_ORDER":
+          setOrders((prev) =>
+            prev.filter((o) => o.id !== normalizedOrder.id)
+          );
+          break;
+
+        default:
+          console.warn("Unknown message type:", message);
+      }
+    },
+    [normalizeOrder, updateOrders]
+  );
+
+  const { connectionState } = useWebSocket({
+    url: MOCK_WS_URL,
+    onMessage: handleWebSocketMessage,
+  });
+  
+  const handleUpdateOrder = (id: string, updates: Partial<Order>) => {
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id !== id) return order;
+
+        const newHistory = [
+          ...order.history,
+          {
+            timestamp: new Date(),
+            ask: updates.ask ?? order.ask,
+            bid: updates.bid ?? order.bid,
+            status: order.status,
+          },
+        ];
+
+        return {
+          ...order,
+          ...updates,
+          history: newHistory,
+        };
       })
     );
   };
 
   const handleCancelOrder = (id: string) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) => {
-        if (order.id === id) {
-          const newHistory = [
-            ...order.history,
-            {
-              timestamp: new Date(),
-              ask: order.ask,
-              bid: order.bid,
-              status: "Canceled" as const,
-            },
-          ];
-          return {
-            ...order,
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id !== id) return order;
+
+        const newHistory = [
+          ...order.history,
+          {
+            timestamp: new Date(),
+            ask: order.ask,
+            bid: order.bid,
             status: "Canceled" as const,
-            history: newHistory,
-          };
-        }
-        return order;
+          },
+        ];
+
+        return {
+          ...order,
+          status: "Canceled" as const,
+          history: newHistory,
+        };
       })
     );
   };
 
   const handleAcceptOrder = (id: string) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) => {
-        if (order.id === id) {
-          const newHistory = [
-            ...order.history,
-            {
-              timestamp: new Date(),
-              ask: order.ask,
-              bid: order.bid,
-              status: "Pending" as const,
-            },
-          ];
-          return {
-            ...order,
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id !== id) return order;
+
+        const newHistory = [
+          ...order.history,
+          {
+            timestamp: new Date(),
+            ask: order.ask,
+            bid: order.bid,
             status: "Pending" as const,
-            history: newHistory,
-          };
-        }
-        return order;
+          },
+        ];
+
+        return {
+          ...order,
+          status: "Pending" as const,
+          history: newHistory,
+        };
       })
     );
   };
 
+  const sortedOrders = useMemo(() => {
+    return [...orders].sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [orders]);
+
   return (
     <main className="min-h-screen bg-background">
-      <div className="container mx-auto  px-4 max-w-7xl">
+      <div className="container mx-auto px-4 max-w-7xl">
+        
         <header className="mb-6 border-b py-8 border-border/40 pb-6 sticky top-0 z-10 bg-background">
           <div className="flex items-center justify-between">
+            
             <div className="flex items-center gap-4">
               <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
                 <Activity className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">
-                  SPA Exchange
-                </h1>
+                <h1 className="text-3xl font-bold tracking-tight">SPA Exchange</h1>
                 <p className="text-muted-foreground text-sm mt-1">
                   Decentralized Order Book
                 </p>
               </div>
             </div>
+
             <div className="flex items-center gap-3">
-              {/* WebSocket Connection Status */}
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card/50">
                 {connectionState === "connected" ? (
                   <>
@@ -187,7 +219,9 @@ export default function Home() {
                   </>
                 )}
               </div>
+
               <ThemeToggle />
+
               <div className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border bg-card/50 hover:bg-card transition-colors cursor-pointer">
                 <Wallet className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">Connect Wallet</span>
@@ -195,8 +229,9 @@ export default function Home() {
             </div>
           </div>
         </header>
+
         <OrderBook
-          orders={orders}
+          orders={sortedOrders}
           onUpdateOrder={handleUpdateOrder}
           onCancelOrder={handleCancelOrder}
           onAcceptOrder={handleAcceptOrder}

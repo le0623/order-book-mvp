@@ -119,6 +119,8 @@ export function DataTable<TData, TValue>({
   const table = useReactTable({
     data,
     columns,
+    // Use stable row id based on the order's `id` field to avoid full-row re-mounts
+    getRowId: (row: any) => String(row.id),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),

@@ -1,136 +1,183 @@
 import { Order, OrderType, OrderStatus } from "./mock-data";
-import { WebSocketMessage } from "./websocket-types";
+import { WebSocketMessage, WebSocketMessageSingle } from "./websocket-types";
 
-// Generate random SS58 format wallet address
-// SS58 addresses are base58 encoded, typically 48 characters
-// Base58 excludes: 0, O, I, l (to avoid confusion)
+// Helper to generate a random wallet address (kept for generating new data)
+const base58Chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 const generateWalletAddress = (): string => {
-  // Base58 character set (no 0, O, I, l)
-  const base58Chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-  
-  // SS58 addresses typically start with 1-9 or specific network prefixes
-  // Using prefix 5 (common for Substrate/Polkadot)
   let address = "5";
-  
-  // Generate remaining 46 characters (total 48 including prefix)
   for (let i = 0; i < 46; i++) {
     address += base58Chars.charAt(Math.floor(Math.random() * base58Chars.length));
   }
-  
   return address;
 };
 
-// Generate a random order
+/**
+ * Generates a random Order object.
+ * NOTE: This function returns a Date object in the `date` and `history` fields.
+ * The payload conversion (to ISO string) happens in the `generateMessage` helpers.
+ */
 const generateRandomOrder = (id: string): Order => {
   const orderTypes: OrderType[] = ["Sell", "Buy"];
-  const statuses: OrderStatus[] = ["Open", "Pending", "Partial"];
-  
+  // New orders are primarily 'Open' or 'Pending'
+  const statuses: OrderStatus[] = ["Open", "Pending"]; 
+
   const orderType = orderTypes[Math.floor(Math.random() * orderTypes.length)];
   const status = statuses[Math.floor(Math.random() * statuses.length)];
   const sn = Math.floor(Math.random() * 10) + 1;
   const size = Math.random() * 3000 + 500;
-  const ask = Math.random() * 15 + 40;
-  const bid = ask - (Math.random() * 5 + 3);
-  
+  const ask = Math.random() * 100 + 10;
+  const bid = Math.random() * 100 + 5;
+  const partial = Math.random() < 0.5;
+  const wallet = generateWalletAddress();
+
+  const now = new Date();
+  const history = [{ timestamp: now, ask, bid, status: "Open" as OrderStatus }];
+
   return {
     id,
-    date: new Date(),
+    date: now,
     order: orderType,
     sn,
-    wallet: generateWalletAddress(),
-    size: Math.round(size * 100) / 100,
-    ask: Math.round(ask * 100) / 100,
-    bid: Math.round(bid * 100) / 100,
-    partial: status === "Partial",
+    wallet,
+    size: parseFloat(size.toFixed(2)),
+    ask: parseFloat(ask.toFixed(2)),
+    bid: parseFloat(bid.toFixed(2)),
+    partial,
     status,
-    history: [
-      {
-        timestamp: new Date(),
-        ask,
-        bid,
-        status,
-      },
-    ],
+    history,
   };
 };
 
-// Mock WebSocket class
-export class MockWebSocket {
-  private url: string;
-  private readyState: number = WebSocket.CONNECTING;
-  private messageQueue: WebSocketMessage[] = [];
+/**
+ * Converts an Order object (with Date objects) into a JSON payload (with ISO strings)
+ * and wraps it in a WebSocketMessage.
+ */
+const generateMessage = (type: WebSocketMessageSingle['type'], order: Order): WebSocketMessageSingle => {
+  // Ensure the date and history timestamps are ISO strings for transport
+  const payload: Order = {
+    ...order,
+    date: order.date.toISOString() as any, 
+    history: order.history.map(h => ({
+      ...h,
+      timestamp: h.timestamp.toISOString() as any,
+    }))
+  };
+
+  return {
+    type,
+    payload,
+    timestamp: new Date().toISOString(),
+  };
+};
+
+
+export class MockWebSocket implements EventTarget {
+  CONNECTING = 0;
+  OPEN = 1;
+  CLOSING = 2;
+  CLOSED = 3;
+
+  public url: string;
+  public readyState: number;
+  
+  public onopen: ((this: WebSocket | MockWebSocket, ev: Event) => any) | null = null;
+  public onclose: ((this: WebSocket | MockWebSocket, ev: CloseEvent) => any) | null = null;
+  public onerror: ((this: WebSocket | MockWebSocket, ev: Event) => any) | null = null;
+  public onmessage: ((this: WebSocket | MockWebSocket, ev: MessageEvent) => any) | null = null;
+
+
+  public binaryType: "blob" | "arraybuffer" = "blob";
+  public bufferedAmount: number = 0;
+  public extensions: string = "";
+  public protocol: string = "";
+
   private intervalId: NodeJS.Timeout | null = null;
-  private orderIdCounter: number = 25; // Start after existing mock orders
-
-  onopen: ((event: Event) => void) | null = null;
-  onclose: ((event: CloseEvent) => void) | null = null;
-  onerror: ((event: Event) => void) | null = null;
-  onmessage: ((event: MessageEvent) => void) | null = null;
-
-  static CONNECTING = 0;
-  static OPEN = 1;
-  static CLOSING = 2;
-  static CLOSED = 3;
+  private orderIdCounter: number;
+  private activeOrders: Order[] = []; 
 
   constructor(url: string) {
     this.url = url;
+    this.readyState = this.CONNECTING;
+    this.orderIdCounter = 100; 
     
-    // Simulate connection delay
     setTimeout(() => {
-      this.readyState = WebSocket.OPEN;
-      if (this.onopen) {
-        this.onopen(new Event("open"));
-      }
-      
-      // Start sending messages every 3-5 seconds
-      this.startSendingMessages();
+      this.readyState = this.OPEN;
+      if (this.onopen) this.onopen(new Event("open"));
+      this.startFeed();
     }, 500);
   }
 
-  private startSendingMessages() {
-    const sendMessage = () => {
-      if (this.readyState === WebSocket.OPEN) {
-        const order = generateRandomOrder(this.orderIdCounter.toString());
-        this.orderIdCounter++;
-        
-        // Serialize order with dates as strings for JSON
-        const serializedOrder = {
-          ...order,
-          date: order.date.toISOString(),
-          history: order.history.map((h) => ({
-            ...h,
-            timestamp: h.timestamp.toISOString(),
-          })),
-        };
+  private startFeed() {
+    this.orderIdCounter += 1;
+    const initialOrder = generateRandomOrder(`mock-${this.orderIdCounter}`);
+    this.activeOrders.push(initialOrder);
+    const initialMessage = generateMessage("NEW_ORDER", initialOrder);
+    
+    // Send initial message
+    if (this.onmessage) {
+        this.onmessage(new MessageEvent("message", { data: JSON.stringify(initialMessage) }));
+    }
 
-        const message: WebSocketMessage = {
-          type: "NEW_ORDER",
-          payload: serializedOrder as unknown as Order,
-          timestamp: new Date().toISOString(),
-        };
+    const FEED_INTERVAL_MS = 5000;
+    this.intervalId = setInterval(() => {
+      const chance = Math.random();
+      
+      if (chance < 0.6) {
+        
+        this.orderIdCounter += 1;
+        const newOrder = generateRandomOrder(`mock-${this.orderIdCounter}`);
+        this.activeOrders.push(newOrder);
+        const message = generateMessage("NEW_ORDER", newOrder);
+
+        if (this.onmessage) {
+          this.onmessage(new MessageEvent("message", { data: JSON.stringify(message) }));
+        }
+      } else if (chance < 0.9 && this.activeOrders.length > 0) {
+        const index = Math.floor(Math.random() * this.activeOrders.length);
+        const orderToUpdate = this.activeOrders[index];
+
+        if (Math.random() < 0.5) {
+            orderToUpdate.status = "Partial"; 
+        } else {
+            const priceChange = Math.random() * 0.5 - 0.25; 
+            orderToUpdate.ask = parseFloat((orderToUpdate.ask + priceChange).toFixed(2));
+            orderToUpdate.bid = parseFloat((orderToUpdate.bid + priceChange).toFixed(2));
+        }
+        
+        
+        orderToUpdate.history.push({ 
+            timestamp: new Date(), 
+            ask: orderToUpdate.ask, 
+            bid: orderToUpdate.bid, 
+            status: orderToUpdate.status 
+        });
+
+        const message = generateMessage("UPDATE_ORDER", orderToUpdate);
         
         if (this.onmessage) {
-          this.onmessage(
-            new MessageEvent("message", {
-              data: JSON.stringify(message),
-            })
-          );
+          this.onmessage(new MessageEvent("message", { data: JSON.stringify(message) }));
+        }
+      } else if (this.activeOrders.length > 0) {
+        const index = Math.floor(Math.random() * this.activeOrders.length);
+        const orderToDelete = this.activeOrders[index];
+        this.activeOrders.splice(index, 1); 
+
+        const message = generateMessage("DELETE_ORDER", orderToDelete);
+
+        if (this.onmessage) {
+          this.onmessage(new MessageEvent("message", { data: JSON.stringify(message) }));
         }
       }
-    };
-
-    // Send first message after 2 seconds
-    setTimeout(sendMessage, 2000);
-    
-    // Then send messages every 3-5 seconds
-    this.intervalId = setInterval(() => {
-      sendMessage();
-    }, 3000 + Math.random() * 2000);
+    }, FEED_INTERVAL_MS);
   }
 
-  send(data: string | ArrayBuffer | Blob) {
-    // Mock send - just log it
-    console.log("MockWebSocket send:", data);
+  send(data: string | ArrayBufferLike | Blob | ArrayBufferView) {
+    try {
+      const parsed = JSON.parse(data.toString());
+      console.log("MockWebSocket received outgoing message (not broadcasted):", parsed);
+    } catch (e) {
+      console.log("MockWebSocket received non-JSON send:", data);
+    }
   }
 
   close(code?: number, reason?: string) {
@@ -138,38 +185,31 @@ export class MockWebSocket {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
-    
-    this.readyState = WebSocket.CLOSED;
-    if (this.onclose) {
-      this.onclose(new CloseEvent("close", { code, reason }));
-    }
+    this.readyState = this.CLOSED;
+    if (this.onclose) this.onclose(new CloseEvent("close", { code, reason }));
   }
-
-  addEventListener(
-    type: "open" | "close" | "error" | "message",
-    listener: EventListener
-  ) {
+  
+  addEventListener(type: "open" | "close" | "error" | "message", listener: EventListener) {
     switch (type) {
       case "open":
-        this.onopen = listener as (event: Event) => void;
+        this.onopen = listener as (e: Event) => void;
         break;
       case "close":
-        this.onclose = listener as (event: CloseEvent) => void;
+        this.onclose = listener as (e: CloseEvent) => void;
         break;
       case "error":
-        this.onerror = listener as (event: Event) => void;
+        this.onerror = listener as (e: Event) => void;
         break;
       case "message":
-        this.onmessage = listener as (event: MessageEvent) => void;
+        this.onmessage = listener as (e: MessageEvent) => void;
         break;
     }
   }
 
-  removeEventListener(
-    type: "open" | "close" | "error" | "message",
-    listener: EventListener
-  ) {
-    // Mock implementation
+  removeEventListener(type: string, listener: EventListener) {
+  }
+  
+  dispatchEvent(event: Event): boolean {
+    return true; 
   }
 }
-

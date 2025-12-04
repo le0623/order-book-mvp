@@ -1,14 +1,22 @@
-import { Order, OrderType, OrderStatus } from "./mock-data";
+import { Order } from "./mock-data";
 
 // WebSocket message types
-export type WebSocketMessageType = "NEW_ORDER" | "UPDATE_ORDER" | "DELETE_ORDER";
+export type WebSocketMessageTypeSingle = "NEW_ORDER" | "UPDATE_ORDER" | "DELETE_ORDER";
+export type WebSocketMessageType = WebSocketMessageTypeSingle | "BATCH_ORDERS";
 
-// WebSocket message structure
-export interface WebSocketMessage {
-  type: WebSocketMessageType;
+export interface WebSocketMessageSingle {
+  type: WebSocketMessageTypeSingle;
   payload: Order;
   timestamp?: string;
 }
+
+export interface WebSocketMessageBatch {
+  type: "BATCH_ORDERS";
+  payload: Order[];
+  timestamp?: string;
+}
+
+export type WebSocketMessage = WebSocketMessageSingle | WebSocketMessageBatch;
 
 // Connection state
 export type ConnectionState = "connecting" | "connected" | "disconnected" | "error";

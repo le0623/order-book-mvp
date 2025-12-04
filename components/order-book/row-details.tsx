@@ -38,7 +38,7 @@ const getStatusVariantColor = (status: string) => {
 
 interface OrderBookRowDetailsProps {
   order: Order;
-  onUpdateOrder?: (id: string, ask: number, bid: number) => void;
+  onUpdateOrder?: (id: string, updates: Partial<Order>) => void;
   onCancelOrder?: (id: string) => void;
   onAcceptOrder?: (id: string) => void;
 }
@@ -66,7 +66,8 @@ export function OrderBookRowDetails({
 
   const handleSaveEdit = () => {
     if (onUpdateOrder) {
-      onUpdateOrder(order.id, editAsk, editBid);
+        onUpdateOrder(order.id, { ask: editAsk, bid: editBid });
+      setIsEditDialogOpen(false);
       setIsEditDialogOpen(false);
     }
   };
