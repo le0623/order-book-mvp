@@ -39,7 +39,12 @@ export function useWebSocket({
 
     try {
       // Decide whether to use the mock or a real WebSocket.
-      const shouldUseMock = typeof useMock === "boolean" ? useMock : process.env.NODE_ENV !== "production";
+      // If useMock is explicitly set, use that value.
+      // Otherwise, use mock if URL contains "mock" or if in non-production environment.
+      const isMockUrl = url.toLowerCase().includes("mock");
+      const shouldUseMock = typeof useMock === "boolean" 
+        ? useMock 
+        : isMockUrl || process.env.NODE_ENV !== "production";
       
       // Use the appropriate WebSocket implementation
       const ws = shouldUseMock ? new MockWebSocket(url) : new WebSocket(url);
