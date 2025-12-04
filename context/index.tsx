@@ -1,6 +1,6 @@
 'use client'
 
-import React, { ReactNode } from 'react'
+import React, { ReactNode, useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider, cookieToInitialState, type Config } from 'wagmi'
 import { createAppKit } from '@reown/appkit/react'
@@ -18,23 +18,8 @@ const metadata = {
   icons: [], 
 }
 
-
-if (!projectId) {
-  console.error("AppKit Initialization Error: Project ID is missing.");
-} else {
-  createAppKit({
-    adapters: [wagmiAdapter],
-    projectId: projectId!,
-    networks: networks,
-    defaultNetwork: mainnet, 
-    metadata,
-    themeMode: 'dark',
-    features: { analytics: true }, 
-    themeVariables: {
-      '--w3m-accent': '#000000',
-    }
-  })
-}
+// Flag to ensure AppKit is only initialized once on the client
+let appKitInitialized = false
 
 export default function ContextProvider({
   children,
@@ -44,6 +29,27 @@ export default function ContextProvider({
   cookies: string | null 
 }) {
   const initialState = cookieToInitialState(config as Config, cookies)
+
+  // Initialize AppKit only on the client side to prevent hydration errors
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !appKitInitialized && projectId) {
+      createAppKit({
+        adapters: [wagmiAdapter],
+        projectId: projectId!,
+        networks: networks,
+        defaultNetwork: mainnet, 
+        metadata,
+        themeMode: 'dark',
+        features: { analytics: true }, 
+        themeVariables: {
+          '--w3m-accent': '#000000',
+        }
+      })
+      appKitInitialized = true
+    } else if (!projectId) {
+      console.error("AppKit Initialization Error: Project ID is missing.");
+    }
+  }, [])
 
   return (
     <WagmiProvider config={config as Config} initialState={initialState}>
