@@ -1,15 +1,6 @@
-# SPA Exchange - Order Book MVP
+# EXFE Order Book 
 
 A Next.js-based order book interface for a decentralized exchange with expandable rows showing order history and actions.
-
-## Features
-
-- **Order Book Table**: Displays all orders with key information
-- **Expandable Rows**: Click any row to view detailed history and actions
-- **Order Actions**: Update Ask/Bid prices, Cancel, or Accept orders (for Open orders)
-- **Status Tracking**: Visual status badges for different order states
-- **Mock Data**: Functional UI with sample data
-- **Responsive Design**: Clean, modern DeFi/crypto themed interface
 
 ## Tech Stack
 
@@ -42,19 +33,6 @@ yarn build
 yarn start
 ```
 
-## Deployment to Vercel
-
-1. Push your code to a Git repository (GitHub, GitLab, etc.)
-2. Import your repository in Vercel
-3. Vercel will automatically detect Next.js and configure the build settings
-4. Deploy!
-
-Or use the Vercel CLI:
-
-```bash
-yarn global add vercel
-vercel
-```
 
 
 ## Order Book Columns
