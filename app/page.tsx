@@ -85,7 +85,7 @@ export default function Home() {
   );
 
   const { connectionState } = useWebSocket({
-    url: WS_URL,
+    url: WS_URL + "/book",
     onMessage: handleWebSocketMessage,
   });
   const handleUpdateOrder = (uuid: string, updates: Partial<Order>) => {

@@ -34,7 +34,7 @@ const generateMockEscrowAddress = (): string => {
   return address;
 };
 
-export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl = "https://api.subnet118.com" }: NewOrderModalProps) {
+export function NewOrderModal({ open, onOpenChange, onOrderPlaced }: NewOrderModalProps) {
  
   const [formData, setFormData] = React.useState<NewOrderFormData>({
     type: 1, // 1 = Sell (default)
@@ -95,7 +95,9 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl = "htt
         status: -1, // -1 = Init status (default for new orders)
       };
 
-      const response = await fetch(`${apiUrl}/rec`, {
+      // Use Next.js API route proxy to bypass CORS restrictions
+      // The proxy route (/api/orders) calls the external API server-side
+      const response = await fetch('/api/orders', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -103,7 +105,7 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl = "htt
         body: JSON.stringify(orderData),
       }).catch((error) => {
         if (error.message === 'Failed to fetch') {
-          throw new Error('Cannot connect to server. This may be due to CORS policy or network issues. Please contact the administrator.');
+          throw new Error('Cannot connect to server. This may be due to network issues or the server being unavailable.');
         }
         throw error;
       });
