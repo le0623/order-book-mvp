@@ -45,21 +45,14 @@ export default function Home() {
 
   const handleWebSocketMessage = useCallback(
     (message: WebSocketMessage) => {
-      let parsedMessage: WebSocketMessage;
-      
-      if (typeof message === 'string') {
-        parsedMessage = JSON.parse(message);
-      } else {
-        parsedMessage = message;
-      }
-      
-      if (!parsedMessage?.data) {
+      // Message is already parsed by useWebSocket hook
+      if (!message?.data) {
         return;
       }
 
-      const orderData = parsedMessage.data;
-      const messageUuid = parsedMessage.uuid || "";
- 
+      const orderData = message.data;
+      const messageUuid = message.uuid || "";
+
       if (Array.isArray(orderData)) {
         setOrders((prev) => {
           const map = new Map(prev.map((o) => [o.uuid, o]));
