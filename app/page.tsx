@@ -1,51 +1,40 @@
 "use client";
 
 import { OrderBook } from "../components/order-book";
-import { mockOrders, Order } from "../lib/mock-data";
+import { Order } from "../lib/types";
 import { useState, useCallback, useMemo } from "react";
 import { Activity, Wifi, WifiOff } from "lucide-react";
 import { ThemeToggle } from "../components/theme-toggle";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { WebSocketMessage } from "../lib/websocket-types";
 import { ConnectButton } from "../components/walletkit/connect";
+import { NewOrderModal } from "../components/new-order-modal";
 
-const MOCK_WS_URL = "wss://mock.orderbook.io/stream";
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "wss://api.subnet118.com/ws/book";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.subnet118.com";
 
 export default function Home() {
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [newOrderModalOpen, setNewOrderModalOpen] = useState(false);
 
-  const normalizeOrder = useCallback((order: Order): Order => {
-    if (!order) return order;
-
-    return {
-      ...order,
-      date: typeof order.date === "string" ? new Date(order.date) : order.date,
-      history: order.history
-        ? order.history.map((h) => ({
-            ...h,
-            timestamp:
-              typeof h.timestamp === "string"
-                ? new Date(h.timestamp)
-                : h.timestamp,
-          }))
-        : [],
-    };
-  }, []);
+  const isTerminalStatus = (status: number) => {
+    // Status 2 (filled), 3 (error), 4 (closed), 6 (expired) are terminal
+    return [2, 3, 4, 6].includes(status);
+  };
 
   const updateOrders = useCallback((updatedOrder: Order) => {
     setOrders((prevOrders) => {
-      const index = prevOrders.findIndex((o) => o.id === updatedOrder.id);
+      const index = prevOrders.findIndex((o) => o.uuid === updatedOrder.uuid);
 
       if (index === -1) {
+        if (isTerminalStatus(updatedOrder.status)) {
+          return prevOrders;
+        }
         return [updatedOrder, ...prevOrders];
       }
 
-      if (
-        updatedOrder.status === "Canceled" ||
-        updatedOrder.status === "Completed" ||
-        updatedOrder.status === "Failed"
-      ) {
-        return prevOrders.filter((o) => o.id !== updatedOrder.id);
+      if (isTerminalStatus(updatedOrder.status)) {
+        return prevOrders.filter((o) => o.uuid !== updatedOrder.uuid);
       }
 
       const newOrders = [...prevOrders];
@@ -56,130 +45,101 @@ export default function Home() {
 
   const handleWebSocketMessage = useCallback(
     (message: WebSocketMessage) => {
-      if (!message?.payload) return;
+      let parsedMessage: WebSocketMessage;
+      
+      if (typeof message === 'string') {
+        parsedMessage = JSON.parse(message);
+      } else {
+        parsedMessage = message;
+      }
+      
+      if (!parsedMessage?.data) {
+        return;
+      }
 
-      if (message.type === "BATCH_ORDERS") {
-        const incoming = (message.payload as Order[]).map(normalizeOrder);
-
+      const orderData = parsedMessage.data;
+      const messageUuid = parsedMessage.uuid || "";
+ 
+      if (Array.isArray(orderData)) {
         setOrders((prev) => {
-          const map = new Map(prev.map((o) => [o.id, o]));
+          const map = new Map(prev.map((o) => [o.uuid, o]));
 
-          for (const order of incoming) {
-            if (
-              ["Canceled", "Completed", "Failed"].includes(order.status ?? "")
-            ) {
-              map.delete(order.id);
+          for (const order of orderData) {
+            const normalizedOrder = { ...order, uuid: order.uuid || messageUuid };
+            
+            if (!normalizedOrder.uuid) {
+              continue;
+            }
+            
+            if (isTerminalStatus(normalizedOrder.status)) {
+              map.delete(normalizedOrder.uuid);
             } else {
-              map.set(order.id, order);
+              map.set(normalizedOrder.uuid, normalizedOrder);
             }
           }
 
           return Array.from(map.values());
         });
+      } else {
+        const normalizedOrder = { ...orderData, uuid: orderData.uuid || messageUuid } as Order;
 
-        return;
-      }
-
-      const normalizedOrder = normalizeOrder(message.payload as Order);
-
-      switch (message.type) {
-        case "NEW_ORDER":
-        case "UPDATE_ORDER":
+        if (normalizedOrder.uuid) {
           updateOrders(normalizedOrder);
-          break;
-
-        case "DELETE_ORDER":
-          setOrders((prev) =>
-            prev.filter((o) => o.id !== normalizedOrder.id)
-          );
-          break;
-
-        default:
-          console.warn("Unknown message type:", message);
+        }
       }
     },
-    [normalizeOrder, updateOrders]
+    [updateOrders]
   );
 
   const { connectionState } = useWebSocket({
-    url: MOCK_WS_URL,
+    url: WS_URL,
     onMessage: handleWebSocketMessage,
   });
-  
-  const handleUpdateOrder = (id: string, updates: Partial<Order>) => {
+  const handleUpdateOrder = (uuid: string, updates: Partial<Order>) => {
     setOrders((prev) =>
       prev.map((order) => {
-        if (order.id !== id) return order;
-
-        const newHistory = [
-          ...order.history,
-          {
-            timestamp: new Date(),
-            ask: updates.ask ?? order.ask,
-            bid: updates.bid ?? order.bid,
-            status: order.status,
-          },
-        ];
+        if (order.uuid !== uuid) return order;
 
         return {
           ...order,
           ...updates,
-          history: newHistory,
         };
       })
     );
   };
 
-  const handleCancelOrder = (id: string) => {
+  const handleCancelOrder = (uuid: string) => {
     setOrders((prev) =>
       prev.map((order) => {
-        if (order.id !== id) return order;
-
-        const newHistory = [
-          ...order.history,
-          {
-            timestamp: new Date(),
-            ask: order.ask,
-            bid: order.bid,
-            status: "Canceled" as const,
-          },
-        ];
+        if (order.uuid !== uuid) return order;
 
         return {
           ...order,
-          status: "Canceled" as const,
-          history: newHistory,
+          status: 4, // 4 = closed
         };
       })
     );
   };
 
-  const handleAcceptOrder = (id: string) => {
+  const handleAcceptOrder = (uuid: string) => {
     setOrders((prev) =>
       prev.map((order) => {
-        if (order.id !== id) return order;
-
-        const newHistory = [
-          ...order.history,
-          {
-            timestamp: new Date(),
-            ask: order.ask,
-            bid: order.bid,
-            status: "Pending" as const,
-          },
-        ];
+        if (order.uuid !== uuid) return order;
 
         return {
           ...order,
-          status: "Pending" as const,
-          history: newHistory,
+          status: 5, // 5 = stopped (pending action)
         };
       })
     );
   };
 
   const sortedOrders = useMemo(() => {
-    return [...orders].sort((a, b) => b.date.getTime() - a.date.getTime());
+    return [...orders].sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateB - dateA;
+    });
   }, [orders]);
 
   return (
@@ -233,6 +193,13 @@ export default function Home() {
           onUpdateOrder={handleUpdateOrder}
           onCancelOrder={handleCancelOrder}
           onAcceptOrder={handleAcceptOrder}
+          onNewOrder={() => setNewOrderModalOpen(true)}
+        />
+
+        <NewOrderModal
+          open={newOrderModalOpen}
+          onOpenChange={setNewOrderModalOpen}
+          apiUrl={API_URL}
         />
       </div>
     </main>

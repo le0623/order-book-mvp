@@ -1,11 +1,11 @@
 import * as React from "react"
-import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { OrderStatus } from "@/lib/mock-data"
+import { OrderStatus } from "@/lib/types"
 
 export interface CheckboxProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   status?: OrderStatus
+  onCheckedChange?: (checked: boolean) => void
 }
 
 const getStatusColorClasses = (status?: OrderStatus) => {
@@ -16,15 +16,15 @@ const getStatusColorClasses = (status?: OrderStatus) => {
   switch (status) {
     case "Open":
       return "peer-checked:bg-blue-600 dark:peer-checked:bg-blue-400 peer-checked:text-white"
-    case "Completed":
+    case "Filled":
       return "peer-checked:bg-emerald-600 dark:peer-checked:bg-emerald-400 peer-checked:text-white"
-    case "Canceled":
+    case "Closed":
       return "peer-checked:bg-red-600 dark:peer-checked:bg-red-400 peer-checked:text-white"
-    case "Failed":
+    case "Error":
       return "peer-checked:bg-rose-600 dark:peer-checked:bg-rose-400 peer-checked:text-white"
-    case "Pending":
+    case "Init":
       return "peer-checked:bg-amber-600 dark:peer-checked:bg-amber-400 peer-checked:text-white"
-    case "Partial":
+    case "Stopped":
       return "peer-checked:bg-slate-500 dark:peer-checked:bg-slate-400 peer-checked:text-white"
     default:
       return "peer-checked:bg-primary peer-checked:text-primary-foreground"
@@ -32,34 +32,42 @@ const getStatusColorClasses = (status?: OrderStatus) => {
 }
 
 const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, status, ...props }, ref) => {
+  ({ className, status, onCheckedChange, checked, ...props }, ref) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (onCheckedChange) {
+        onCheckedChange(e.target.checked)
+      }
+    }
+
     return (
       <div className="relative inline-flex items-center">
         <input
           type="checkbox"
-          className="border-none active:border-none focus:border-none focus-visible:border-none active:outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 sr-only peer outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0"          ref={ref}
+          className="sr-only peer"
+          ref={ref}
+          checked={checked}
+          onChange={handleChange}
           {...props}
         />
         <div
           className={cn(
-            "w-4 h-4 rounded-sm bg-background",
+            "w-4 h-4 rounded-sm bg-background cursor-pointer",
             "border-2 border-border",
             "peer-checked:border-0",
-            "peer-focus:border-0 peer-focus-visible:border-0",
-            "peer-active:border-0 peer-hover:border-0",
             "ring-0 focus-within:ring-0",
             getStatusColorClasses(status),
-            "peer-focus-visible:outline-none peer-focus:outline-none",
             "transition-all",
             "flex items-center justify-center",
             className
           )}
         >
-          <Check
+          <span
             className={cn(
-              "h-3 w-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity"
+              "text-sm opacity-0 peer-checked:opacity-100 transition-opacity"
             )}
-          />
+          >
+            ✓
+          </span>
         </div>
       </div>
     )

@@ -1,95 +1,107 @@
 "use client";
 
-import { MockWebSocket } from "@/lib/mock-websocket";
 import { ConnectionState, WebSocketMessage } from "@/lib/websocket-types";
 import { useEffect, useRef, useState, useCallback } from "react";
+
 interface UseWebSocketOptions {
   url: string;
   enabled?: boolean;
   onMessage?: (message: WebSocketMessage) => void;
   onError?: (error: Event) => void;
-  // If provided, forces use of the mock WebSocket. Defaults to true in non-production.
-  useMock?: boolean;
 }
 
-/**
- * Custom hook to manage a WebSocket connection. It uses a mock implementation
- * in non-production environments by default. Messages are processed immediately
- * upon receipt (batching logic removed).
- */
 export function useWebSocket({
   url,
   enabled = true,
   onMessage,
   onError,
-  useMock,
 }: UseWebSocketOptions) {
   const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
-  const wsRef = useRef<WebSocket | MockWebSocket | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const onMessageRef = useRef(onMessage);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+    onErrorRef.current = onError;
+  }, [onMessage, onError]);
   
   const connect = useCallback(() => {
-    // Clear any existing reconnect attempts
     if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
     }
 
-    if (!enabled || wsRef.current) return;
+    if (!enabled) return;
+    
+    if (wsRef.current?.readyState === WebSocket.OPEN || 
+        wsRef.current?.readyState === WebSocket.CONNECTING) {
+      return;
+    }
 
     try {
-      // Decide whether to use the mock or a real WebSocket.
-      // If useMock is explicitly set, use that value.
-      // Otherwise, use mock if URL contains "mock" or if in non-production environment.
-      const isMockUrl = url.toLowerCase().includes("mock");
-      const shouldUseMock = typeof useMock === "boolean" 
-        ? useMock 
-        : isMockUrl || process.env.NODE_ENV !== "production";
-      
-      // Use the appropriate WebSocket implementation
-      const ws = shouldUseMock ? new MockWebSocket(url) : new WebSocket(url);
+      const ws = new WebSocket(url);
       wsRef.current = ws;
+      setConnectionState("connecting");
 
       ws.onopen = () => {
         setConnectionState("connected");
-        console.log("WebSocket connected.");
+        reconnectAttemptsRef.current = 0;
       };
 
       ws.onclose = (event: CloseEvent) => {
+        wsRef.current = null;
         setConnectionState("disconnected");
-        console.log("WebSocket disconnected:", event.reason);
-        // Implement simple reconnection logic after a delay if still enabled
-        if (enabled) {
+        
+        if (enabled && reconnectAttemptsRef.current < 10) {
+          reconnectAttemptsRef.current++;
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
+          
             reconnectTimeoutRef.current = setTimeout(() => {
-                console.log("Attempting to reconnect...");
-                setConnectionState("connecting");
                 connect();
-            }, 5000); // Wait 5 seconds before attempting reconnect
+          }, delay);
+        } else if (reconnectAttemptsRef.current >= 10) {
+          setConnectionState("error");
         }
       };
 
       ws.onerror = (event: Event) => {
+        console.error("⚠️ WebSocket error:", {
+          type: event.type,
+          target: event.target instanceof WebSocket ? {
+            readyState: event.target.readyState,
+            url: event.target.url
+          } : 'unknown',
+          readyStateDescription: ws.readyState === 0 ? 'CONNECTING' :
+                                 ws.readyState === 1 ? 'OPEN' :
+                                 ws.readyState === 2 ? 'CLOSING' :
+                                 ws.readyState === 3 ? 'CLOSED' : 'UNKNOWN'
+        });
+        
         setConnectionState("error");
-        console.error("WebSocket error:", event);
-        if (onError) onError(event);
-        // Close the connection on error to trigger onclose and reconnection attempt
-        ws.close();
+        
+        if (onErrorRef.current) {
+          onErrorRef.current(event);
+        }
       };
       
-      // Messages are processed immediately (batching logic removed)
       ws.onmessage = (event: MessageEvent) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
-          if (onMessage) onMessage(message);
+          if (onMessageRef.current) {
+            onMessageRef.current(message);
+          }
         } catch (error) {
           console.error("Failed to parse WebSocket message:", error);
         }
       };
     } catch (error) {
-      console.error("WebSocket connection error (in connect):", error);
+      console.error("❌ WebSocket connection error:", error);
       setConnectionState("error");
     }
-  }, [url, enabled, onMessage, onError]);
+  }, [url, enabled]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -98,31 +110,35 @@ export function useWebSocket({
     }
 
     if (wsRef.current) {
+      wsRef.current.onclose = null;
+      wsRef.current.onerror = null;
+      wsRef.current.onmessage = null;
+      wsRef.current.onopen = null;
       wsRef.current.close();
       wsRef.current = null;
     }
 
+    reconnectAttemptsRef.current = 0;
     setConnectionState("disconnected");
   }, []);
 
   useEffect(() => {
     if (enabled) {
-      setConnectionState("connecting");
       connect();
     } else {
       disconnect();
     }
 
-    // Cleanup function: ensures disconnection on component unmount
     return () => {
-      // Clear timeout before running disconnect to prevent recursive call
       if (reconnectTimeoutRef.current) {
           clearTimeout(reconnectTimeoutRef.current);
           reconnectTimeoutRef.current = null;
       }
       if (wsRef.current) {
-        // Prevent onclose from triggering reconnect on manual disconnect/unmount
         wsRef.current.onclose = null; 
+        wsRef.current.onerror = null;
+        wsRef.current.onmessage = null;
+        wsRef.current.onopen = null;
         wsRef.current.close();
         wsRef.current = null;
       }

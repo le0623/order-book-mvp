@@ -35,21 +35,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Filter, X } from "lucide-react";
+import { Filter, X, Plus } from "lucide-react";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   renderSubComponent?: (props: { row: Row<TData> }) => React.ReactElement;
+  onNewOrder?: () => void; // NEW: Callback to open New Order modal
 }
 
 const ORDER_STATUSES = [
-  "Open",
-  "Pending",
-  "Canceled",
-  "Failed",
-  "Partial",
-  "Completed",
+  { value: 0, label: "Init" }, // Backend default init state
+  { value: 1, label: "Open" },
+  { value: 2, label: "Filled" },
+  { value: 3, label: "Error" },
+  { value: 4, label: "Closed" },
+  { value: 5, label: "Stopped" },
+  { value: 6, label: "Expired" },
 ];
 
 const getStatusTextColor = (status: string): string => {
@@ -75,6 +77,7 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   renderSubComponent,
+  onNewOrder,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -82,8 +85,8 @@ export function DataTable<TData, TValue>({
   );
   const [expanded, setExpanded] = React.useState({});
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
-  const [selectedStatuses, setSelectedStatuses] = React.useState<Set<string>>(
-    new Set(["Open"])
+  const [selectedStatuses, setSelectedStatuses] = React.useState<Set<number>>(
+    new Set([0, 1])
   );
 
   const cardHeaderRef = React.useRef<HTMLDivElement | null>(null);
@@ -91,7 +94,7 @@ export function DataTable<TData, TValue>({
 
   React.useEffect(() => {
     if (columnFilters.length === 0) {
-      setColumnFilters([{ id: "status", value: ["Open"] }]);
+      setColumnFilters([{ id: "status", value: [0, 1] }]);
     }
   }, [columnFilters.length]);
 
@@ -119,8 +122,7 @@ export function DataTable<TData, TValue>({
   const table = useReactTable({
     data,
     columns,
-    // Use stable row id based on the order's `id` field to avoid full-row re-mounts
-    getRowId: (row: any) => String(row.id),
+    getRowId: (row: any) => String(row.uuid),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -131,7 +133,9 @@ export function DataTable<TData, TValue>({
     state: { sorting, columnFilters, expanded },
   });
 
-  const handleStatusToggle = (status: string) => {
+  const rows = table.getRowModel().rows;
+
+  const handleStatusToggle = (status: number) => {
     const newSet = new Set(selectedStatuses);
     newSet.has(status) ? newSet.delete(status) : newSet.add(status);
     setSelectedStatuses(newSet);
@@ -150,6 +154,20 @@ export function DataTable<TData, TValue>({
               Order Book
             </CardTitle>
 
+            <div className="flex items-center gap-2">
+              {/* NEW ORDER BUTTON */}
+              {onNewOrder && (
+                <Button
+                  onClick={onNewOrder}
+                  className="bg-primary hover:bg-primary/90"
+                  size="sm"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Order
+                </Button>
+              )}
+
+              {/* FILTER BUTTON */}
             <DropdownMenu open={dropdownOpen} onOpenChange={(open) => {
               setDropdownOpen(open);
               if (!open) {
@@ -196,19 +214,20 @@ export function DataTable<TData, TValue>({
                 <DropdownMenuSeparator />
                 {ORDER_STATUSES.map((status) => (
                   <DropdownMenuCheckboxItem
-                    key={status}
-                    checked={selectedStatuses.has(status)}
-                    onCheckedChange={() => handleStatusToggle(status)}
+                    key={status.value}
+                    checked={selectedStatuses.has(status.value)}
+                    onCheckedChange={() => handleStatusToggle(status.value)}
                     onSelect={(e) => {
                       e.preventDefault();
                     }}
-                    className={getStatusTextColor(status)}
+                    className={getStatusTextColor(status.label)}
                   >
-                    {status}
+                    {status.label}
                   </DropdownMenuCheckboxItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           </div>
         </CardHeader>
 

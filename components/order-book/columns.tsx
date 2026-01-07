@@ -1,43 +1,34 @@
 "use client";
 
-import { ColumnDef, Column } from "@tanstack/react-table";
+import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  ChevronDown,
-  ChevronRight,
-  ChevronsUpDown,
-  ArrowUp,
-  ArrowDown,
-} from "lucide-react";
-import { Order, OrderStatus, formatWalletAddress } from "@/lib/mock-data";
+import { ChevronDown, ChevronRight, ChevronsUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Order, formatWalletAddress, getOrderType, getOrderStatus } from "@/lib/types";
 
-export const getStatusVariant = (status: OrderStatus) => {
+const getStatusColor = (status: number): string => {
   switch (status) {
-    case "Open":
-      return "statusOpen";
-    case "Completed":
-      return "statusCompleted";
-    case "Canceled":
-      return "statusCanceled";
-    case "Failed":
-      return "statusFailed";
-    case "Pending":
-      return "statusPending";
-    case "Partial":
-      return "statusPartial";
+    case 0:
+      return "text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800";
+    case 1:
+      return "text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800";
+    case 2:
+      return "text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800";
+    case 3:
+      return "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800";
+    case 4:
+      return "text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800";
+    case 5:
+      return "text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800";
+    case 6:
+      return "text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800";
     default:
-      return "default";
+      return "text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800";
   }
 };
 
-const formatDate = (date: Date) => {
+const formatDate = (date: string | Date) => {
+  const d = typeof date === "string" ? new Date(date) : date;
   return new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "2-digit",
@@ -45,57 +36,40 @@ const formatDate = (date: Date) => {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    timeZone: "UTC",
-    timeZoneName: "short",
-  }).format(date);
+  }).format(d);
 };
 
 const formatNumber = (num: number) => {
+  if (num === 0) return "—";
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(num);
 };
 
-// --- Sortable Header Component ---
-
 interface SortableColumnHeaderProps {
-  column: Column<Order, unknown>;
+  column: any;
   title: string;
   className?: string;
 }
 
-function SortableColumnHeader({
-  column,
-  title,
-  className,
-}: SortableColumnHeaderProps) {
-  const sortingState = column.getIsSorted();
-  const handleSort = () => {
-    if (sortingState === false) {
-      column.toggleSorting(false);
-    } else if (sortingState === "asc") {
-      column.toggleSorting(true);
-    } else {
-      column.clearSorting();
-    }
-  };
+function SortableColumnHeader({ column, title, className = "" }: SortableColumnHeaderProps) {
+  const isSorted = column.getIsSorted();
 
   return (
     <Button
       variant="ghost"
       size="sm"
-      className={`-ml-3 h-8 data-[state=open]:bg-accent ${className}`}
-      onClick={handleSort}
+      className={`-ml-3 h-8 data-[state=open]:bg-accent hover:bg-transparent ${className}`}
+      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
     >
       <span>{title}</span>
-
-      {sortingState === "desc" ? (
-        <ArrowDown className="ml-2 h-4 w-4" />
-      ) : sortingState === "asc" ? (
+      {isSorted === "asc" ? (
         <ArrowUp className="ml-2 h-4 w-4" />
+      ) : isSorted === "desc" ? (
+        <ArrowDown className="ml-2 h-4 w-4" />
       ) : (
-        <ChevronsUpDown className="ml-2 h-4 w-4 text-muted-foreground/50" />
+        <ChevronsUpDown className="ml-2 h-4 w-4" />
       )}
     </Button>
   );
@@ -109,20 +83,18 @@ export const columns: ColumnDef<Order>[] = [
       return (
         <Button
           variant="ghost"
-          size="icon"
-          className="h-6 w-6 p-0 hover:bg-muted"
+          size="sm"
+          onClick={() => row.toggleExpanded()}
+          className="p-0 h-8 w-8 hover:bg-accent"
         >
           {row.getIsExpanded() ? (
             <ChevronDown className="h-4 w-4" />
           ) : (
             <ChevronRight className="h-4 w-4" />
           )}
-          <span className="sr-only">Toggle Row</span>
         </Button>
       );
     },
-    enableSorting: false,
-    enableHiding: false,
   },
   {
     accessorKey: "date",
@@ -130,108 +102,120 @@ export const columns: ColumnDef<Order>[] = [
       <SortableColumnHeader column={column} title="Date" />
     ),
     cell: ({ row }) => (
-      <span className="font-mono text-xs text-muted-foreground">
+      <div className="font-mono text-xs whitespace-nowrap">
         {formatDate(row.getValue("date"))}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "escrow",
+    header: "Escrow",
+    cell: ({ row }) => (
+      <span className="font-mono text-xs">
+        {formatWalletAddress(row.getValue("escrow"))}
       </span>
     ),
   },
   {
-    accessorKey: "order",
+    accessorKey: "wallet",
+    header: "Wallet",
+    cell: ({ row }) => (
+      <span className="font-mono text-xs">
+        {formatWalletAddress(row.getValue("wallet"))}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "type",
     header: ({ column }) => (
       <SortableColumnHeader column={column} title="Order" />
     ),
-    cell: ({ row }) => (
-      <Badge
-        variant={row.getValue("order") === "Buy" ? "outline" : "secondary"}
-        className={`font-medium ${
-          row.getValue("order") === "Buy"
-            ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
-            : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
-        }`}
-      >
-        {row.getValue("order")}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "sn",
-    header: ({ column }) => <SortableColumnHeader column={column} title="SN" />,
-    cell: ({ row }) => (
-      <span className="font-mono text-xs">{row.getValue("sn")}</span>
-    ),
-  },
-  {
-    accessorKey: "wallet",
-    header: ({ column }) => (
-      <SortableColumnHeader column={column} title="Wallet" />
-    ),
     cell: ({ row }) => {
-      const wallet = row.getValue("wallet") as string;
+      const orderType = getOrderType(row.getValue("type"));
       return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="cursor-help font-mono text-xs text-primary underline decoration-dotted underline-offset-2">
-                {formatWalletAddress(wallet)}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p className="font-mono text-xs">{wallet}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Badge
+          variant={orderType === "Buy" ? "outline" : "secondary"}
+          className={`font-medium ${
+            orderType === "Buy"
+              ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
+              : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
+          }`}
+        >
+          {orderType}
+        </Badge>
       );
     },
   },
   {
-    accessorKey: "size",
+    accessorKey: "asset",
+    header: ({ column }) => (
+      <SortableColumnHeader column={column} title="Asset" />
+    ),
+    cell: ({ row }) => (
+      <span className="font-mono text-sm">
+        {row.getValue("asset") === 0 ? "—" : `#${row.getValue("asset")}`}
+      </span>
+    ),
+  },
+  {
+    id: "size",
     header: ({ column }) => (
       <div className="flex justify-end">
         <SortableColumnHeader column={column} title="Size" className="ml-0" />
       </div>
     ),
+    cell: ({ row }) => {
+      const orderType = getOrderType(row.original.type);
+      const value = orderType === "Sell" ? row.original.ask : row.original.bid;
+      return (
+        <div className="text-right font-mono text-sm">
+          {formatNumber(value as number)}
+        </div>
+      );
+    },
+    accessorFn: (row) => {
+      const orderType = getOrderType(row.type);
+      return orderType === "Sell" ? row.ask : row.bid;
+    },
+  },
+  {
+    accessorKey: "stp",
+    header: ({ column }) => (
+      <div className="flex justify-end">
+        <SortableColumnHeader column={column} title="Price" className="ml-0" />
+      </div>
+    ),
     cell: ({ row }) => (
       <div className="text-right font-mono text-sm">
-        {formatNumber(row.getValue("size"))}
+        {formatNumber(row.getValue("stp"))}
       </div>
     ),
   },
   {
-    accessorKey: "ask",
-    header: ({ column }) => (
-      <div className="flex justify-end">
-        <SortableColumnHeader column={column} title="Ask" className="ml-0" />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="text-right font-mono text-sm">
-        {formatNumber(row.getValue("ask"))}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "bid",
-    header: ({ column }) => (
-      <div className="flex justify-end">
-        <SortableColumnHeader column={column} title="Bid" className="ml-0" />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="text-right font-mono text-sm">
-        {formatNumber(row.getValue("bid"))}
-      </div>
-    ),
+    accessorKey: "gtd",
+    header: "GTD",
+    cell: ({ row }) => {
+      const gtd = row.getValue("gtd") as string;
+      return (
+        <span className="font-mono text-xs whitespace-nowrap">
+          {gtd || "—"}
+        </span>
+      );
+    },
   },
   {
     accessorKey: "partial",
-    header: ({ column }) => (
-      <SortableColumnHeader column={column} title="Partial" />
-    ),
-    cell: ({ row }) => (
-      <span className="text-muted-foreground text-xs">
-        {row.getValue("partial") ? "Yes" : "No"}
-      </span>
-    ),
+    header: "Partial",
+    cell: ({ row }) => {
+      const partial = row.getValue("partial");
+      return (
+        <div className="flex justify-center">
+          <span className="text-sm">
+            {partial ? "✓" : "—"}
+          </span>
+        </div>
+      );
+    },
   },
   {
     accessorKey: "status",
@@ -239,27 +223,15 @@ export const columns: ColumnDef<Order>[] = [
       <SortableColumnHeader column={column} title="Status" />
     ),
     cell: ({ row }) => {
-      const status = row.getValue("status") as OrderStatus;
-      const statusColors: Record<string, string> = {
-        Open: "text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800",
-        Completed:
-          "text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
-        Canceled:
-          "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800",
-        Pending:
-          "text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800",
-        Failed:
-          "text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800",
-        Partial:
-          "text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800",
-      };
+      const status = row.getValue("status") as number;
+      const statusText = getOrderStatus(status);
 
       return (
         <Badge
           variant="outline"
-          className={`${statusColors[status]} font-medium`}
+          className={`${getStatusColor(status)} font-medium`}
         >
-          {status}
+          {statusText}
         </Badge>
       );
     },
