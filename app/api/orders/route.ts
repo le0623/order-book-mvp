@@ -18,6 +18,9 @@ export async function POST(request: NextRequest) {
     // Get the request body from the frontend
     const body = await request.json();
 
+    // Log the request for debugging (remove in production)
+    console.log('📤 Sending to backend:', JSON.stringify(body, null, 2));
+
     // Forward the request to the external API
     const response = await fetch(`${EXTERNAL_API_URL}/rec`, {
       method: 'POST',
@@ -27,8 +30,27 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    // Get the response data
-    const data = await response.json();
+    // Log response status for debugging
+    console.log('📥 Backend response status:', response.status);
+
+    // Get the response data - handle both JSON and plain text responses
+    let data: any;
+    const contentType = response.headers.get('content-type');
+    
+    if (contentType && contentType.includes('application/json')) {
+      // Try to parse as JSON
+      try {
+        data = await response.json();
+      } catch (error) {
+        // If JSON parsing fails, get as text
+        const text = await response.text();
+        data = { error: text || response.statusText };
+      }
+    } else {
+      // If not JSON, get as text
+      const text = await response.text();
+      data = { error: text || response.statusText };
+    }
 
     // Return the response to the frontend with proper CORS headers
     // (Not needed for same-origin, but good practice)
