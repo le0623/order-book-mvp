@@ -26,16 +26,8 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import { Filter, X, Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -44,34 +36,6 @@ interface DataTableProps<TData, TValue> {
   onNewOrder?: () => void; // NEW: Callback to open New Order modal
 }
 
-const ORDER_STATUSES = [
-  { value: 0, label: "Init" }, // Backend default init state
-  { value: 1, label: "Open" },
-  { value: 2, label: "Filled" },
-  { value: 3, label: "Error" },
-  { value: 4, label: "Closed" },
-  { value: 5, label: "Stopped" },
-  { value: 6, label: "Expired" },
-];
-
-const getStatusTextColor = (status: string): string => {
-  switch (status) {
-    case "Open":
-      return "text-blue-600 dark:text-blue-400";
-    case "Completed":
-      return "text-emerald-600 dark:text-emerald-400";
-    case "Canceled":
-      return "text-red-600 dark:text-red-400";
-    case "Failed":
-      return "text-rose-600 dark:text-rose-400";
-    case "Pending":
-      return "text-amber-600 dark:text-amber-400";
-    case "Partial":
-      return "text-slate-500 dark:text-slate-400";
-    default:
-      return "";
-  }
-};
 
 export function DataTable<TData, TValue>({
   columns,
@@ -84,10 +48,7 @@ export function DataTable<TData, TValue>({
     []
   );
   const [expanded, setExpanded] = React.useState({});
-  const [dropdownOpen, setDropdownOpen] = React.useState(false);
-  const [selectedStatuses, setSelectedStatuses] = React.useState<Set<number>>(
-    new Set([0, 1])
-  );
+  const [searchQuery, setSearchQuery] = React.useState<string>("");
 
   const cardHeaderRef = React.useRef<HTMLDivElement | null>(null);
   const tableHeaderRef = React.useRef<HTMLTableSectionElement | null>(null);
@@ -119,8 +80,44 @@ export function DataTable<TData, TValue>({
     };
   }, []);
 
+  // Filter data by ss58 address search (origin, escrow, wallet)
+  // Default: only show Open (status=1) AND public orders
+  // When searching: show all matching orders regardless of status/public
+  const filteredData = React.useMemo(() => {
+    console.log("🔍 Filtering data. Total orders:", data.length);
+    
+    // If searching, show all matching orders regardless of status/public
+    if (searchQuery && searchQuery.trim() !== "") {
+      const searchLower = searchQuery.toLowerCase().trim();
+      const filtered = data.filter((order: any) => {
+        const originMatch = order.origin?.toLowerCase().includes(searchLower) || false;
+        const escrowMatch = order.escrow?.toLowerCase().includes(searchLower) || false;
+        const walletMatch = order.wallet?.toLowerCase().includes(searchLower) || false;
+        return originMatch || escrowMatch || walletMatch;
+      });
+      console.log("🔎 Search filtered:", filtered.length, "orders");
+      return filtered;
+    }
+    
+    // Default: only show Open (status=1) AND public orders
+    const filtered = data.filter((order: any) => {
+      const matches = order.status === 1 && order.public === true;
+      if (!matches) {
+        console.log("❌ Order filtered out:", {
+          uuid: order.uuid,
+          status: order.status,
+          public: order.public,
+          reason: order.status !== 1 ? "status != 1" : "public != true"
+        });
+      }
+      return matches;
+    });
+    console.log("✅ Default filtered:", filtered.length, "orders (status=1 AND public=true)");
+    return filtered;
+  }, [data, searchQuery]);
+
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     getRowId: (row: any) => String(row.uuid),
     getCoreRowModel: getCoreRowModel(),
@@ -135,13 +132,6 @@ export function DataTable<TData, TValue>({
 
   const rows = table.getRowModel().rows;
 
-  const handleStatusToggle = (status: number) => {
-    const newSet = new Set(selectedStatuses);
-    newSet.has(status) ? newSet.delete(status) : newSet.add(status);
-    setSelectedStatuses(newSet);
-    table.getColumn("status")?.setFilterValue(Array.from(newSet));
-  };
-
   return (
     <div className="w-full smooth-scroll">
       <Card className="w-full border-border/60 shadow-sm bg-card/50 backdrop-blur-sm mb-8">
@@ -155,6 +145,18 @@ export function DataTable<TData, TValue>({
             </CardTitle>
 
             <div className="flex items-center gap-2">
+              {/* SEARCH INPUT */}
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search by ss58 address..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
+                />
+              </div>
+
               {/* NEW ORDER BUTTON */}
               {onNewOrder && (
                 <Button
@@ -166,83 +168,24 @@ export function DataTable<TData, TValue>({
                   New Order
                 </Button>
               )}
-
-              {/* FILTER BUTTON */}
-            <DropdownMenu open={dropdownOpen} onOpenChange={(open) => {
-              setDropdownOpen(open);
-              if (!open) {
-                // Remove focus from button when dropdown closes to prevent green border
-                setTimeout(() => {
-                  const trigger = document.activeElement as HTMLElement;
-                  if (trigger && trigger.blur) {
-                    trigger.blur();
-                  }
-                }, 0);
-              }
-            }}>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-2 focus-visible:ring-0 focus-visible:ring-offset-0"
-                >
-                  <Filter className="h-4 w-4" />
-                  Filter
-                  {selectedStatuses.size > 0 && (
-                    <span className="ml-1 rounded-full bg-primary text-primary-foreground px-1.5 py-0.5 text-xs">
-                      {selectedStatuses.size}
-                    </span>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent align="end" className="w-48">
-                <div className="flex items-center justify-between px-2 py-1.5">
-                  <DropdownMenuLabel className="p-0">
-                    Filter by Status
-                  </DropdownMenuLabel>
-                  <DropdownMenuItem
-                    className="h-6 w-6 p-0 justify-center cursor-pointer"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setDropdownOpen(false);
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </DropdownMenuItem>
-                </div>
-                <DropdownMenuSeparator />
-                {ORDER_STATUSES.map((status) => (
-                  <DropdownMenuCheckboxItem
-                    key={status.value}
-                    checked={selectedStatuses.has(status.value)}
-                    onCheckedChange={() => handleStatusToggle(status.value)}
-                    onSelect={(e) => {
-                      e.preventDefault();
-                    }}
-                    className={getStatusTextColor(status.label)}
-                  >
-                    {status.label}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className="p-0">
-          <Table noWrapper className="w-full">
-            <TableHeader
-              ref={tableHeaderRef as any}
-              className="sticky top-[205px] z-20 bg-background shadow-sm border-b"
-            >
+        <CardContent className="p-0 overflow-x-auto">
+          <div className="min-w-[1200px]">
+            <Table noWrapper className="w-full table-fixed">
+              <TableHeader
+                ref={tableHeaderRef as any}
+                className="sticky  z-20 bg-background shadow-sm border-b"
+              >
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <TableHeadCell
                       key={header.id}
                       className="text-sm font-semibold"
+                      style={{ width: header.getSize() }}
                     >
                       {header.isPlaceholder
                         ? null
@@ -267,7 +210,7 @@ export function DataTable<TData, TValue>({
                       onClick={() => row.toggleExpanded()}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
+                        <TableCell key={cell.id} style={{ width: cell.column.getSize() }}>
                           {flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext()
@@ -300,6 +243,7 @@ export function DataTable<TData, TValue>({
               )}
             </TableBody>
           </Table>
+          </div>
           <div className="flex items-center justify-end space-x-2 p-4 rounded-b-md bg-white dark:bg-background">
             <div className="text-xs text-muted-foreground">
               Showing {table.getRowModel().rows.length} rows

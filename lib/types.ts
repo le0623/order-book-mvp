@@ -35,7 +35,8 @@ export interface NewOrderFormData {
 
 export const formatWalletAddress = (address: string) => {
   if (!address) return '—';
-  return `${address.slice(0, 8)}...${address.slice(-8)}`
+  // Show first 4 and last 4 characters to fit in narrow columns
+  return `${address.slice(0, 4)}...${address.slice(-4)}`
 }
 
 export const getOrderType = (type: number): OrderType => {

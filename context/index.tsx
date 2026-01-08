@@ -12,7 +12,7 @@ import { mainnet } from '@reown/appkit/networks'
 const queryClient = new QueryClient()
 
 const metadata = {
-  name: 'SPA Exchange - Order Book',
+  name: 'HODL Exchange - Order Book',
   description: 'Decentralized order book exchange MVP',
   url: typeof window !== 'undefined' ? window.location.origin : 'https://localhost:3000', 
   icons: [], 

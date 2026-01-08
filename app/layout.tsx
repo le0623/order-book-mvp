@@ -8,7 +8,7 @@ import ContextProvider from '@/context'
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "SPA Exchange - Order Book",
+  title: "HODL Exchange - Order Book",
   description: "Decentralized order book exchange MVP",
 }
 

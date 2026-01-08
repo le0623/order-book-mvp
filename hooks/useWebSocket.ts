@@ -125,7 +125,15 @@ export function useWebSocket({
           }
 
           // Parse subsequent messages as JSON
-          const message: WebSocketMessage = JSON.parse(rawData);
+          let message: WebSocketMessage = JSON.parse(rawData);
+          
+          // Handle double-encoded JSON (backend sends json.dumps() inside send_json())
+          // If the parsed result is a string, parse it again
+          if (typeof message === 'string') {
+            console.log("⚠️ Double-encoded JSON detected, parsing again");
+            message = JSON.parse(message);
+          }
+          
           if (onMessageRef.current) {
             onMessageRef.current(message);
           }

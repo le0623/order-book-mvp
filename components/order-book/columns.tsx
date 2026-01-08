@@ -79,6 +79,9 @@ export const columns: ColumnDef<Order>[] = [
   {
     id: "expander",
     header: () => null,
+    size: 50,
+    minSize: 50,
+    maxSize: 50,
     cell: ({ row }) => {
       return (
         <Button
@@ -106,24 +109,30 @@ export const columns: ColumnDef<Order>[] = [
         {formatDate(row.getValue("date"))}
       </div>
     ),
+    size: 180,
+    minSize: 180,
   },
   {
     accessorKey: "escrow",
     header: "Escrow",
     cell: ({ row }) => (
-      <span className="font-mono text-xs">
+      <span className="font-mono text-xs whitespace-nowrap overflow-hidden text-ellipsis block" title={row.getValue("escrow")}>
         {formatWalletAddress(row.getValue("escrow"))}
       </span>
     ),
+    size: 100,
+    minSize: 100,
   },
   {
     accessorKey: "wallet",
     header: "Wallet",
     cell: ({ row }) => (
-      <span className="font-mono text-xs">
+      <span className="font-mono text-xs whitespace-nowrap overflow-hidden text-ellipsis block" title={row.getValue("wallet")}>
         {formatWalletAddress(row.getValue("wallet"))}
       </span>
     ),
+    size: 100,
+    minSize: 100,
   },
   {
     accessorKey: "type",
@@ -145,6 +154,8 @@ export const columns: ColumnDef<Order>[] = [
         </Badge>
       );
     },
+    size: 100,
+    minSize: 100,
   },
   {
     accessorKey: "asset",
@@ -156,6 +167,8 @@ export const columns: ColumnDef<Order>[] = [
         {row.getValue("asset") === 0 ? "—" : `#${row.getValue("asset")}`}
       </span>
     ),
+    size: 100,
+    minSize: 100,
   },
   {
     id: "size",
@@ -177,6 +190,8 @@ export const columns: ColumnDef<Order>[] = [
       const orderType = getOrderType(row.type);
       return orderType === "Sell" ? row.ask : row.bid;
     },
+    size: 100,
+    minSize: 100,
   },
   {
     accessorKey: "stp",
@@ -190,6 +205,8 @@ export const columns: ColumnDef<Order>[] = [
         {formatNumber(row.getValue("stp"))}
       </div>
     ),
+    size: 100,
+    minSize: 100,
   },
   {
     accessorKey: "gtd",
@@ -202,6 +219,8 @@ export const columns: ColumnDef<Order>[] = [
         </span>
       );
     },
+    size: 100,
+    minSize: 100,
   },
   {
     accessorKey: "partial",
@@ -216,6 +235,8 @@ export const columns: ColumnDef<Order>[] = [
         </div>
       );
     },
+    size: 80,
+    minSize: 80,
   },
   {
     accessorKey: "status",
@@ -238,5 +259,7 @@ export const columns: ColumnDef<Order>[] = [
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
+    size: 100,
+    minSize: 100,
   },
 ];
