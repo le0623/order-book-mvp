@@ -282,7 +282,7 @@ export default function Home() {
     const fetchInitialOrders = async () => {
       try {
         console.log("📥 Fetching initial orders from API...");
-        const response = await fetch(`${API_URL}/sql?limit=10`);
+        const response = await fetch(`${API_URL}/sql?date=2026-01-09`);
 
         if (!response.ok) {
           console.error(

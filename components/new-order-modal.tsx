@@ -436,7 +436,10 @@ export function NewOrderModal({
               }
               disabled={escrowGenerated && !isInReviewMode}
             >
-              <SelectTrigger id="type">
+              <SelectTrigger
+                id="type"
+                className="focus:ring-1 focus:ring-blue-500/50 focus:ring-offset-0 focus:border-blue-500/70"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -461,6 +464,7 @@ export function NewOrderModal({
                 })
               }
               disabled={escrowGenerated && !isInReviewMode}
+              className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40"
             />
           </div>
 
@@ -480,7 +484,7 @@ export function NewOrderModal({
                 }}
                 disabled={escrowGenerated && !isInReviewMode}
               >
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-32 focus:ring-1 focus:ring-blue-500/30 focus:ring-offset-0 focus:border-blue-500/40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -541,6 +545,7 @@ export function NewOrderModal({
                 })
               }
               disabled={escrowGenerated && !isInReviewMode}
+              className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40"
             />
           </div>
 

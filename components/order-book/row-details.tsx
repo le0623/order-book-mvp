@@ -79,16 +79,10 @@ export function OrderBookRowDetails({
     <div className="bg-muted/30 p-6 space-y-6 shadow-inner border-t border-border/50">
       {/* Header / Actions */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
+        <div className="flex items-center gap-2">
           <h3 className="text-base font-semibold tracking-tight text-foreground">
             Order Detail
           </h3>
-          <p className="text-sm text-muted-foreground">
-            Manage order parameters and view history.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
           {order.status === 1 && ( // Status 1 = Open
             <>
               <Dialog
@@ -96,7 +90,11 @@ export function OrderBookRowDetails({
                 onOpenChange={setIsEditDialogOpen}
               >
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 bg-[#2F3F4A] border-[#2F3F4A] hover:bg-[#2F3F4A]/90"
+                  >
                     <Edit2 className="h-3.5 w-3.5 mr-2" />
                     Modify
                   </Button>
@@ -161,44 +159,46 @@ export function OrderBookRowDetails({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8"
+                className="h-8 bg-[#2F3F4A] border-[#2F3F4A] hover:bg-[#2F3F4A]/90"
                 onClick={() => onCancelOrder?.(order.uuid)}
               >
                 <X className="h-3.5 w-3.5 mr-2" />
                 Close Order
               </Button>
-
-              <Button
-                size="sm"
-                className="h-8 bg-blue-600 hover:bg-blue-700 text-white ml-auto"
-                onClick={() => setIsFillOrderModalOpen(true)}
-              >
-                <Plus className="h-3.5 w-3.5 mr-2" />
-                Fill Order
-              </Button>
             </>
           )}
         </div>
+
+        {order.status === 1 && (
+          <Button
+            size="sm"
+            className="h-8 bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => setIsFillOrderModalOpen(true)}
+          >
+            <Plus className="h-3.5 w-3.5 mr-2" />
+            Fill Order
+          </Button>
+        )}
       </div>
 
       <Separator />
 
       {/* Simplified Order Details - Only Wallet, Stop Price, Public */}
       <div className="space-y-4">
-        <div className="p-4 rounded-lg bg-background border space-y-4">
+        <div className="p-4 rounded-lg border space-y-4 bg-[#2F3F4A]">
           {order.wallet && (
-            <div>
+            <div className="grid gap-2">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 WALLET
               </span>
-              <div className="flex items-center gap-2 mt-1">
-                <code className="flex-1 text-xs bg-muted p-2 rounded break-all">
+              <div className="flex items-start gap-2">
+                <code className="text-xs font-mono p-2 break-all">
                   {order.wallet}
                 </code>
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8 shrink-0"
+                  className="h-8 w-8 shrink-0 bg-transparent border-transparent hover:bg-transparent hover:border-transparent"
                   onClick={() => copyToClipboard(order.wallet)}
                 >
                   {copiedWalletId ? (
@@ -213,18 +213,20 @@ export function OrderBookRowDetails({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mr-2">
                 STOP
               </span>
-              <p className="font-mono text-sm mt-1">
+              <span className="font-mono text-sm">
                 {order.stp > 0 ? order.stp.toFixed(2) : "—"}
-              </p>
+              </span>
             </div>
             <div>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mr-2">
                 PUBLIC
               </span>
-              <p className="text-sm mt-1">{order.public ? "Yes" : "No"}</p>
+              <span className="text-sm font-bold">
+                {order.public ? "Yes" : "No"}
+              </span>
             </div>
           </div>
         </div>

@@ -214,11 +214,11 @@ export const columns = (
     header: "GTD",
     cell: ({ row }) => {
       const gtd = row.getValue("gtd") as string;
-      // Convert "gtc" to uppercase "GTC", otherwise format as date
+      // For "gtc", display as "2026-01-31 UTC", otherwise format as date
       let displayValue = "—";
       if (gtd) {
         if (gtd.toLowerCase() === "gtc") {
-          displayValue = "GTC";
+          displayValue = "2026-01-31 UTC";
         } else {
           // Format as date if it's a date string
           try {
@@ -234,8 +234,8 @@ export const columns = (
         </span>
       );
     },
-    size: 150,
-    minSize: 150,
+    size: 110,
+    minSize: 110,
   },
   {
     accessorKey: "partial",
