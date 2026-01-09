@@ -39,35 +39,23 @@ export default function Home() {
   };
 
   const updateOrders = useCallback((updatedOrder: Order) => {
-    console.log("🔄 updateOrders called with:", updatedOrder);
-
     setOrders((prevOrders) => {
       const index = prevOrders.findIndex(
         (o) => o.uuid === updatedOrder.uuid && o.status === updatedOrder.status
-      );
-      console.log(
-        "📊 Current orders count:",
-        prevOrders.length,
-        "| Order exists:",
-        index !== -1
       );
 
       if (index === -1) {
         // For filled orders (status=2), always add them (they can coexist with parent)
         if (updatedOrder.status === 2) {
-          console.log("✅ Adding filled order to list");
           return [updatedOrder, ...prevOrders];
         }
         if (isTerminalStatus(updatedOrder.status)) {
-          console.log("⚠️ Order has terminal status, not adding to list");
           return prevOrders;
         }
-        console.log("✅ Adding new order to list");
         return [updatedOrder, ...prevOrders];
       }
 
       if (isTerminalStatus(updatedOrder.status)) {
-        console.log("🗑️ Removing order with terminal status");
         // Only remove if it's not a filled order (status=2)
         if (updatedOrder.status !== 2) {
           return prevOrders.filter(
@@ -79,7 +67,6 @@ export default function Home() {
         }
       }
 
-      console.log("📝 Updating existing order");
       const newOrders = [...prevOrders];
       newOrders[index] = updatedOrder;
       return newOrders;
@@ -124,20 +111,12 @@ export default function Home() {
       orderData: Order | Order[];
       messageUuid: string;
     } | null => {
-      console.log("🔎 extractOrderData called with:", message);
-      console.log("🔎 Message type:", typeof message);
-      console.log("🔎 Has 'data' field:", "data" in message);
-      console.log("🔎 Has 'uuid' field:", "uuid" in message);
-      console.log("🔎 Has 'date' field:", "date" in message);
-
       if (!message || typeof message !== "object") {
-        console.log("❌ Message is not an object");
         return null;
       }
 
       // Check if message has nested data structure (WebSocketMessage format)
       if ("data" in message && message.data !== undefined) {
-        console.log("✅ Nested format detected");
         const wsMessage = message as WebSocketMessage;
         // We've already checked data !== undefined, so use non-null assertion
         return {
@@ -149,14 +128,12 @@ export default function Home() {
       // Check if message itself is an order (flat format from backend)
       // An Order must have at least 'uuid' and 'date' fields
       if ("uuid" in message && "date" in message) {
-        console.log("✅ Flat format detected");
         return {
           orderData: message as Order,
           messageUuid: (message as Order).uuid || "",
         };
       }
 
-      console.log("❌ Message format not recognized");
       return null;
     },
     []
@@ -164,16 +141,12 @@ export default function Home() {
 
   const handleWebSocketMessage = useCallback(
     (message: WebSocketMessage) => {
-      console.log("🔵 WebSocket message received:", message);
-
       // Extract order data from message (handles both nested and flat formats)
       const extracted = extractOrderData(message);
       if (!extracted) {
-        console.log("❌ Failed to extract order data from message");
         return;
       }
 
-      console.log("✅ Extracted order data:", extracted);
       const { orderData, messageUuid } = extracted;
 
       // Handle array of orders
@@ -207,15 +180,6 @@ export default function Home() {
         const normalized = normalizeOrder({
           ...orderData,
           uuid: orderData.uuid || messageUuid,
-        });
-
-        console.log("📦 Order received:", {
-          raw_public: (orderData as any).public,
-          raw_partial: (orderData as any).partial,
-          normalized_public: normalized.public,
-          normalized_partial: normalized.partial,
-          status: normalized.status,
-          uuid: normalized.uuid,
         });
 
         if (normalized.uuid) {
@@ -281,25 +245,20 @@ export default function Home() {
   useEffect(() => {
     const fetchInitialOrders = async () => {
       try {
-        console.log("📥 Fetching initial orders from API...");
-        const response = await fetch(`${API_URL}/sql?date=2026-01-09`);
+        const response = await fetch(`${API_URL}/sql?limit=1000`);
 
         if (!response.ok) {
-          console.error(
-            "❌ Failed to fetch initial orders:",
-            response.statusText
-          );
+          console.error("Failed to fetch initial orders:", response.statusText);
           return;
         }
 
         const data = await response.json();
-        console.log("📦 Initial orders received:", data);
 
         // Parse JSON string if needed (API might return stringified JSON)
         const ordersArray = typeof data === "string" ? JSON.parse(data) : data;
 
         if (!Array.isArray(ordersArray)) {
-          console.error("❌ Invalid orders data format");
+          console.error("Invalid orders data format");
           return;
         }
 
@@ -312,13 +271,11 @@ export default function Home() {
             return isOpen && isPublic;
           });
 
-        console.log("✅ Loaded", normalizedOrders.length, "open public orders");
-
         if (normalizedOrders.length > 0) {
           setOrders(normalizedOrders);
         }
       } catch (error) {
-        console.error("❌ Error fetching initial orders:", error);
+        console.error("Error fetching initial orders:", error);
       }
     };
 

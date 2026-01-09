@@ -139,9 +139,6 @@ export function NewOrderModal({
         status: -1, // -1 = Init status (triggers escrow generation in backend)
       };
 
-      // Debug: Log the data being sent (remove in production)
-      console.log("📤 Sending order data:", JSON.stringify(orderData, null, 2));
-
       // Call backend API directly (CORS is now handled by backend)
       const backendUrl =
         apiUrl ||
@@ -217,7 +214,6 @@ export function NewOrderModal({
 
       // If no escrow found in response, use mock (shouldn't happen if backend works correctly)
       if (!escrowAddress) {
-        console.warn("⚠️ No escrow address in backend response, using mock");
         escrowAddress = generateMockEscrowAddress();
       }
 
@@ -226,7 +222,7 @@ export function NewOrderModal({
       setOrderUuid(orderUuid); // Store UUID for reuse when placing order
       setEscrowGenerated(true); // Mark escrow as generated, form becomes read-only
     } catch (err: any) {
-      console.error("❌ Error creating order:", err);
+      console.error("Error creating order:", err);
       setError(err.message || "Failed to create order");
     } finally {
       setLoading(false);
@@ -243,17 +239,14 @@ export function NewOrderModal({
       setShowPaymentButtons(true);
     } else if (showPaymentButtons) {
       // Final "Place Order" - send order to backend with status = 1 (Open)
-      console.log("📥 handleFinalPlaceOrder");
       await handleFinalPlaceOrder();
     } else if (escrowGenerated && !isInReviewMode) {
       // Escrow generated, user clicks "Place Order" for the first time
-      console.log("📥 handleFinalPlaceOrder (direct)");
       await handleFinalPlaceOrder();
     }
   };
 
   const handleFinalPlaceOrder = async () => {
-    console.log("📥 handleFinalPlaceOrder start");
     try {
       setLoading(true);
       setError("");
@@ -302,8 +295,6 @@ export function NewOrderModal({
         throw error;
       });
 
-      console.log("📥 Backend response:", response);
-
       if (!response.ok) {
         let errorText: string;
         const contentType = response.headers.get("content-type");
@@ -332,7 +323,7 @@ export function NewOrderModal({
       onOpenChange(false);
       resetForm();
     } catch (err: any) {
-      console.error("❌ Error placing order:", err);
+      console.error("Error placing order:", err);
       setError(err.message || "Failed to place order");
     } finally {
       setLoading(false);

@@ -70,18 +70,6 @@ export function useWebSocket({
       };
 
       ws.onerror = (event: Event) => {
-        console.error("⚠️ WebSocket error:", {
-          type: event.type,
-          target: event.target instanceof WebSocket ? {
-            readyState: event.target.readyState,
-            url: event.target.url
-          } : 'unknown',
-          readyStateDescription: ws.readyState === 0 ? 'CONNECTING' :
-                                 ws.readyState === 1 ? 'OPEN' :
-                                 ws.readyState === 2 ? 'CLOSING' :
-                                 ws.readyState === 3 ? 'CLOSED' : 'UNKNOWN'
-        });
-        
         setConnectionState("error");
         
         if (onErrorRef.current) {
@@ -131,7 +119,6 @@ export function useWebSocket({
           // Handle double-encoded JSON (backend sends json.dumps() inside send_json())
           // If the parsed result is a string, parse it again
           if (typeof message === 'string') {
-            console.log("⚠️ Double-encoded JSON detected, parsing again");
             message = JSON.parse(message);
           }
           
@@ -139,19 +126,10 @@ export function useWebSocket({
             onMessageRef.current(message);
           }
         } catch (error) {
-          console.error("❌ Failed to parse WebSocket message:");
-          console.error("Error details:", error instanceof Error ? error.message : String(error));
-          console.error("Data type:", typeof event.data);
-          console.error("Raw data preview:", typeof event.data === 'string' 
-            ? event.data.substring(0, 200) 
-            : event.data);
-          console.error("First 20 chars (codes):", typeof event.data === 'string'
-            ? Array.from(event.data.substring(0, 20)).map(c => `${c}(${c.charCodeAt(0)})`).join(' ')
-            : 'N/A');
+          // Silently skip invalid messages
         }
       };
     } catch (error) {
-      console.error("❌ WebSocket connection error:", error);
       setConnectionState("error");
     }
   }, [url, enabled]);

@@ -18,9 +18,6 @@ export async function POST(request: NextRequest) {
     // Get the request body from the frontend
     const body = await request.json();
 
-    // Log the request for debugging (remove in production)
-    console.log('📤 Sending to backend:', JSON.stringify(body, null, 2));
-
     // Forward the request to the external API
     const response = await fetch(`${EXTERNAL_API_URL}/rec`, {
       method: 'POST',
@@ -29,9 +26,6 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify(body),
     });
-
-    // Log response status for debugging
-    console.log('📥 Backend response status:', response.status);
 
     // Get the response data - handle both JSON and plain text responses
     let data: any;
@@ -63,7 +57,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('❌ Proxy error:', error);
+    console.error('Proxy error:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to proxy request to external API' },
       { status: 500 }

@@ -84,8 +84,6 @@ export function DataTable<TData, TValue>({
   // When searching: show all matching orders regardless of status/public
   // Keep expanded orders visible even if they don't match default filter
   const filteredData = React.useMemo(() => {
-    console.log("🔍 Filtering data. Total orders:", data.length);
-
     // Get list of expanded order UUIDs
     const expandedOrderIds = Object.keys(expanded).filter(
       (id) => (expanded as Record<string, boolean>)[id]
@@ -103,7 +101,6 @@ export function DataTable<TData, TValue>({
           order.wallet?.toLowerCase().includes(searchLower) || false;
         return originMatch || escrowMatch || walletMatch;
       });
-      console.log("🔎 Search filtered:", filtered.length, "orders");
       return filtered;
     }
 
@@ -114,25 +111,8 @@ export function DataTable<TData, TValue>({
       const matches = order.status === 1 && order.public === true;
 
       // Include order if it matches filter OR if it's currently expanded
-      if (matches || isExpanded) {
-        return true;
-      }
-
-      if (!matches) {
-        console.log("❌ Order filtered out:", {
-          uuid: order.uuid,
-          status: order.status,
-          public: order.public,
-          reason: order.status !== 1 ? "status != 1" : "public != true",
-        });
-      }
-      return false;
+      return matches || isExpanded;
     });
-    console.log(
-      "✅ Default filtered:",
-      filtered.length,
-      "orders (status=1 AND public=true, plus expanded orders)"
-    );
     return filtered;
   }, [data, searchQuery, expanded]);
 
