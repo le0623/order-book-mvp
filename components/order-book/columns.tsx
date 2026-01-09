@@ -3,8 +3,13 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, ChevronsUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import { Order, formatWalletAddress, getOrderType, getOrderStatus } from "@/lib/types";
+import { ChevronsUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Order,
+  formatWalletAddress,
+  getOrderType,
+  getOrderStatus,
+} from "@/lib/types";
 
 const getStatusColor = (status: number): string => {
   switch (status) {
@@ -27,23 +32,33 @@ const getStatusColor = (status: number): string => {
   }
 };
 
-const formatDate = (date: string | Date) => {
+export const formatDate = (date: string | Date) => {
   const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat("en-US", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(d);
+  if (!d || isNaN(d.getTime())) return "—";
+
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const hours = String(d.getUTCHours()).padStart(2, "0");
+  const minutes = String(d.getUTCMinutes()).padStart(2, "0");
+  const seconds = String(d.getUTCSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} UTC`;
 };
 
-const formatNumber = (num: number) => {
+export const formatNumber = (num: number) => {
   if (num === 0) return "—";
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
+  }).format(num);
+};
+
+export const formatPrice = (num: number) => {
+  if (num === 0) return "—";
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 6,
+    maximumFractionDigits: 6,
   }).format(num);
 };
 
@@ -53,7 +68,11 @@ interface SortableColumnHeaderProps {
   className?: string;
 }
 
-function SortableColumnHeader({ column, title, className = "" }: SortableColumnHeaderProps) {
+function SortableColumnHeader({
+  column,
+  title,
+  className = "",
+}: SortableColumnHeaderProps) {
   const isSorted = column.getIsSorted();
 
   return (
@@ -75,48 +94,28 @@ function SortableColumnHeader({ column, title, className = "" }: SortableColumnH
   );
 }
 
-export const columns: ColumnDef<Order>[] = [
-  {
-    id: "expander",
-    header: () => null,
-    size: 50,
-    minSize: 50,
-    maxSize: 50,
-    cell: ({ row }) => {
-      return (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => row.toggleExpanded()}
-          className="p-0 h-8 w-8 hover:bg-accent"
-        >
-          {row.getIsExpanded() ? (
-            <ChevronDown className="h-4 w-4" />
-          ) : (
-            <ChevronRight className="h-4 w-4" />
-          )}
-        </Button>
-      );
-    },
-  },
+export const columns = (
+  prices: Record<number, number> = {}
+): ColumnDef<Order>[] => [
   {
     accessorKey: "date",
-    header: ({ column }) => (
-      <SortableColumnHeader column={column} title="Date" />
-    ),
+    header: () => <div className="pl-4">Date</div>,
     cell: ({ row }) => (
-      <div className="font-mono text-xs whitespace-nowrap">
+      <div className="font-mono text-xs whitespace-nowrap pl-4">
         {formatDate(row.getValue("date"))}
       </div>
     ),
-    size: 180,
-    minSize: 180,
+    size: 160,
+    minSize: 160,
   },
   {
     accessorKey: "escrow",
     header: "Escrow",
     cell: ({ row }) => (
-      <span className="font-mono text-xs whitespace-nowrap overflow-hidden text-ellipsis block" title={row.getValue("escrow")}>
+      <span
+        className="font-mono text-xs whitespace-nowrap overflow-hidden text-ellipsis block"
+        title={row.getValue("escrow")}
+      >
         {formatWalletAddress(row.getValue("escrow"))}
       </span>
     ),
@@ -124,21 +123,8 @@ export const columns: ColumnDef<Order>[] = [
     minSize: 100,
   },
   {
-    accessorKey: "wallet",
-    header: "Wallet",
-    cell: ({ row }) => (
-      <span className="font-mono text-xs whitespace-nowrap overflow-hidden text-ellipsis block" title={row.getValue("wallet")}>
-        {formatWalletAddress(row.getValue("wallet"))}
-      </span>
-    ),
-    size: 100,
-    minSize: 100,
-  },
-  {
     accessorKey: "type",
-    header: ({ column }) => (
-      <SortableColumnHeader column={column} title="Order" />
-    ),
+    header: "Order",
     cell: ({ row }) => {
       const orderType = getOrderType(row.getValue("type"));
       return (
@@ -154,8 +140,8 @@ export const columns: ColumnDef<Order>[] = [
         </Badge>
       );
     },
-    size: 100,
-    minSize: 100,
+    size: 90,
+    minSize: 90,
   },
   {
     accessorKey: "asset",
@@ -164,63 +150,92 @@ export const columns: ColumnDef<Order>[] = [
     ),
     cell: ({ row }) => (
       <span className="font-mono text-sm">
-        {row.getValue("asset") === 0 ? "—" : `#${row.getValue("asset")}`}
+        {row.getValue("asset") === 0 ? "—" : `SN${row.getValue("asset")}`}
       </span>
     ),
-    size: 100,
-    minSize: 100,
+    size: 80,
+    minSize: 80,
   },
   {
-    id: "size",
-    header: ({ column }) => (
+    accessorKey: "bid",
+    id: "tao",
+    header: () => (
       <div className="flex justify-end">
-        <SortableColumnHeader column={column} title="Size" className="ml-0" />
+        <span>Tao</span>
       </div>
     ),
     cell: ({ row }) => {
-      const orderType = getOrderType(row.original.type);
-      const value = orderType === "Sell" ? row.original.ask : row.original.bid;
       return (
         <div className="text-right font-mono text-sm">
-          {formatNumber(value as number)}
+          {formatNumber(row.original.bid || 0)}
         </div>
       );
     },
-    accessorFn: (row) => {
-      const orderType = getOrderType(row.type);
-      return orderType === "Sell" ? row.ask : row.bid;
+    size: 80,
+    minSize: 80,
+  },
+  {
+    accessorKey: "ask",
+    id: "alpha",
+    header: () => (
+      <div className="flex justify-end">
+        <span>Alpha</span>
+      </div>
+    ),
+    cell: ({ row }) => {
+      return (
+        <div className="text-right font-mono text-sm">
+          {formatNumber(row.original.ask || 0)}
+        </div>
+      );
     },
-    size: 100,
-    minSize: 100,
+    size: 80,
+    minSize: 80,
   },
   {
     accessorKey: "stp",
-    header: ({ column }) => (
-      <div className="flex justify-end">
-        <SortableColumnHeader column={column} title="Price" className="ml-0" />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="text-right font-mono text-sm">
-        {formatNumber(row.getValue("stp"))}
-      </div>
-    ),
-    size: 100,
-    minSize: 100,
+    header: "Price",
+    cell: ({ row }) => {
+      // Use live price from /ws/price if available, otherwise fall back to stop price (stp)
+      const asset = row.original.asset;
+      const livePrice = prices[asset];
+      const displayPrice =
+        livePrice !== undefined && livePrice > 0 ? livePrice : row.original.stp;
+
+      return (
+        <div className="font-mono text-sm">{formatPrice(displayPrice)}</div>
+      );
+    },
+    size: 90,
+    minSize: 90,
   },
   {
     accessorKey: "gtd",
     header: "GTD",
     cell: ({ row }) => {
       const gtd = row.getValue("gtd") as string;
+      // Convert "gtc" to uppercase "GTC", otherwise format as date
+      let displayValue = "—";
+      if (gtd) {
+        if (gtd.toLowerCase() === "gtc") {
+          displayValue = "GTC";
+        } else {
+          // Format as date if it's a date string
+          try {
+            displayValue = formatDate(gtd);
+          } catch {
+            displayValue = gtd; // Fallback to original value if parsing fails
+          }
+        }
+      }
       return (
         <span className="font-mono text-xs whitespace-nowrap">
-          {gtd || "—"}
+          {displayValue}
         </span>
       );
     },
-    size: 100,
-    minSize: 100,
+    size: 150,
+    minSize: 150,
   },
   {
     accessorKey: "partial",
@@ -229,9 +244,7 @@ export const columns: ColumnDef<Order>[] = [
       const partial = row.getValue("partial");
       return (
         <div className="flex justify-center">
-          <span className="text-sm">
-            {partial ? "✓" : "—"}
-          </span>
+          <span className="text-sm">{partial ? "✓" : "—"}</span>
         </div>
       );
     },
@@ -240,9 +253,7 @@ export const columns: ColumnDef<Order>[] = [
   },
   {
     accessorKey: "status",
-    header: ({ column }) => (
-      <SortableColumnHeader column={column} title="Status" />
-    ),
+    header: "Status",
     cell: ({ row }) => {
       const status = row.getValue("status") as number;
       const statusText = getOrderStatus(status);
@@ -259,7 +270,7 @@ export const columns: ColumnDef<Order>[] = [
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
-    size: 100,
-    minSize: 100,
+    size: 90,
+    minSize: 90,
   },
 ];

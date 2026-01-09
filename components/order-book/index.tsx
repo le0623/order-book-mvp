@@ -8,33 +8,45 @@ import { OrderBookRowDetails } from "./row-details";
 
 interface OrderBookProps {
   orders: Order[];
-  // UPDATED: Use Partial<Order> for a more flexible update payload
+  prices?: Record<number, number>; // netuid -> price mapping
+  filledOrdersMap?: Record<string, Order[]>; // UUID -> filled orders array
   onUpdateOrder?: (id: string, updates: Partial<Order>) => void;
   onCancelOrder?: (id: string) => void;
-  onAcceptOrder?: (id: string) => void;
-  onNewOrder?: () => void; // NEW: Callback to open New Order modal
+  onFillOrder?: () => void;
+  onNewOrder?: () => void;
+  apiUrl?: string;
 }
 
 export function OrderBook({
   orders,
+  prices = {},
+  filledOrdersMap = {},
   onUpdateOrder,
   onCancelOrder,
-  onAcceptOrder,
+  onFillOrder,
   onNewOrder,
+  apiUrl,
 }: OrderBookProps) {
   return (
     <DataTable
-      columns={columns}
+      columns={columns(prices)}
       data={orders}
       onNewOrder={onNewOrder}
-      renderSubComponent={({ row }) => (
-        <OrderBookRowDetails
-          order={row.original}
-          onUpdateOrder={onUpdateOrder} 
-          onCancelOrder={onCancelOrder}
-          onAcceptOrder={onAcceptOrder}
-        />
-      )}
+      renderSubComponent={({ row }) => {
+        const order = row.original;
+        const filledOrders = filledOrdersMap[order.uuid] || [];
+        return (
+          <OrderBookRowDetails
+            order={order}
+            filledOrders={filledOrders}
+            prices={prices}
+            onUpdateOrder={onUpdateOrder}
+            onCancelOrder={onCancelOrder}
+            onFillOrder={onFillOrder}
+            apiUrl={apiUrl}
+          />
+        );
+      }}
     />
   );
 }

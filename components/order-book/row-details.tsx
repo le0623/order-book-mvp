@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -16,50 +17,60 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Edit2, X, Check, Copy, CheckIcon, Timer, Wallet2 } from "lucide-react";
-
+import { Edit2, X, Copy, CheckIcon, Wallet2, Plus } from "lucide-react";
+import { formatDate } from "./columns";
+import { FillOrderModal } from "../fill-order-modal";
+import { getOrderType, formatWalletAddress } from "@/lib/types";
+import { formatNumber, formatPrice } from "./columns";
 
 interface OrderBookRowDetailsProps {
   order: Order;
+  filledOrders?: Order[]; // Orders with same UUID and status=2
+  prices?: Record<number, number>; // netuid -> price mapping for live prices
   onUpdateOrder?: (uuid: string, updates: Partial<Order>) => void;
   onCancelOrder?: (uuid: string) => void;
-  onAcceptOrder?: (uuid: string) => void;
+  onFillOrder?: () => void;
+  apiUrl?: string;
 }
 
 export function OrderBookRowDetails({
   order,
+  filledOrders = [],
+  prices = {},
   onUpdateOrder,
   onCancelOrder,
-  onAcceptOrder,
+  onFillOrder,
+  apiUrl,
 }: OrderBookRowDetailsProps) {
   const [copiedWalletId, setCopiedWalletId] = React.useState(false);
-  const [copiedOriginId, setCopiedOriginId] = React.useState(false);
-  const [copiedEscrowId, setCopiedEscrowId] = React.useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
-  const [editAsk, setEditAsk] = React.useState(order.ask);
-  const [editBid, setEditBid] = React.useState(order.bid);
+  const [isFillOrderModalOpen, setIsFillOrderModalOpen] = React.useState(false);
+  const [editStp, setEditStp] = React.useState(order.stp);
+  const [editPublic, setEditPublic] = React.useState(order.public);
 
-  const copyToClipboard = async (text: string, type: 'wallet' | 'origin' | 'escrow') => {
+  // Reset edit values when dialog opens
+  React.useEffect(() => {
+    if (isEditDialogOpen) {
+      setEditStp(order.stp);
+      setEditPublic(order.public);
+    }
+  }, [isEditDialogOpen, order.stp, order.public]);
+
+  const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      if (type === 'wallet') {
       setCopiedWalletId(true);
       setTimeout(() => setCopiedWalletId(false), 2000);
-      } else if (type === 'origin') {
-        setCopiedOriginId(true);
-        setTimeout(() => setCopiedOriginId(false), 2000);
-      } else {
-        setCopiedEscrowId(true);
-        setTimeout(() => setCopiedEscrowId(false), 2000);
-      }
     } catch (err) {
       console.error("Failed to copy:", err);
     }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (onUpdateOrder) {
-      onUpdateOrder(order.uuid, { ask: editAsk, bid: editBid });
+      await onUpdateOrder(order.uuid, { stp: editStp, public: editPublic });
+      // Close the modal after saving
+      // The order pane will stay expanded because the row remains expanded
       setIsEditDialogOpen(false);
     }
   };
@@ -87,48 +98,58 @@ export function OrderBookRowDetails({
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm" className="h-8">
                     <Edit2 className="h-3.5 w-3.5 mr-2" />
-                    Adjust Prices
+                    Modify
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Update Order Prices</DialogTitle>
+                    <DialogTitle>Modify Order</DialogTitle>
                     <DialogDescription>
-                      Modify ask/bid prices for Order {order.uuid.slice(0, 8)}...
+                      Update order settings for Order {order.uuid.slice(0, 8)}
+                      ...
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="ask">Ask Price (Tao)</Label>
-                        <Input
-                          id="ask"
-                          type="number"
-                          step="0.01"
-                          value={editAsk}
-                          onChange={(e) =>
-                            setEditAsk(parseFloat(e.target.value) || 0)
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="bid">Bid Price (Tao)</Label>
-                        <Input
-                          id="bid"
-                          type="number"
-                          step="0.01"
-                          value={editBid}
-                          onChange={(e) =>
-                            setEditBid(parseFloat(e.target.value) || 0)
-                          }
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="stp">Stop Price</Label>
+                      <Input
+                        id="stp"
+                        type="number"
+                        step="0.000001"
+                        value={editStp}
+                        onChange={(e) =>
+                          setEditStp(parseFloat(e.target.value) || 0)
+                        }
+                        className="font-mono"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Stop price for this order
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="public"
+                        checked={editPublic}
+                        onCheckedChange={(checked) =>
+                          setEditPublic(checked === true)
+                        }
+                      />
+                      <Label
+                        htmlFor="public"
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        Public Order
+                      </Label>
                     </div>
                   </div>
                   <DialogFooter>
                     <Button
                       variant="outline"
-                      onClick={() => setIsEditDialogOpen(false)}
+                      onClick={() => {
+                        setEditStp(order.stp);
+                        setEditPublic(order.public);
+                        setIsEditDialogOpen(false);
+                      }}
                     >
                       Cancel
                     </Button>
@@ -138,22 +159,22 @@ export function OrderBookRowDetails({
               </Dialog>
 
               <Button
-                variant="destructive"
+                variant="outline"
                 size="sm"
-                className="h-8 bg-red-600/10 text-red-600 hover:bg-red-600/20 hover:text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900"
+                className="h-8"
                 onClick={() => onCancelOrder?.(order.uuid)}
               >
                 <X className="h-3.5 w-3.5 mr-2" />
-                Cancel
+                Close Order
               </Button>
 
               <Button
                 size="sm"
-                className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={() => onAcceptOrder?.(order.uuid)}
+                className="h-8 bg-blue-600 hover:bg-blue-700 text-white ml-auto"
+                onClick={() => setIsFillOrderModalOpen(true)}
               >
-                <Check className="h-3.5 w-3.5 mr-2" />
-                Accept
+                <Plus className="h-3.5 w-3.5 mr-2" />
+                Fill Order
               </Button>
             </>
           )}
@@ -162,51 +183,13 @@ export function OrderBookRowDetails({
 
       <Separator />
 
-      <div className="grid md:grid-cols-1 gap-8">
-        {/* Details Column */}
-        <div className="space-y-4">
-          <h4 className="font-medium text-sm mb-4 flex items-center gap-2">
-            <Wallet2 className="w-4 h-4" />
-            Wallet & Metadata
-          </h4>
-
-          <div className="p-4 rounded-lg bg-background border space-y-4">
+      {/* Simplified Order Details - Only Wallet, Stop Price, Public */}
+      <div className="space-y-4">
+        <div className="p-4 rounded-lg bg-background border space-y-4">
+          {order.wallet && (
             <div>
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                ORDER UUID
-              </span>
-              <p className="font-mono text-sm mt-1 select-all">{order.uuid}</p>
-            </div>
-
-            {order.origin && (
-              <div>
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  ORIGIN ADDRESS
-                </span>
-                <div className="flex items-center gap-2 mt-1">
-                  <code className="flex-1 text-xs bg-muted p-2 rounded break-all">
-                    {order.origin}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 shrink-0"
-                    onClick={() => copyToClipboard(order.origin, 'origin')}
-                  >
-                    {copiedOriginId ? (
-                      <CheckIcon className="h-4 w-4 text-emerald-500" />
-                    ) : (
-                      <Copy className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {order.wallet && (
-            <div>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  WALLET ADDRESS
+                WALLET
               </span>
               <div className="flex items-center gap-2 mt-1">
                 <code className="flex-1 text-xs bg-muted p-2 rounded break-all">
@@ -216,7 +199,7 @@ export function OrderBookRowDetails({
                   variant="outline"
                   size="icon"
                   className="h-8 w-8 shrink-0"
-                    onClick={() => copyToClipboard(order.wallet, 'wallet')}
+                  onClick={() => copyToClipboard(order.wallet)}
                 >
                   {copiedWalletId ? (
                     <CheckIcon className="h-4 w-4 text-emerald-500" />
@@ -224,79 +207,147 @@ export function OrderBookRowDetails({
                     <Copy className="h-4 w-4 text-muted-foreground" />
                   )}
                 </Button>
-                </div>
-              </div>
-            )}
-
-            {order.escrow && (
-              <div>
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  ESCROW ADDRESS
-                </span>
-                <div className="flex items-center gap-2 mt-1">
-                  <code className="flex-1 text-xs bg-muted p-2 rounded break-all">
-                    {order.escrow}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 shrink-0"
-                    onClick={() => copyToClipboard(order.escrow, 'escrow')}
-                  >
-                    {copiedEscrowId ? (
-                      <CheckIcon className="h-4 w-4 text-emerald-500" />
-                    ) : (
-                      <Copy className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  ASSET
-                </span>
-                <p className="font-mono text-sm mt-1">{order.asset}</p>
-              </div>
-              <div>
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  STOP PRICE
-                </span>
-                <p className="font-mono text-sm mt-1">{order.stp > 0 ? order.stp.toFixed(2) : "—"}</p>
-              </div>
-              <div>
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  LIMIT PRICE
-                </span>
-                <p className="font-mono text-sm mt-1">{order.lmt > 0 ? order.lmt.toFixed(2) : "—"}</p>
               </div>
             </div>
+          )}
 
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  PARTIAL FILLS
-                </span>
-                <p className="text-sm mt-1">{order.partial ? "Yes" : "No"}</p>
-              </div>
-              <div>
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  PUBLIC
-                </span>
-                <p className="text-sm mt-1">{order.public ? "Yes" : "No"}</p>
-              </div>
-              <div>
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  GOOD TILL
-                </span>
-                <p className="font-mono text-xs mt-1">{order.gtd || "—"}</p>
-              </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                STOP
+              </span>
+              <p className="font-mono text-sm mt-1">
+                {order.stp > 0 ? order.stp.toFixed(2) : "—"}
+              </p>
+            </div>
+            <div>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                PUBLIC
+              </span>
+              <p className="text-sm mt-1">{order.public ? "Yes" : "No"}</p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Filled Orders List */}
+      {filledOrders.length > 0 && (
+        <>
+          <Separator />
+          <div className="space-y-3">
+            <h4 className="font-medium text-sm">Filled Orders</h4>
+            <div className="rounded-lg border bg-background overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 border-b">
+                    <tr>
+                      <th className="text-left p-3 font-semibold text-xs">
+                        Date
+                      </th>
+                      <th className="text-left p-3 font-semibold text-xs">
+                        Escrow
+                      </th>
+                      <th className="text-left p-3 font-semibold text-xs">
+                        Order
+                      </th>
+                      <th className="text-left p-3 font-semibold text-xs">
+                        Asset
+                      </th>
+                      <th className="text-right p-3 font-semibold text-xs">
+                        Tao
+                      </th>
+                      <th className="text-right p-3 font-semibold text-xs">
+                        Alpha
+                      </th>
+                      <th className="text-left p-3 font-semibold text-xs">
+                        Price
+                      </th>
+                      <th className="text-left p-3 font-semibold text-xs">
+                        GTD
+                      </th>
+                      <th className="text-center p-3 font-semibold text-xs">
+                        Partial
+                      </th>
+                      <th className="text-left p-3 font-semibold text-xs">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filledOrders.map((filledOrder, index) => {
+                      // Use parent order type and asset (these don't change)
+                      // Use filled order's own bid (Tao), ask (Alpha), stp (Price) - values captured when filled
+                      const orderType = getOrderType(order.type);
+                      // Use a unique key combining UUID, escrow, and index for uniqueness
+                      const uniqueKey = `${filledOrder.uuid}-${filledOrder.escrow}-${index}`;
+                      return (
+                        <tr
+                          key={uniqueKey}
+                          className="border-b last:border-b-0 hover:bg-muted/30"
+                        >
+                          <td className="p-3 font-mono text-xs">
+                            {formatDate(filledOrder.date)}
+                          </td>
+                          <td className="p-3 font-mono text-xs">
+                            {formatWalletAddress(filledOrder.escrow)}
+                          </td>
+                          <td className="p-3">
+                            <Badge
+                              variant={
+                                orderType === "Buy" ? "outline" : "secondary"
+                              }
+                              className={`text-xs ${
+                                orderType === "Buy"
+                                  ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
+                                  : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
+                              }`}
+                            >
+                              {orderType}
+                            </Badge>
+                          </td>
+                          <td className="p-3 font-mono text-sm">
+                            {order.asset === 0 ? "—" : `SN${order.asset}`}
+                          </td>
+                          <td className="p-3 text-right font-mono text-sm">
+                            {formatNumber(filledOrder.bid || 0)}
+                          </td>
+                          <td className="p-3 text-right font-mono text-sm">
+                            {formatNumber(filledOrder.ask || 0)}
+                          </td>
+                          <td className="p-3 font-mono text-sm">
+                            {formatPrice(filledOrder.stp || 0)}
+                          </td>
+                          <td className="p-3 font-mono text-xs whitespace-nowrap">
+                            —
+                          </td>
+                          <td className="p-3 text-center">
+                            <span className="text-sm">—</span>
+                          </td>
+                          <td className="p-3">
+                            <Badge variant="outline" className="font-medium">
+                              Filled
+                            </Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Fill Order Modal */}
+      <FillOrderModal
+        open={isFillOrderModalOpen}
+        onOpenChange={setIsFillOrderModalOpen}
+        order={order}
+        prices={prices}
+        apiUrl={apiUrl}
+        onOrderFilled={onFillOrder}
+      />
     </div>
   );
 }

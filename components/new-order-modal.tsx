@@ -1,20 +1,36 @@
 "use client";
 
 import * as React from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Copy, CheckIcon } from "lucide-react";
 import { format } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 import { NewOrderFormData } from "@/lib/types";
-
 
 interface NewOrderModalProps {
   open: boolean;
@@ -26,8 +42,8 @@ interface NewOrderModalProps {
 // Generate a random mock ss58 address (coldkey format)
 // SS58 addresses are base58 encoded, typically 48 characters
 const generateMockEscrowAddress = (): string => {
-  const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'; // Base58 alphabet
-  const prefix = '5'; // Common Substrate/Polkadot address prefix
+  const chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"; // Base58 alphabet
+  const prefix = "5"; // Common Substrate/Polkadot address prefix
   let address = prefix;
   for (let i = 0; i < 47; i++) {
     address += chars[Math.floor(Math.random() * chars.length)];
@@ -35,8 +51,12 @@ const generateMockEscrowAddress = (): string => {
   return address;
 };
 
-export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: NewOrderModalProps) {
- 
+export function NewOrderModal({
+  open,
+  onOpenChange,
+  onOrderPlaced,
+  apiUrl,
+}: NewOrderModalProps) {
   const [formData, setFormData] = React.useState<NewOrderFormData>({
     type: 1, // 1 = Sell (default)
     asset: 1, // NETUID (default)
@@ -50,8 +70,11 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
   const [orderUuid, setOrderUuid] = React.useState<string>(""); // Store UUID for reuse when placing order
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string>("");
-  const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
+    undefined
+  );
   const [escrowGenerated, setEscrowGenerated] = React.useState(false);
+  const [copiedEscrow, setCopiedEscrow] = React.useState(false);
   const [showReviewButtons, setShowReviewButtons] = React.useState(false);
   const [showPaymentButtons, setShowPaymentButtons] = React.useState(false);
   const [isInReviewMode, setIsInReviewMode] = React.useState(false);
@@ -74,9 +97,20 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
     setShowReviewButtons(false);
     setShowPaymentButtons(false);
     setIsInReviewMode(false);
+    setCopiedEscrow(false);
   };
 
- 
+  const copyEscrowToClipboard = async () => {
+    if (!escrowWallet) return;
+    try {
+      await navigator.clipboard.writeText(escrowWallet);
+      setCopiedEscrow(true);
+      setTimeout(() => setCopiedEscrow(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
   const handleNext = async () => {
     try {
       setLoading(true);
@@ -98,17 +132,21 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
         bid: Number(formData.type === 2 ? formData.stp : 0.0), // For buy orders, bid = stop price
         stp: Number(formData.stp), // Stop price - ensure it's a number
         lmt: Number(formData.stp), // Limit price (using stop price for now) - ensure it's a number
-        gtd: formData.gtd === "gtc" ? "gtc" : (selectedDate?.toISOString() || "gtc"), // Good till date
+        gtd:
+          formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc", // Good till date
         partial: Boolean(formData.partial), // Allow partial fills - ensure it's a boolean
         public: Boolean(formData.public), // Public order visibility - ensure it's a boolean
         status: -1, // -1 = Init status (triggers escrow generation in backend)
       };
 
       // Debug: Log the data being sent (remove in production)
-      console.log('📤 Sending order data:', JSON.stringify(orderData, null, 2));
+      console.log("📤 Sending order data:", JSON.stringify(orderData, null, 2));
 
       // Call backend API directly (CORS is now handled by backend)
-      const backendUrl = apiUrl || process.env.NEXT_PUBLIC_API_URL || "https://api.subnet118.com";
+      const backendUrl =
+        apiUrl ||
+        process.env.NEXT_PUBLIC_API_URL ||
+        "https://api.subnet118.com";
       const response = await fetch(`${backendUrl}/rec`, {
         method: "POST",
         headers: {
@@ -116,32 +154,41 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
         },
         body: JSON.stringify(orderData),
       }).catch((error) => {
-        if (error.message === 'Failed to fetch') {
-          throw new Error('Cannot connect to server. This may be due to network issues or the server being unavailable.');
+        if (error.message === "Failed to fetch") {
+          throw new Error(
+            "Cannot connect to server. This may be due to network issues or the server being unavailable."
+          );
         }
         throw error;
       });
 
       if (!response.ok) {
         let errorText: string;
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
           try {
             const errorData = await response.json();
-            errorText = typeof errorData === 'string' ? errorData : JSON.stringify(errorData);
+            errorText =
+              typeof errorData === "string"
+                ? errorData
+                : JSON.stringify(errorData);
           } catch {
             errorText = await response.text();
           }
         } else {
           errorText = await response.text();
         }
-        throw new Error(`Server error (${response.status}): ${errorText || response.statusText}`);
+        throw new Error(
+          `Server error (${response.status}): ${
+            errorText || response.statusText
+          }`
+        );
       }
 
       // Parse response - backend returns JSON array with the created order
       let data: any;
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
         try {
           data = await response.json();
         } catch {
@@ -162,7 +209,7 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
         // Response is an array of records
         escrowAddress = data[0].escrow || "";
         originAddress = data[0].origin || "";
-      } else if (data && typeof data === 'object') {
+      } else if (data && typeof data === "object") {
         // Response might be a single object
         escrowAddress = data.escrow || "";
         originAddress = data.origin || "";
@@ -173,7 +220,7 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
         console.warn("⚠️ No escrow address in backend response, using mock");
         escrowAddress = generateMockEscrowAddress();
       }
-      
+
       setEscrowWallet(escrowAddress);
       setOriginWallet(originAddress || escrowAddress); // Use origin if available, otherwise use escrow
       setOrderUuid(orderUuid); // Store UUID for reuse when placing order
@@ -186,7 +233,6 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
     }
   };
 
- 
   const handlePlaceOrder = async () => {
     if (!escrowGenerated) {
       // First "Place Order" click - show review buttons
@@ -197,17 +243,17 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
       setShowPaymentButtons(true);
     } else if (showPaymentButtons) {
       // Final "Place Order" - send order to backend with status = 1 (Open)
-      console.log('📥 handleFinalPlaceOrder');
+      console.log("📥 handleFinalPlaceOrder");
       await handleFinalPlaceOrder();
     } else if (escrowGenerated && !isInReviewMode) {
       // Escrow generated, user clicks "Place Order" for the first time
-      console.log('📥 handleFinalPlaceOrder (direct)');
+      console.log("📥 handleFinalPlaceOrder (direct)");
       await handleFinalPlaceOrder();
     }
   };
 
   const handleFinalPlaceOrder = async () => {
-    console.log('📥 handleFinalPlaceOrder start');
+    console.log("📥 handleFinalPlaceOrder start");
     try {
       setLoading(true);
       setError("");
@@ -229,14 +275,18 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
         bid: Number(formData.type === 2 ? formData.stp : 0.0), // For buy orders, bid = stop price
         stp: Number(formData.stp), // Stop price
         lmt: Number(formData.stp), // Limit price (using stop price)
-        gtd: formData.gtd === "gtc" ? "gtc" : (selectedDate?.toISOString() || "gtc"), // Good till date
+        gtd:
+          formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc", // Good till date
         partial: formData.partial ? "True" : "False", // Backend expects string "True"/"False"
         public: formData.public ? "True" : "False", // Backend expects string "True"/"False"
         status: 1, // 1 = Open status (order is now active)
       };
 
       // Call backend API
-      const backendUrl = apiUrl || process.env.NEXT_PUBLIC_API_URL || "https://api.subnet118.com";
+      const backendUrl =
+        apiUrl ||
+        process.env.NEXT_PUBLIC_API_URL ||
+        "https://api.subnet118.com";
       const response = await fetch(`${backendUrl}/rec`, {
         method: "POST",
         headers: {
@@ -244,28 +294,37 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
         },
         body: JSON.stringify(orderData),
       }).catch((error) => {
-        if (error.message === 'Failed to fetch') {
-          throw new Error('Cannot connect to server. This may be due to network issues or the server being unavailable.');
+        if (error.message === "Failed to fetch") {
+          throw new Error(
+            "Cannot connect to server. This may be due to network issues or the server being unavailable."
+          );
         }
         throw error;
       });
 
-      console.log('📥 Backend response:', response);
+      console.log("📥 Backend response:", response);
 
       if (!response.ok) {
         let errorText: string;
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
           try {
             const errorData = await response.json();
-            errorText = typeof errorData === 'string' ? errorData : JSON.stringify(errorData);
+            errorText =
+              typeof errorData === "string"
+                ? errorData
+                : JSON.stringify(errorData);
           } catch {
             errorText = await response.text();
           }
         } else {
           errorText = await response.text();
         }
-        throw new Error(`Server error (${response.status}): ${errorText || response.statusText}`);
+        throw new Error(
+          `Server error (${response.status}): ${
+            errorText || response.statusText
+          }`
+        );
       }
 
       // Order placed successfully
@@ -316,7 +375,6 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
     }
   };
 
- 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
       resetForm();
@@ -328,7 +386,7 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>New Order</DialogTitle>          
+          <DialogTitle>New Order</DialogTitle>
         </DialogHeader>
 
         {error && (
@@ -340,24 +398,44 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
         {/* Order Details Form */}
         <div className="grid gap-4 py-4">
           {/* Escrow Wallet Address (always visible) */}
-          <div className="p-4 rounded-lg bg-muted/50 border">
-            <p className="text-sm font-medium mb-2">Escrow Wallet Address:</p>
-            <code className={cn(
-              "text-xs bg-background p-2 rounded block break-all",
-              !escrowWallet && "text-muted-foreground italic"
-            )}>
-              {escrowWallet || "To be created…"}
-            </code>
+          <div className="grid gap-2">
+            <Label htmlFor="escrow">Escrow Wallet Address</Label>
+            <div className="flex items-center gap-2">
+              <code
+                className={cn(
+                  "flex-1 text-xs font-mono p-2 rounded-md border bg-background break-all",
+                  !escrowWallet && "text-muted-foreground italic"
+                )}
+              >
+                {escrowWallet || "To be created…"}
+              </code>
+              {escrowWallet && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={copyEscrowToClipboard}
+                >
+                  {copiedEscrow ? (
+                    <CheckIcon className="h-4 w-4 text-emerald-500" />
+                  ) : (
+                    <Copy className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Order Type Select */}
           <div className="grid gap-2">
             <Label htmlFor="type">Order Type</Label>
-              <Select
-                value={String(formData.type)}
-                onValueChange={(value) => setFormData({ ...formData, type: parseInt(value) })}
-                disabled={escrowGenerated && !isInReviewMode}
-              >
+            <Select
+              value={String(formData.type)}
+              onValueChange={(value) =>
+                setFormData({ ...formData, type: parseInt(value) })
+              }
+              disabled={escrowGenerated && !isInReviewMode}
+            >
               <SelectTrigger id="type">
                 <SelectValue />
               </SelectTrigger>
@@ -371,14 +449,19 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
           {/* Asset (NETUID) */}
           <div className="grid gap-2">
             <Label htmlFor="asset">Asset (NETUID)</Label>
-              <Input
-                id="asset"
-                type="number"
-                min="0"
-                value={formData.asset}
-                onChange={(e) => setFormData({ ...formData, asset: parseInt(e.target.value) || 0 })}
-                disabled={escrowGenerated && !isInReviewMode}
-              />
+            <Input
+              id="asset"
+              type="number"
+              min="0"
+              value={formData.asset}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  asset: parseInt(e.target.value) || 0,
+                })
+              }
+              disabled={escrowGenerated && !isInReviewMode}
+            />
           </div>
 
           {/* Good Till Date */}
@@ -418,7 +501,11 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
                       disabled={escrowGenerated && !isInReviewMode}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                      {selectedDate ? (
+                        format(selectedDate, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -441,18 +528,28 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
           {/* Stop Price */}
           <div className="grid gap-2">
             <Label htmlFor="stp">Stop Price (TAO)</Label>
-              <Input
-                id="stp"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.stp}
-                onChange={(e) => setFormData({ ...formData, stp: parseFloat(e.target.value) || 0 })}
-                disabled={escrowGenerated && !isInReviewMode}
-              />
+            <Input
+              id="stp"
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.stp}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  stp: parseFloat(e.target.value) || 0,
+                })
+              }
+              disabled={escrowGenerated && !isInReviewMode}
+            />
           </div>
 
-          <div className={cn("flex items-center space-x-2", escrowGenerated && !isInReviewMode && "opacity-60")}>
+          <div
+            className={cn(
+              "flex items-center space-x-2",
+              escrowGenerated && !isInReviewMode && "opacity-60"
+            )}
+          >
             <Checkbox
               id="partial"
               checked={formData.partial}
@@ -461,12 +558,20 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
               }}
               disabled={escrowGenerated && !isInReviewMode}
             />
-            <Label htmlFor="partial" className="text-sm font-normal cursor-pointer">
+            <Label
+              htmlFor="partial"
+              className="text-sm font-normal cursor-pointer"
+            >
               Allow partial fills
             </Label>
           </div>
 
-          <div className={cn("flex items-center space-x-2", escrowGenerated && !isInReviewMode && "opacity-60")}>
+          <div
+            className={cn(
+              "flex items-center space-x-2",
+              escrowGenerated && !isInReviewMode && "opacity-60"
+            )}
+          >
             <Checkbox
               id="public"
               checked={formData.public}
@@ -475,7 +580,10 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
               }}
               disabled={escrowGenerated && !isInReviewMode}
             />
-            <Label htmlFor="public" className="text-sm font-normal cursor-pointer">
+            <Label
+              htmlFor="public"
+              className="text-sm font-normal cursor-pointer"
+            >
               Public order (visible to everyone)
             </Label>
           </div>
@@ -505,7 +613,10 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
               >
                 {isInReviewMode ? "Cancel" : "Back"}
               </Button>
-              <Button onClick={isInReviewMode ? handleReviewOrder : handlePlaceOrder} disabled={loading}>
+              <Button
+                onClick={isInReviewMode ? handleReviewOrder : handlePlaceOrder}
+                disabled={loading}
+              >
                 {isInReviewMode ? "Review Order" : "Place Order"}
               </Button>
             </>
@@ -518,9 +629,7 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
             <Button variant="outline" onClick={handleBack}>
               Back
             </Button>
-            <Button onClick={handleReviewOrder}>
-              Review Order
-            </Button>
+            <Button onClick={handleReviewOrder}>Review Order</Button>
           </div>
         )}
 
@@ -530,13 +639,10 @@ export function NewOrderModal({ open, onOpenChange, onOrderPlaced, apiUrl }: New
             <Button variant="outline" onClick={handleBack}>
               Back
             </Button>
-            <Button onClick={handlePlaceOrder}>
-              Place Order
-            </Button>
+            <Button onClick={handlePlaceOrder}>Place Order</Button>
           </div>
         )}
       </DialogContent>
     </Dialog>
   );
 }
-

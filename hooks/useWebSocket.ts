@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 interface UseWebSocketOptions {
   url: string;
   enabled?: boolean;
-  onMessage?: (message: WebSocketMessage) => void;
+  onMessage?: (message: WebSocketMessage | any) => void;
   onError?: (error: Event) => void;
 }
 
@@ -116,11 +116,12 @@ export function useWebSocket({
             return;
           }
 
-          // First message from backend is always a UUID string (not JSON)
+          // First message from backend:
+          // - /ws/book: UUID string (skip it)
+          // - /ws/price: empty string '' (skip it, then process actual price data)
           if (isFirstMessageRef.current) {
             isFirstMessageRef.current = false;
-            // Store UUID if needed, but don't try to parse it as JSON
-            // Just skip it for now since we don't need it yet
+            // Skip first message (UUID for /ws/book, empty string for /ws/price)
             return;
           }
 

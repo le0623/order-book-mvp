@@ -36,7 +36,6 @@ interface DataTableProps<TData, TValue> {
   onNewOrder?: () => void; // NEW: Callback to open New Order modal
 }
 
-
 export function DataTable<TData, TValue>({
   columns,
   data,
@@ -83,38 +82,59 @@ export function DataTable<TData, TValue>({
   // Filter data by ss58 address search (origin, escrow, wallet)
   // Default: only show Open (status=1) AND public orders
   // When searching: show all matching orders regardless of status/public
+  // Keep expanded orders visible even if they don't match default filter
   const filteredData = React.useMemo(() => {
     console.log("🔍 Filtering data. Total orders:", data.length);
-    
+
+    // Get list of expanded order UUIDs
+    const expandedOrderIds = Object.keys(expanded).filter(
+      (id) => (expanded as Record<string, boolean>)[id]
+    );
+
     // If searching, show all matching orders regardless of status/public
     if (searchQuery && searchQuery.trim() !== "") {
       const searchLower = searchQuery.toLowerCase().trim();
       const filtered = data.filter((order: any) => {
-        const originMatch = order.origin?.toLowerCase().includes(searchLower) || false;
-        const escrowMatch = order.escrow?.toLowerCase().includes(searchLower) || false;
-        const walletMatch = order.wallet?.toLowerCase().includes(searchLower) || false;
+        const originMatch =
+          order.origin?.toLowerCase().includes(searchLower) || false;
+        const escrowMatch =
+          order.escrow?.toLowerCase().includes(searchLower) || false;
+        const walletMatch =
+          order.wallet?.toLowerCase().includes(searchLower) || false;
         return originMatch || escrowMatch || walletMatch;
       });
       console.log("🔎 Search filtered:", filtered.length, "orders");
       return filtered;
     }
-    
+
     // Default: only show Open (status=1) AND public orders
+    // But keep expanded orders visible even if they don't match
     const filtered = data.filter((order: any) => {
+      const isExpanded = expandedOrderIds.includes(String(order.uuid));
       const matches = order.status === 1 && order.public === true;
+
+      // Include order if it matches filter OR if it's currently expanded
+      if (matches || isExpanded) {
+        return true;
+      }
+
       if (!matches) {
         console.log("❌ Order filtered out:", {
           uuid: order.uuid,
           status: order.status,
           public: order.public,
-          reason: order.status !== 1 ? "status != 1" : "public != true"
+          reason: order.status !== 1 ? "status != 1" : "public != true",
         });
       }
-      return matches;
+      return false;
     });
-    console.log("✅ Default filtered:", filtered.length, "orders (status=1 AND public=true)");
+    console.log(
+      "✅ Default filtered:",
+      filtered.length,
+      "orders (status=1 AND public=true, plus expanded orders)"
+    );
     return filtered;
-  }, [data, searchQuery]);
+  }, [data, searchQuery, expanded]);
 
   const table = useReactTable({
     data: filteredData,
@@ -179,70 +199,73 @@ export function DataTable<TData, TValue>({
                 ref={tableHeaderRef as any}
                 className="sticky  z-20 bg-background shadow-sm border-b"
               >
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHeadCell
-                      key={header.id}
-                      className="text-sm font-semibold"
-                      style={{ width: header.getSize() }}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHeadCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHeadCell
+                        key={header.id}
+                        className="text-sm font-semibold normal-case"
+                        style={{ width: header.getSize() }}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHeadCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
 
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <React.Fragment key={row.id}>
-                    <TableRow
-                      data-state={row.getIsSelected() && "selected"}
-                      data-expanded={row.getIsExpanded()}
-                      className="cursor-pointer transition-colors hover:bg-muted/50 data-[expanded=true]:bg-muted/50"
-                      onClick={() => row.toggleExpanded()}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} style={{ width: cell.column.getSize() }}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-
-                    {row.getIsExpanded() && renderSubComponent && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={columns.length}
-                          className="p-0 border-t-0"
-                        >
-                          {renderSubComponent({ row })}
-                        </TableCell>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <React.Fragment key={row.id}>
+                      <TableRow
+                        data-state={row.getIsSelected() && "selected"}
+                        data-expanded={row.getIsExpanded()}
+                        className="cursor-pointer transition-colors hover:bg-muted/50 data-[expanded=true]:bg-muted/50"
+                        onClick={() => row.toggleExpanded()}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell
+                            key={cell.id}
+                            style={{ width: cell.column.getSize() }}
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </TableCell>
+                        ))}
                       </TableRow>
-                    )}
-                  </React.Fragment>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    No results found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+
+                      {row.getIsExpanded() && renderSubComponent && (
+                        <TableRow>
+                          <TableCell
+                            colSpan={columns.length}
+                            className="p-0 border-t-0"
+                          >
+                            {renderSubComponent({ row })}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      No results found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
           <div className="flex items-center justify-end space-x-2 p-4 rounded-b-md bg-white dark:bg-background">
             <div className="text-xs text-muted-foreground">
