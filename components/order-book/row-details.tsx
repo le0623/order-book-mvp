@@ -268,20 +268,14 @@ export function OrderBookRowDetails({
                         Price
                       </th>
                       <th className="text-left p-3 font-semibold text-xs">
-                        GTD
-                      </th>
-                      <th className="text-center p-3 font-semibold text-xs">
-                        Partial
-                      </th>
-                      <th className="text-left p-3 font-semibold text-xs">
                         Status
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {filledOrders.map((filledOrder, index) => {
-                      // Use parent order type and asset (these don't change)
-                      // Use filled order's own bid (Tao), ask (Alpha), stp (Price) - values captured when filled
+                      // Use parent order values for type, asset, Tao, Alpha
+                      // Use filled order's stp for Price (fixed at fill time)
                       const orderType = getOrderType(order.type);
                       // Use a unique key combining UUID, escrow, and index for uniqueness
                       const uniqueKey = `${filledOrder.uuid}-${filledOrder.escrow}-${index}`;
@@ -320,22 +314,13 @@ export function OrderBookRowDetails({
                             {order.asset === 0 ? "—" : `SN${order.asset}`}
                           </td>
                           <td className="p-3 text-right font-mono text-sm">
-                            {formatNumber(filledOrder.bid || 0)}
+                            {formatNumber(order.bid || 0)}
                           </td>
                           <td className="p-3 text-right font-mono text-sm">
-                            {formatNumber(filledOrder.ask || 0)}
+                            {formatNumber(order.ask || 0)}
                           </td>
                           <td className="p-3 font-mono text-sm">
                             {formatPrice(filledOrder.stp || 0)}
-                          </td>
-                          <td
-                            className="p-3 font-mono whitespace-nowrap"
-                            style={{ fontSize: "0.875rem" }}
-                          >
-                            —
-                          </td>
-                          <td className="p-3 text-center">
-                            <span className="text-sm">—</span>
                           </td>
                           <td className="p-3">
                             <Badge variant="outline" className="font-medium">

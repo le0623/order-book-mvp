@@ -101,12 +101,12 @@ export function FillOrderModal({
       setLoading(true);
       setError("");
 
-      // Generate unique UUID for the filled order
+      // Generate unique UUID for this fill order (each fill is a separate record)
       const fillOrderUuid = uuidv4();
 
       // Prepare data for backend with status=-1 to generate escrow (same as New Order)
       const orderData = {
-        uuid: fillOrderUuid, // Unique identifier for the filled order
+        uuid: fillOrderUuid, // Unique identifier for this fill order
         origin: "", // Backend will populate this when status=-1 (escrow generation)
         escrow: "", // Backend will populate this when status=-1 (escrow generation)
         wallet:
@@ -228,7 +228,7 @@ export function FillOrderModal({
       // Prepare order data with fixed values (same origin logic as New Order)
       const fillOrderData = {
         uuid: orderUuid, // Reuse the same UUID from escrow generation
-        origin: originWallet || escrowWallet, // Use origin wallet from backend response, fallback to escrow (same as New Order)
+        origin: order.uuid, // Store parent order UUID in origin field to link them
         escrow: escrowWallet, // Escrow wallet address from backend
         wallet:
           order.wallet || "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty", // User wallet

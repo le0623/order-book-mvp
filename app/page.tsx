@@ -397,17 +397,19 @@ export default function Home() {
   // Separate orders: open orders (status=1) and filled orders (status=2)
   const { openOrders, filledOrdersMap } = useMemo(() => {
     const open: Order[] = [];
-    const filled: Record<string, Order[]> = {}; // UUID -> filled orders array
+    const filled: Record<string, Order[]> = {}; // Parent UUID -> filled orders array
 
     orders.forEach((order) => {
       if (order.status === 1) {
         open.push(order);
       } else if (order.status === 2) {
-        // Group filled orders by parent UUID
-        if (!filled[order.uuid]) {
-          filled[order.uuid] = [];
+        // For filled orders, the origin field contains the parent order UUID
+        // Group filled orders by their parent UUID
+        const parentUuid = order.origin || order.uuid; // Fallback to own UUID if origin not set
+        if (!filled[parentUuid]) {
+          filled[parentUuid] = [];
         }
-        filled[order.uuid].push(order);
+        filled[parentUuid].push(order);
       }
     });
 
