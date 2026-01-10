@@ -93,7 +93,7 @@ export function OrderBookRowDetails({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 bg-[#2F3F4A] border-[#2F3F4A] hover:bg-[#2F3F4A]/90"
+                    className="h-8 border-gray-600 rounded-md bg-transparent"
                   >
                     <Edit2 className="h-3.5 w-3.5 mr-2" />
                     Modify
@@ -128,7 +128,7 @@ export function OrderBookRowDetails({
                       <Checkbox
                         id="public"
                         checked={editPublic}
-                        onCheckedChange={(checked) =>
+                        onCheckedChange={(checked: boolean) =>
                           setEditPublic(checked === true)
                         }
                       />
@@ -159,7 +159,7 @@ export function OrderBookRowDetails({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 bg-[#2F3F4A] border-[#2F3F4A] hover:bg-[#2F3F4A]/90"
+                className="h-8 border-gray-600 rounded-md bg-transparent"
                 onClick={() => onCancelOrder?.(order.uuid)}
               >
                 <X className="h-3.5 w-3.5 mr-2" />
@@ -185,14 +185,17 @@ export function OrderBookRowDetails({
 
       {/* Simplified Order Details - Only Wallet, Stop Price, Public */}
       <div className="space-y-4">
-        <div className="p-4 rounded-lg border space-y-4 bg-[#2F3F4A]">
+        <div className="p-4 rounded-lg border space-y-4 bg-[#2F3F4A]/40">
           {order.wallet && (
             <div className="grid gap-2">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 WALLET
               </span>
               <div className="flex items-start gap-2">
-                <code className="text-xs font-mono p-2 break-all">
+                <code
+                  className="font-mono p-2 break-all"
+                  style={{ fontSize: "0.875rem" }}
+                >
                   {order.wallet}
                 </code>
                 <Button
@@ -287,10 +290,16 @@ export function OrderBookRowDetails({
                           key={uniqueKey}
                           className="border-b last:border-b-0 hover:bg-muted/30"
                         >
-                          <td className="p-3 font-mono text-xs">
+                          <td
+                            className="p-3 font-mono"
+                            style={{ fontSize: "0.875rem" }}
+                          >
                             {formatDate(filledOrder.date)}
                           </td>
-                          <td className="p-3 font-mono text-xs">
+                          <td
+                            className="p-3 font-mono"
+                            style={{ fontSize: "0.875rem" }}
+                          >
                             {formatWalletAddress(filledOrder.escrow)}
                           </td>
                           <td className="p-3">
@@ -319,7 +328,10 @@ export function OrderBookRowDetails({
                           <td className="p-3 font-mono text-sm">
                             {formatPrice(filledOrder.stp || 0)}
                           </td>
-                          <td className="p-3 font-mono text-xs whitespace-nowrap">
+                          <td
+                            className="p-3 font-mono whitespace-nowrap"
+                            style={{ fontSize: "0.875rem" }}
+                          >
                             —
                           </td>
                           <td className="p-3 text-center">

@@ -107,7 +107,9 @@ export function DataTable<TData, TValue>({
     // Default: only show Open (status=1) AND public orders
     // But keep expanded orders visible even if they don't match
     const filtered = data.filter((order: any) => {
-      const isExpanded = expandedOrderIds.includes(String(order.uuid));
+      // Match expanded state using the same ID format as getRowId
+      const orderId = `${order.uuid}-${order.status}-${order.escrow || ""}`;
+      const isExpanded = expandedOrderIds.includes(orderId);
       const matches = order.status === 1 && order.public === true;
 
       // Include order if it matches filter OR if it's currently expanded
@@ -119,7 +121,8 @@ export function DataTable<TData, TValue>({
   const table = useReactTable({
     data: filteredData,
     columns,
-    getRowId: (row: any) => String(row.uuid),
+    // Use UUID + status + escrow to ensure uniqueness (filled orders can have same UUID but different escrow)
+    getRowId: (row: any) => `${row.uuid}-${row.status}-${row.escrow || ""}`,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -161,7 +164,7 @@ export function DataTable<TData, TValue>({
               {onNewOrder && (
                 <Button
                   onClick={onNewOrder}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
                   size="sm"
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -177,7 +180,7 @@ export function DataTable<TData, TValue>({
             <Table noWrapper className="w-full table-fixed">
               <TableHeader
                 ref={tableHeaderRef as any}
-                className="sticky  z-20 bg-background shadow-sm border-b"
+                className="sticky z-20 bg-background shadow-sm border-b"
               >
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>

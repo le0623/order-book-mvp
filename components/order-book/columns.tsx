@@ -101,7 +101,10 @@ export const columns = (
     accessorKey: "date",
     header: () => <div className="pl-4">Date</div>,
     cell: ({ row }) => (
-      <div className="font-mono text-xs whitespace-nowrap pl-4">
+      <div
+        className="font-mono whitespace-nowrap pl-4"
+        style={{ fontSize: "0.875rem" }}
+      >
         {formatDate(row.getValue("date"))}
       </div>
     ),
@@ -113,8 +116,9 @@ export const columns = (
     header: "Escrow",
     cell: ({ row }) => (
       <span
-        className="font-mono text-xs whitespace-nowrap overflow-hidden text-ellipsis block"
+        className="font-mono whitespace-nowrap overflow-hidden text-ellipsis block"
         title={row.getValue("escrow")}
+        style={{ fontSize: "0.875rem" }}
       >
         {formatWalletAddress(row.getValue("escrow"))}
       </span>
@@ -229,7 +233,10 @@ export const columns = (
         }
       }
       return (
-        <span className="font-mono text-xs whitespace-nowrap">
+        <span
+          className="font-mono whitespace-nowrap"
+          style={{ fontSize: "0.875rem" }}
+        >
           {displayValue}
         </span>
       );

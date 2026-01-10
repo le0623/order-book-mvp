@@ -424,7 +424,23 @@ export default function Home() {
   }, [orders]);
 
   const sortedOrders = useMemo(() => {
-    return [...openOrders].sort((a, b) => {
+    // Deduplicate orders by UUID (keep the most recent one)
+    const uniqueOrdersMap = new Map<string, Order>();
+    openOrders.forEach((order) => {
+      const existing = uniqueOrdersMap.get(order.uuid);
+      if (!existing) {
+        uniqueOrdersMap.set(order.uuid, order);
+      } else {
+        // If duplicate, keep the one with more recent date
+        const existingDate = new Date(existing.date).getTime();
+        const currentDate = new Date(order.date).getTime();
+        if (currentDate > existingDate) {
+          uniqueOrdersMap.set(order.uuid, order);
+        }
+      }
+    });
+
+    return Array.from(uniqueOrdersMap.values()).sort((a, b) => {
       const dateA = new Date(a.date).getTime();
       const dateB = new Date(b.date).getTime();
       return dateB - dateA;
@@ -470,8 +486,10 @@ export default function Home() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3 mt-1">
-                  <p className="text-muted-foreground text-sm">by Subnet118</p>
+                <div className="flex items-center gap-3 mt-0">
+                  <p className="text-muted-foreground text-lg font-bold">
+                    by Subnet118
+                  </p>
                 </div>
               </div>
             </div>

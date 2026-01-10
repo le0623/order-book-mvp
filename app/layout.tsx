@@ -22,7 +22,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning>
         <ContextProvider cookies={cookies}>
           <ThemeProvider defaultTheme="dark">
             {children}

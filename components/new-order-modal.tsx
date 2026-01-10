@@ -394,9 +394,10 @@ export function NewOrderModal({
             <div className="flex items-center gap-2">
               <code
                 className={cn(
-                  "flex-1 text-xs font-mono p-2 rounded-md border bg-background break-all",
+                  "flex-1 font-mono p-2 rounded-md border bg-background break-all",
                   !escrowWallet && "text-muted-foreground italic"
                 )}
+                style={{ fontSize: "0.875rem" }}
               >
                 {escrowWallet || "To be created…"}
               </code>
@@ -549,7 +550,7 @@ export function NewOrderModal({
             <Checkbox
               id="partial"
               checked={formData.partial}
-              onCheckedChange={(checked) => {
+              onCheckedChange={(checked: boolean) => {
                 setFormData({ ...formData, partial: checked });
               }}
               disabled={escrowGenerated && !isInReviewMode}
@@ -571,7 +572,7 @@ export function NewOrderModal({
             <Checkbox
               id="public"
               checked={formData.public}
-              onCheckedChange={(checked) => {
+              onCheckedChange={(checked: boolean) => {
                 setFormData({ ...formData, public: checked });
               }}
               disabled={escrowGenerated && !isInReviewMode}
@@ -595,7 +596,11 @@ export function NewOrderModal({
               >
                 Cancel
               </Button>
-              <Button onClick={handleNext} disabled={loading}>
+              <Button
+                onClick={handleNext}
+                disabled={loading}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+              >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Escrow
               </Button>
