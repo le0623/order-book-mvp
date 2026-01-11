@@ -460,7 +460,7 @@ export default function Home() {
               </div>
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold tracking-tight">
+                  <h1 className="text-[28px] font-bold tracking-tight">
                     HODL Exchange
                   </h1>
                   <div className="flex items-center gap-2 px-3 mt-2 py-2 rounded-lg border border-border bg-card/50">
@@ -489,8 +489,8 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-0">
-                  <p className="text-muted-foreground text-lg font-bold">
-                    by Subnet118
+                  <p className="text-muted-foreground text-[16px] font-bold leading-[0.375rem]">
+                    by Subnet 118
                   </p>
                 </div>
               </div>

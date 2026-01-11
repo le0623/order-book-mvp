@@ -181,8 +181,6 @@ export function OrderBookRowDetails({
         )}
       </div>
 
-      <Separator />
-
       {/* Simplified Order Details - Only Wallet, Stop Price, Public */}
       <div className="space-y-4">
         <div className="p-4 rounded-lg border space-y-4 bg-[#2F3F4A]/40">
@@ -238,13 +236,14 @@ export function OrderBookRowDetails({
       {/* Filled Orders List */}
       {filledOrders.length > 0 && (
         <>
-          <Separator />
           <div className="space-y-3">
-            <h4 className="font-medium text-sm">Filled Orders</h4>
+            <h3 className="text-base font-semibold tracking-tight text-foreground">
+              Filled Orders
+            </h3>
             <div className="rounded-lg border bg-background overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-muted/50 border-b">
+                  {/* <thead className="bg-muted/50 border-b">
                     <tr>
                       <th className="text-left p-3 font-semibold text-xs">
                         Date
@@ -271,7 +270,7 @@ export function OrderBookRowDetails({
                         Status
                       </th>
                     </tr>
-                  </thead>
+                  </thead> */}
                   <tbody>
                     {filledOrders.map((filledOrder, index) => {
                       // Use parent order values for type, asset, Tao, Alpha

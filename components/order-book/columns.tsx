@@ -144,8 +144,8 @@ export const columns = (
         </Badge>
       );
     },
-    size: 90,
-    minSize: 90,
+    size: 75,
+    minSize: 75,
   },
   {
     accessorKey: "asset",
@@ -157,8 +157,8 @@ export const columns = (
         {row.getValue("asset") === 0 ? "—" : `SN${row.getValue("asset")}`}
       </span>
     ),
-    size: 80,
-    minSize: 80,
+    size: 50,
+    minSize: 50,
   },
   {
     accessorKey: "bid",
@@ -175,8 +175,8 @@ export const columns = (
         </div>
       );
     },
-    size: 80,
-    minSize: 80,
+    size: 70,
+    minSize: 70,
   },
   {
     accessorKey: "ask",
@@ -193,8 +193,8 @@ export const columns = (
         </div>
       );
     },
-    size: 80,
-    minSize: 80,
+    size: 70,
+    minSize: 70,
   },
   {
     accessorKey: "stp",

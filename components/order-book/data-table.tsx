@@ -134,13 +134,12 @@ export function DataTable<TData, TValue>({
   });
 
   const rows = table.getRowModel().rows;
-
   return (
     <div className="w-full smooth-scroll">
       <Card className="w-full border-border/60 shadow-sm bg-card/50 backdrop-blur-sm mb-8">
         <CardHeader
           ref={cardHeaderRef as any}
-          className="sticky top-[117px] z-30 rounded-t-md bg-background border-b border-border/40 pb-4 shadow-sm"
+          className="rounded-t-md bg-background border-b border-border/40 pb-4 shadow-sm"
         >
           <div className="flex items-center justify-between mb-4">
             <CardTitle className="text-xl font-semibold tracking-tight">
@@ -175,12 +174,12 @@ export function DataTable<TData, TValue>({
           </div>
         </CardHeader>
 
-        <CardContent className="p-0 overflow-x-auto">
-          <div className="min-w-[1200px]">
+         <CardContent className="p-0">
+           <div className="h-[calc(100vh-220px)] overflow-auto min-w-[1200px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <Table noWrapper className="w-full table-fixed">
               <TableHeader
                 ref={tableHeaderRef as any}
-                className="sticky z-20 bg-background shadow-sm border-b"
+                className="sticky top-0 z-20 bg-background shadow-sm border-b"
               >
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
@@ -193,9 +192,9 @@ export function DataTable<TData, TValue>({
                         {header.isPlaceholder
                           ? null
                           : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                       </TableHeadCell>
                     ))}
                   </TableRow>

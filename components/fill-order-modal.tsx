@@ -327,7 +327,6 @@ export function FillOrderModal({
         )}
 
         <div className="grid gap-4 py-4">
-          {/* Escrow Wallet Address (same style as New Order modal) */}
           <div className="grid gap-2">
             <Label htmlFor="escrow">Escrow Wallet Address</Label>
             <div className="flex items-center gap-2">
