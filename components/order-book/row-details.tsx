@@ -240,98 +240,107 @@ export function OrderBookRowDetails({
             <h3 className="text-base font-semibold tracking-tight text-foreground">
               Filled Orders
             </h3>
-            <div className="rounded-lg border bg-background overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  {/* <thead className="bg-muted/50 border-b">
-                    <tr>
-                      <th className="text-left p-3 font-semibold text-xs">
-                        Date
-                      </th>
-                      <th className="text-left p-3 font-semibold text-xs">
-                        Escrow
-                      </th>
-                      <th className="text-left p-3 font-semibold text-xs">
-                        Order
-                      </th>
-                      <th className="text-left p-3 font-semibold text-xs">
-                        Asset
-                      </th>
-                      <th className="text-right p-3 font-semibold text-xs">
-                        Tao
-                      </th>
-                      <th className="text-right p-3 font-semibold text-xs">
-                        Alpha
-                      </th>
-                      <th className="text-left p-3 font-semibold text-xs">
-                        Price
-                      </th>
-                      <th className="text-left p-3 font-semibold text-xs">
-                        Status
-                      </th>
-                    </tr>
-                  </thead> */}
-                  <tbody>
-                    {filledOrders.map((filledOrder, index) => {
-                      // Use parent order values for type, asset, Tao, Alpha
-                      // Use filled order's stp for Price (fixed at fill time)
-                      const orderType = getOrderType(order.type);
-                      // Use a unique key combining UUID, escrow, and index for uniqueness
-                      const uniqueKey = `${filledOrder.uuid}-${filledOrder.escrow}-${index}`;
-                      return (
-                        <tr
-                          key={uniqueKey}
-                          className="border-b last:border-b-0 hover:bg-muted/30"
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm table-fixed">
+                <tbody>
+                  {filledOrders.map((filledOrder, index) => {
+                    // Use parent order values for type, asset, Tao, Alpha, GTD, Partial
+                    // Use filled order's stp for Price (fixed at fill time)
+                    const orderType = getOrderType(order.type);
+                    // Use a unique key combining UUID, escrow, and index for uniqueness
+                    const uniqueKey = `${filledOrder.uuid}-${filledOrder.escrow}-${index}`;
+
+                    // Format GTD from parent order
+                    const gtd = order.gtd;
+                    let displayGtd = "—";
+                    if (gtd) {
+                      if (gtd.toLowerCase() === "gtc") {
+                        displayGtd = "2026-01-31 UTC";
+                      } else {
+                        try {
+                          displayGtd = formatDate(gtd);
+                        } catch {
+                          displayGtd = gtd;
+                        }
+                      }
+                    }
+
+                    return (
+                      <tr
+                        key={uniqueKey}
+                        className="border-b last:border-b-0 hover:bg-muted/50 transition-colors"
+                      >
+                        <td
+                          className="p-3 font-mono whitespace-nowrap"
+                          style={{ width: 160, fontSize: "0.875rem" }}
                         >
-                          <td
-                            className="p-3 font-mono"
-                            style={{ fontSize: "0.875rem" }}
+                          {formatDate(filledOrder.date)}
+                        </td>
+                        <td
+                          className="p-3 font-mono whitespace-nowrap overflow-hidden text-ellipsis"
+                          style={{ width: 100, fontSize: "0.875rem" }}
+                        >
+                          {formatWalletAddress(filledOrder.escrow)}
+                        </td>
+                        <td className="p-3" style={{ width: 75 }}>
+                          <Badge
+                            variant={
+                              orderType === "Buy" ? "outline" : "secondary"
+                            }
+                            className={`font-medium ${
+                              orderType === "Buy"
+                                ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
+                                : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
+                            }`}
                           >
-                            {formatDate(filledOrder.date)}
-                          </td>
-                          <td
-                            className="p-3 font-mono"
-                            style={{ fontSize: "0.875rem" }}
-                          >
-                            {formatWalletAddress(filledOrder.escrow)}
-                          </td>
-                          <td className="p-3">
-                            <Badge
-                              variant={
-                                orderType === "Buy" ? "outline" : "secondary"
-                              }
-                              className={`text-xs ${
-                                orderType === "Buy"
-                                  ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
-                                  : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
-                              }`}
-                            >
-                              {orderType}
-                            </Badge>
-                          </td>
-                          <td className="p-3 font-mono text-sm">
-                            {order.asset === 0 ? "—" : `SN${order.asset}`}
-                          </td>
-                          <td className="p-3 text-right font-mono text-sm">
-                            {formatNumber(order.bid || 0)}
-                          </td>
-                          <td className="p-3 text-right font-mono text-sm">
-                            {formatNumber(order.ask || 0)}
-                          </td>
-                          <td className="p-3 font-mono text-sm">
-                            {formatPrice(filledOrder.stp || 0)}
-                          </td>
-                          <td className="p-3">
-                            <Badge variant="outline" className="font-medium">
-                              Filled
-                            </Badge>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                            {orderType}
+                          </Badge>
+                        </td>
+                        <td
+                          className="p-3 font-mono text-sm"
+                          style={{ width: 50 }}
+                        >
+                          {order.asset === 0 ? "—" : `SN${order.asset}`}
+                        </td>
+                        <td
+                          className="p-3 text-right font-mono text-sm"
+                          style={{ width: 70 }}
+                        >
+                          {formatNumber(order.bid || 0)}
+                        </td>
+                        <td
+                          className="p-3 text-right font-mono text-sm"
+                          style={{ width: 70 }}
+                        >
+                          {formatNumber(order.ask || 0)}
+                        </td>
+                        <td
+                          className="p-3 font-mono text-sm"
+                          style={{ width: 90 }}
+                        >
+                          {formatPrice(filledOrder.stp || 0)}
+                        </td>
+                        <td
+                          className="p-3 font-mono whitespace-nowrap"
+                          style={{ width: 110, fontSize: "0.875rem" }}
+                        >
+                          {displayGtd}
+                        </td>
+                        <td className="p-3 text-center" style={{ width: 80 }}>
+                          <span className="text-sm">
+                            {order.partial ? "✓" : "—"}
+                          </span>
+                        </td>
+                        <td className="p-3" style={{ width: 90 }}>
+                          <Badge variant="outline" className="font-medium">
+                            Filled
+                          </Badge>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         </>
