@@ -356,8 +356,7 @@ export function FillOrderModal({
             </div>
           </div>
 
-          {/* Display fixed values (read-only, for reference) */}
-          <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+          <div className="grid grid-cols-2 gap-4 pt-2">
             <div>
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Asset

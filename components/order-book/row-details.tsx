@@ -271,18 +271,21 @@ export function OrderBookRowDetails({
                         className="border-b last:border-b-0 hover:bg-muted/50 transition-colors"
                       >
                         <td
-                          className="p-3 font-mono whitespace-nowrap"
+                          className="pr-3 pt-3 pb-3 pl-[0.5rem] font-mono whitespace-nowrap"
                           style={{ width: 160, fontSize: "0.875rem" }}
                         >
                           {formatDate(filledOrder.date)}
                         </td>
                         <td
-                          className="p-3 font-mono whitespace-nowrap overflow-hidden text-ellipsis"
+                          className="pr-3 pt-3 pb-3 pl-[0.5rem] font-mono whitespace-nowrap overflow-hidden text-ellipsis"
                           style={{ width: 100, fontSize: "0.875rem" }}
                         >
                           {formatWalletAddress(filledOrder.escrow)}
                         </td>
-                        <td className="p-3" style={{ width: 75 }}>
+                        <td
+                          className="pr-3 pt-3 pb-3 pl-[0.5rem]"
+                          style={{ width: 75 }}
+                        >
                           <Badge
                             variant={
                               orderType === "Buy" ? "outline" : "secondary"
@@ -297,13 +300,13 @@ export function OrderBookRowDetails({
                           </Badge>
                         </td>
                         <td
-                          className="p-3 font-mono text-sm"
+                          className="pr-3 pt-3 pb-3 pl-[0.5rem] font-mono text-sm"
                           style={{ width: 50 }}
                         >
                           {order.asset === 0 ? "—" : `SN${order.asset}`}
                         </td>
                         <td
-                          className="p-3 text-right font-mono text-sm"
+                          className="pr-3 pt-3 pb-3 pl-[0.5rem] text-right font-mono text-sm"
                           style={{ width: 70 }}
                         >
                           {formatNumber(order.bid || 0)}
@@ -315,23 +318,29 @@ export function OrderBookRowDetails({
                           {formatNumber(order.ask || 0)}
                         </td>
                         <td
-                          className="p-3 font-mono text-sm"
+                          className="pr-3 pt-3 pb-3 pl-[1rem] font-mono text-sm"
                           style={{ width: 90 }}
                         >
                           {formatPrice(filledOrder.stp || 0)}
                         </td>
                         <td
-                          className="p-3 font-mono whitespace-nowrap"
+                          className="pr-3 pt-3 pb-3 pl-[1.5rem] font-mono whitespace-nowrap"
                           style={{ width: 110, fontSize: "0.875rem" }}
                         >
                           {displayGtd}
                         </td>
-                        <td className="p-3 text-center" style={{ width: 80 }}>
+                        <td
+                          className="pr-3 pt-3 pb-3 pl-[2rem] text-center"
+                          style={{ width: 80 }}
+                        >
                           <span className="text-sm">
-                            {order.partial ? "✓" : "—"}
+                            {order.partial ? "✓" : "x"}
                           </span>
                         </td>
-                        <td className="p-3" style={{ width: 90 }}>
+                        <td
+                          className="pr-3 pt-3 pb-3 pl-[2rem]"
+                          style={{ width: 90 }}
+                        >
                           <Badge variant="outline" className="font-medium">
                             Filled
                           </Badge>

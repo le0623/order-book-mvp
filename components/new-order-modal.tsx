@@ -27,7 +27,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, Loader2, Copy, CheckIcon } from "lucide-react";
+import {
+  CalendarIcon,
+  Loader2,
+  Copy,
+  CheckIcon,
+  ChevronUp,
+  ChevronDown,
+} from "lucide-react";
 import { format } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 import { NewOrderFormData } from "@/lib/types";
@@ -444,20 +451,56 @@ export function NewOrderModal({
           {/* Asset (NETUID) */}
           <div className="grid gap-2">
             <Label htmlFor="asset">Asset (NETUID)</Label>
-            <Input
-              id="asset"
-              type="number"
-              min="0"
-              value={formData.asset}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  asset: parseInt(e.target.value) || 0,
-                })
-              }
-              disabled={escrowGenerated && !isInReviewMode}
-              className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40"
-            />
+            <div className="relative flex items-center">
+              <Input
+                id="asset"
+                type="number"
+                min="0"
+                value={formData.asset}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    asset: parseInt(e.target.value) || 0,
+                  })
+                }
+                disabled={escrowGenerated && !isInReviewMode}
+                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <div className="absolute right-1 flex flex-col gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!escrowGenerated || isInReviewMode) {
+                      setFormData({
+                        ...formData,
+                        asset: Math.max(0, formData.asset + 1),
+                      });
+                    }
+                  }}
+                  disabled={escrowGenerated && !isInReviewMode}
+                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Increase asset"
+                >
+                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!escrowGenerated || isInReviewMode) {
+                      setFormData({
+                        ...formData,
+                        asset: Math.max(0, formData.asset - 1),
+                      });
+                    }
+                  }}
+                  disabled={escrowGenerated && !isInReviewMode}
+                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Decrease asset"
+                >
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Good Till Date */}
@@ -524,21 +567,61 @@ export function NewOrderModal({
           {/* Stop Price */}
           <div className="grid gap-2">
             <Label htmlFor="stp">Stop Price (TAO)</Label>
-            <Input
-              id="stp"
-              type="number"
-              min="0"
-              step="0.01"
-              value={formData.stp}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  stp: parseFloat(e.target.value) || 0,
-                })
-              }
-              disabled={escrowGenerated && !isInReviewMode}
-              className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40"
-            />
+            <div className="relative flex items-center">
+              <Input
+                id="stp"
+                type="number"
+                min="0"
+                step="0.001"
+                value={formData.stp}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    stp: parseFloat(e.target.value) || 0,
+                  })
+                }
+                disabled={escrowGenerated && !isInReviewMode}
+                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <div className="absolute right-1 flex flex-col gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!escrowGenerated || isInReviewMode) {
+                      setFormData({
+                        ...formData,
+                        stp: Number((formData.stp + 0.001).toFixed(3)),
+                      });
+                    }
+                  }}
+                  disabled={escrowGenerated && !isInReviewMode}
+                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Increase stop price"
+                >
+                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!escrowGenerated || isInReviewMode) {
+                      const newValue = Math.max(
+                        0,
+                        Number((formData.stp - 0.001).toFixed(3))
+                      );
+                      setFormData({
+                        ...formData,
+                        stp: newValue,
+                      });
+                    }
+                  }}
+                  disabled={escrowGenerated && !isInReviewMode}
+                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Decrease stop price"
+                >
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                </button>
+              </div>
+            </div>
           </div>
 
           <div
