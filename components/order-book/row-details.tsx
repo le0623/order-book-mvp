@@ -191,7 +191,7 @@ export function OrderBookRowDetails({
               </span>
               <div className="flex items-start gap-2">
                 <code
-                  className="font-mono p-2 break-all"
+                  className="font-mono py-2 break-all"
                   style={{ fontSize: "0.875rem" }}
                 >
                   {order.wallet}
@@ -268,7 +268,7 @@ export function OrderBookRowDetails({
                     return (
                       <tr
                         key={uniqueKey}
-                        className="border-b last:border-b-0 hover:bg-muted/50 transition-colors"
+                        className="hover:bg-muted/50 transition-colors"
                       >
                         <td
                           className="pr-3 pt-3 pb-3 pl-[0.5rem] font-mono whitespace-nowrap"

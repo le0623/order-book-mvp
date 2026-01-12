@@ -700,6 +700,7 @@ export function NewOrderModal({
               <Button
                 onClick={isInReviewMode ? handleReviewOrder : handlePlaceOrder}
                 disabled={loading}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
               >
                 {isInReviewMode ? "Review Order" : "Place Order"}
               </Button>
@@ -713,7 +714,12 @@ export function NewOrderModal({
             <Button variant="outline" onClick={handleBack}>
               Back
             </Button>
-            <Button onClick={handleReviewOrder}>Review Order</Button>
+            <Button
+              onClick={handleReviewOrder}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+            >
+              Review Order
+            </Button>
           </div>
         )}
 
@@ -723,7 +729,12 @@ export function NewOrderModal({
             <Button variant="outline" onClick={handleBack}>
               Back
             </Button>
-            <Button onClick={handlePlaceOrder}>Place Order</Button>
+            <Button
+              onClick={handlePlaceOrder}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+            >
+              Place Order
+            </Button>
           </div>
         )}
       </DialogContent>
