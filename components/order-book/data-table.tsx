@@ -58,24 +58,36 @@ export function DataTable<TData, TValue>({
     }
   }, [columnFilters.length]);
 
-  // Set CSS variable for sticky table header
+  // Set CSS variable for sticky table header position (below CardHeader)
   React.useLayoutEffect(() => {
     const setTopVar = () => {
-      const h = cardHeaderRef.current?.getBoundingClientRect().height ?? 0;
+      const cardHeaderHeight = cardHeaderRef.current?.getBoundingClientRect().height ?? 0;
+      const pageHeaderHeight = 100; // Page header height
+      const totalOffset = pageHeaderHeight + cardHeaderHeight;
       if (tableHeaderRef.current) {
-        (tableHeaderRef.current.style as any).setProperty(
-          "--card-header-height",
-          `${h}px`
-        );
+        tableHeaderRef.current.style.top = `${totalOffset}px`;
       }
     };
-    setTopVar();
-    const ro = new ResizeObserver(setTopVar);
-    if (cardHeaderRef.current) ro.observe(cardHeaderRef.current);
+    
+    // Initial calculation with a small delay to ensure DOM is ready
+    const timeoutId = setTimeout(setTopVar, 0);
+    
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(setTopVar);
+    });
+    
+    if (cardHeaderRef.current) {
+      ro.observe(cardHeaderRef.current);
+    }
+    
     window.addEventListener("resize", setTopVar);
+    window.addEventListener("scroll", setTopVar);
+    
     return () => {
+      clearTimeout(timeoutId);
       ro.disconnect();
       window.removeEventListener("resize", setTopVar);
+      window.removeEventListener("scroll", setTopVar);
     };
   }, []);
 
@@ -139,7 +151,7 @@ export function DataTable<TData, TValue>({
       <Card className="w-full border-border/60 shadow-sm bg-card/50 backdrop-blur-sm mb-8">
         <CardHeader
           ref={cardHeaderRef as any}
-          className="rounded-t-md bg-background border-b border-border/40 pb-4 shadow-sm"
+          className="sticky top-[100px] z-30 rounded-t-md bg-background border-b border-border/40 pb-4 shadow-sm"
         >
           <div className="flex items-center justify-between mb-4">
             <CardTitle className="text-xl font-semibold tracking-tight">
@@ -175,11 +187,11 @@ export function DataTable<TData, TValue>({
         </CardHeader>
 
          <CardContent className="p-0">
-           <div className="h-[calc(100vh-220px)] overflow-auto min-w-[1200px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+           <div className="min-w-[1200px]">
             <Table noWrapper className="w-full table-fixed">
               <TableHeader
                 ref={tableHeaderRef as any}
-                className="sticky top-0 z-20 bg-background shadow-sm border-b"
+                className="sticky z-30 bg-background shadow-sm border-b"
               >
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
