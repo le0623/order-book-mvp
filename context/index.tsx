@@ -12,8 +12,8 @@ import { mainnet } from '@reown/appkit/networks'
 const queryClient = new QueryClient()
 
 const metadata = {
-  name: 'HODL Exchange - Order Book',
-  description: 'Decentralized order book exchange MVP',
+  name: '',
+  description: '',
   url: typeof window !== 'undefined' ? window.location.origin : 'https://localhost:3000', 
   icons: [], 
 }

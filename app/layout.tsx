@@ -8,8 +8,8 @@ import ContextProvider from '@/context'
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "HODL Exchange - Order Book",
-  description: "Decentralized order book exchange MVP",
+  title: "HODL",
+  description: "",
 }
 
 export default async function RootLayout({
