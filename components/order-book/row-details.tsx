@@ -334,7 +334,7 @@ export function OrderBookRowDetails({
                           style={{ width: 80 }}
                         >
                           <span className="text-sm">
-                            {order.partial ? "✓" : "x"}
+                            {order.partial ? "✓" : "✗"}
                           </span>
                         </td>
                         <td

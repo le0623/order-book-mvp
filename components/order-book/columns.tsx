@@ -251,7 +251,7 @@ export const columns = (
       const partial = row.getValue("partial");
       return (
         <div className="flex justify-center">
-          <span className="text-sm">{partial ? "✓" : "x"}</span>
+          <span className="text-sm">{partial ? "✓" : "✗"}</span>
         </div>
       );
     },
