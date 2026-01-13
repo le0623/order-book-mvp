@@ -162,7 +162,7 @@ export function OrderBookRowDetails({
                 className="h-8 border-gray-600 rounded-md bg-transparent"
                 onClick={() => onCancelOrder?.(order.uuid)}
               >
-                <X className="h-3.5 w-3.5 mr-2" />
+                <span className="text-sm mr-2">✗</span>
                 Close Order
               </Button>
             </>
@@ -250,20 +250,8 @@ export function OrderBookRowDetails({
                     // Use a unique key combining UUID, escrow, and index for uniqueness
                     const uniqueKey = `${filledOrder.uuid}-${filledOrder.escrow}-${index}`;
 
-                    // Format GTD from parent order
-                    const gtd = order.gtd;
-                    let displayGtd = "—";
-                    if (gtd) {
-                      if (gtd.toLowerCase() === "gtc") {
-                        displayGtd = "2026-01-31 UTC";
-                      } else {
-                        try {
-                          displayGtd = formatDate(gtd);
-                        } catch {
-                          displayGtd = gtd;
-                        }
-                      }
-                    }
+                    // For filled orders, GTD is empty
+                    const displayGtd = "";
 
                     return (
                       <tr
@@ -333,9 +321,7 @@ export function OrderBookRowDetails({
                           className="pr-3 pt-3 pb-3 pl-[2rem] text-center"
                           style={{ width: 80 }}
                         >
-                          <span className="text-sm">
-                            {order.partial ? "✓" : "✗"}
-                          </span>
+                          <span className="text-sm">{""}</span>
                         </td>
                         <td
                           className="pr-3 pt-3 pb-3 pl-[2rem]"

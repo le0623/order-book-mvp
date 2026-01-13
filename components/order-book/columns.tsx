@@ -33,7 +33,22 @@ const getStatusColor = (status: number): string => {
 };
 
 export const formatDate = (date: string | Date) => {
-  const d = typeof date === "string" ? new Date(date) : date;
+  let d: Date;
+  if (typeof date === "string") {
+    // If string already has timezone info (Z, +, -), use as-is
+    // Otherwise, treat as UTC by appending 'Z' or replacing ' UTC' with 'Z'
+    let dateStr = date.trim();
+    if (dateStr.endsWith(" UTC")) {
+      dateStr = dateStr.replace(" UTC", "Z");
+    } else if (!dateStr.includes("Z") && !dateStr.match(/[+-]\d{2}:?\d{2}$/)) {
+      // No timezone info, append 'Z' to force UTC interpretation
+      dateStr = dateStr + "Z";
+    }
+    d = new Date(dateStr);
+  } else {
+    d = date;
+  }
+
   if (!d || isNaN(d.getTime())) return "—";
 
   const year = d.getUTCFullYear();

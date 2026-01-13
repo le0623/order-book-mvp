@@ -31,6 +31,9 @@ export default function Home() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [newOrderModalOpen, setNewOrderModalOpen] = useState(false);
   const [prices, setPrices] = useState<Record<number, number>>({}); // netuid -> price mapping
+  const [newlyAddedOrderIds, setNewlyAddedOrderIds] = useState<Set<string>>(
+    new Set()
+  ); // Track newly added orders for flash animation
 
   const isTerminalStatus = (status: number) => {
     // Status 3 (error), 4 (closed), 6 (expired) are terminal and should be filtered out
@@ -45,6 +48,21 @@ export default function Home() {
       );
 
       if (index === -1) {
+        // NEW ORDER DETECTED - add to flash animation set
+        const orderId = `${updatedOrder.uuid}-${updatedOrder.status}-${
+          updatedOrder.escrow || ""
+        }`;
+        setNewlyAddedOrderIds((prev) => new Set([...prev, orderId]));
+
+        // Remove flash after 2 seconds
+        setTimeout(() => {
+          setNewlyAddedOrderIds((prev) => {
+            const next = new Set(prev);
+            next.delete(orderId);
+            return next;
+          });
+        }, 2000);
+
         // For filled orders (status=2), always add them (they can coexist with parent)
         if (updatedOrder.status === 2) {
           return [updatedOrder, ...prevOrders];
@@ -508,6 +526,7 @@ export default function Home() {
           orders={sortedOrders}
           prices={prices}
           filledOrdersMap={filledOrdersMap}
+          newlyAddedOrderIds={newlyAddedOrderIds}
           onUpdateOrder={handleUpdateOrder}
           onCancelOrder={handleCancelOrder}
           onFillOrder={handleFillOrder}

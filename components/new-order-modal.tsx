@@ -206,15 +206,18 @@ export function NewOrderModal({
       }
 
       // Backend returns array of records: [{"date": "...", "uuid": "...", "origin": "...", "escrow": "...", ...}]
-      // Extract escrow and origin addresses from the response
+      // Extract uuid, escrow and origin addresses from the response
+      let responseUuid = "";
       let escrowAddress = "";
       let originAddress = "";
       if (Array.isArray(data) && data.length > 0) {
         // Response is an array of records
+        responseUuid = data[0].uuid || "";
         escrowAddress = data[0].escrow || "";
         originAddress = data[0].origin || "";
       } else if (data && typeof data === "object") {
         // Response might be a single object
+        responseUuid = data.uuid || "";
         escrowAddress = data.escrow || "";
         originAddress = data.origin || "";
       }
@@ -224,9 +227,12 @@ export function NewOrderModal({
         escrowAddress = generateMockEscrowAddress();
       }
 
+      // Use UUID from backend response if available, otherwise fallback to the one we sent
+      const finalUuid = responseUuid || orderUuid;
+
       setEscrowWallet(escrowAddress);
       setOriginWallet(originAddress || escrowAddress); // Use origin if available, otherwise use escrow
-      setOrderUuid(orderUuid); // Store UUID for reuse when placing order
+      setOrderUuid(finalUuid); // Store UUID from backend response (or fallback to sent UUID)
       setEscrowGenerated(true); // Mark escrow as generated, form becomes read-only
     } catch (err: any) {
       console.error("Error creating order:", err);
