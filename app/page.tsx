@@ -31,9 +31,9 @@ export default function Home() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [newOrderModalOpen, setNewOrderModalOpen] = useState(false);
   const [prices, setPrices] = useState<Record<number, number>>({}); // netuid -> price mapping
-  const [newlyAddedOrderIds, setNewlyAddedOrderIds] = useState<Set<string>>(
-    new Set()
-  ); // Track newly added orders for flash animation
+  const [newlyAddedOrderIds, setNewlyAddedOrderIds] = useState<
+    Map<string, number>
+  >(new Map()); // Track newly added orders for flash animation: orderId -> orderType (1=sell, 2=buy)
 
   const isTerminalStatus = (status: number) => {
     // Status 3 (error), 4 (closed), 6 (expired) are terminal and should be filtered out
@@ -48,16 +48,20 @@ export default function Home() {
       );
 
       if (index === -1) {
-        // NEW ORDER DETECTED - add to flash animation set
+        // NEW ORDER DETECTED - add to flash animation set with order type
         const orderId = `${updatedOrder.uuid}-${updatedOrder.status}-${
           updatedOrder.escrow || ""
         }`;
-        setNewlyAddedOrderIds((prev) => new Set([...prev, orderId]));
+        setNewlyAddedOrderIds((prev) => {
+          const next = new Map(prev);
+          next.set(orderId, updatedOrder.type); // Store order type (1=sell, 2=buy)
+          return next;
+        });
 
         // Remove flash after 2 seconds
         setTimeout(() => {
           setNewlyAddedOrderIds((prev) => {
-            const next = new Set(prev);
+            const next = new Map(prev);
             next.delete(orderId);
             return next;
           });

@@ -17,16 +17,25 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Edit2, X, Copy, CheckIcon, Wallet2, Plus } from "lucide-react";
-import { formatDate } from "./columns";
+import {
+  Edit2,
+  X,
+  Copy,
+  CheckIcon,
+  Wallet2,
+  Plus,
+  ChevronUp,
+  ChevronDown,
+} from "lucide-react";
+import { formatDate, formatPrice, formatNumber } from "./columns";
 import { FillOrderModal } from "../fill-order-modal";
 import { getOrderType, formatWalletAddress } from "@/lib/types";
-import { formatNumber, formatPrice } from "./columns";
 
 interface OrderBookRowDetailsProps {
   order: Order;
   filledOrders?: Order[]; // Orders with same UUID and status=2
   prices?: Record<number, number>; // netuid -> price mapping for live prices
+  newlyAddedOrderIds?: Map<string, number>; // Track newly added orders for flash animation
   onUpdateOrder?: (uuid: string, updates: Partial<Order>) => void;
   onCancelOrder?: (uuid: string) => void;
   onFillOrder?: () => void;
@@ -37,6 +46,7 @@ export function OrderBookRowDetails({
   order,
   filledOrders = [],
   prices = {},
+  newlyAddedOrderIds = new Map(),
   onUpdateOrder,
   onCancelOrder,
   onFillOrder,
@@ -45,8 +55,17 @@ export function OrderBookRowDetails({
   const [copiedWalletId, setCopiedWalletId] = React.useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isFillOrderModalOpen, setIsFillOrderModalOpen] = React.useState(false);
+  const [isCloseConfirmOpen, setIsCloseConfirmOpen] = React.useState(false);
   const [editStp, setEditStp] = React.useState(order.stp);
   const [editPublic, setEditPublic] = React.useState(order.public);
+  const [isFlashing, setIsFlashing] = React.useState(false);
+  const paneRef = React.useRef<HTMLDivElement>(null);
+
+  // Update local state when order prop changes (after modification)
+  React.useEffect(() => {
+    setEditStp(order.stp);
+    setEditPublic(order.public);
+  }, [order.stp, order.public]);
 
   // Reset edit values when dialog opens
   React.useEffect(() => {
@@ -68,10 +87,31 @@ export function OrderBookRowDetails({
 
   const handleSaveEdit = async () => {
     if (onUpdateOrder) {
-      await onUpdateOrder(order.uuid, { stp: editStp, public: editPublic });
-      // Close the modal after saving
-      // The order pane will stay expanded because the row remains expanded
+      // Check if any fields changed
+      const hasChanges = editStp !== order.stp || editPublic !== order.public;
+
+      // Close the modal first
       setIsEditDialogOpen(false);
+
+      await onUpdateOrder(order.uuid, { stp: editStp, public: editPublic });
+
+      // Flash the entire pane if there were changes
+      if (hasChanges) {
+        console.log("Triggering flash animation");
+        // Small delay to ensure dialog is closed and pane is visible
+        setTimeout(() => {
+          setIsFlashing(false); // Reset first
+          // Force browser reflow to restart animation
+          setTimeout(() => {
+            setIsFlashing(true);
+            console.log("Flash animation triggered");
+            // Reset after animation completes
+            setTimeout(() => {
+              setIsFlashing(false);
+            }, 1500);
+          }, 10);
+        }, 200);
+      }
     }
   };
 
@@ -103,23 +143,52 @@ export function OrderBookRowDetails({
                   <DialogHeader>
                     <DialogTitle>Modify Order</DialogTitle>
                     <DialogDescription>
-                      Update order settings for Order {order.uuid.slice(0, 8)}
-                      ...
+                      Update order settings for Escrow{" "}
+                      {formatWalletAddress(order.escrow)}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="space-y-2">
-                      <Label htmlFor="stp">Stop Price</Label>
-                      <Input
-                        id="stp"
-                        type="number"
-                        step="0.000001"
-                        value={editStp}
-                        onChange={(e) =>
-                          setEditStp(parseFloat(e.target.value) || 0)
-                        }
-                        className="font-mono"
-                      />
+                      <Label htmlFor="stp">Stop Price (TAO)</Label>
+                      <div className="relative flex items-center">
+                        <Input
+                          id="stp"
+                          type="number"
+                          min="0"
+                          step="0.001"
+                          value={editStp}
+                          onChange={(e) =>
+                            setEditStp(parseFloat(e.target.value) || 0)
+                          }
+                          className="font-mono focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <div className="absolute right-1 flex flex-col gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditStp(Number((editStp + 0.001).toFixed(3)));
+                            }}
+                            className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Increase stop price"
+                          >
+                            <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newValue = Math.max(
+                                0,
+                                Number((editStp - 0.001).toFixed(3))
+                              );
+                              setEditStp(newValue);
+                            }}
+                            className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Decrease stop price"
+                          >
+                            <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         Stop price for this order
                       </p>
@@ -151,7 +220,12 @@ export function OrderBookRowDetails({
                     >
                       Cancel
                     </Button>
-                    <Button onClick={handleSaveEdit}>Save Changes</Button>
+                    <Button
+                      onClick={handleSaveEdit}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                    >
+                      Save Changes
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -160,11 +234,42 @@ export function OrderBookRowDetails({
                 variant="outline"
                 size="sm"
                 className="h-8 border-gray-600 rounded-md bg-transparent"
-                onClick={() => onCancelOrder?.(order.uuid)}
+                onClick={() => setIsCloseConfirmOpen(true)}
               >
                 <span className="text-sm mr-2">✗</span>
                 Close Order
               </Button>
+              <Dialog
+                open={isCloseConfirmOpen}
+                onOpenChange={setIsCloseConfirmOpen}
+              >
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Close Order</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to close this order? This action
+                      cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsCloseConfirmOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        onCancelOrder?.(order.uuid);
+                        setIsCloseConfirmOpen(false);
+                      }}
+                    >
+                      Close Order
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </>
           )}
         </div>
@@ -183,7 +288,20 @@ export function OrderBookRowDetails({
 
       {/* Simplified Order Details - Only Wallet, Stop Price, Public */}
       <div className="space-y-4">
-        <div className="p-4 rounded-lg border space-y-4 bg-[#2F3F4A]/40">
+        <div
+          ref={paneRef}
+          className={`p-4 rounded-lg border space-y-4 ${
+            isFlashing ? "animate-flash-pane" : "bg-[#2F3F4A]/40"
+          }`}
+          style={
+            isFlashing
+              ? {
+                  backgroundColor: "rgb(96 165 250 / 0.5)",
+                  animation: "flash-pane 1.5s ease-out",
+                }
+              : {}
+          }
+        >
           {order.wallet && (
             <div className="grid gap-2">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -218,7 +336,7 @@ export function OrderBookRowDetails({
                 STOP
               </span>
               <span className="font-mono text-sm">
-                {order.stp > 0 ? order.stp.toFixed(2) : "—"}
+                {order.stp > 0 ? formatPrice(order.stp) : "—"}
               </span>
             </div>
             <div>
@@ -246,17 +364,30 @@ export function OrderBookRowDetails({
                   {filledOrders.map((filledOrder, index) => {
                     // Use parent order values for type, asset, Tao, Alpha, GTD, Partial
                     // Use filled order's stp for Price (fixed at fill time)
-                    const orderType = getOrderType(order.type);
+                    const orderTypeLabel = getOrderType(order.type);
                     // Use a unique key combining UUID, escrow, and index for uniqueness
                     const uniqueKey = `${filledOrder.uuid}-${filledOrder.escrow}-${index}`;
 
                     // For filled orders, GTD is empty
                     const displayGtd = "";
 
+                    // Check if this filled order should flash
+                    const filledOrderId = `${filledOrder.uuid}-${
+                      filledOrder.status
+                    }-${filledOrder.escrow || ""}`;
+                    const shouldFlash = newlyAddedOrderIds.has(filledOrderId);
+                    const filledOrderType =
+                      newlyAddedOrderIds.get(filledOrderId);
+                    const flashClass = shouldFlash
+                      ? filledOrderType === 2
+                        ? "animate-flash-buy"
+                        : "animate-flash-sell"
+                      : "";
+
                     return (
                       <tr
                         key={uniqueKey}
-                        className="hover:bg-muted/50 transition-colors"
+                        className={`hover:bg-muted/50 transition-colors ${flashClass}`}
                       >
                         <td
                           className="pr-3 pt-3 pb-3 pl-[0.5rem] font-mono whitespace-nowrap"
@@ -276,15 +407,15 @@ export function OrderBookRowDetails({
                         >
                           <Badge
                             variant={
-                              orderType === "Buy" ? "outline" : "secondary"
+                              orderTypeLabel === "Buy" ? "outline" : "secondary"
                             }
                             className={`font-medium ${
-                              orderType === "Buy"
+                              orderTypeLabel === "Buy"
                                 ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
                                 : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
                             }`}
                           >
-                            {orderType}
+                            {orderTypeLabel}
                           </Badge>
                         </td>
                         <td

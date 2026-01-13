@@ -34,7 +34,7 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   renderSubComponent?: (props: { row: Row<TData> }) => React.ReactElement;
   onNewOrder?: () => void; // NEW: Callback to open New Order modal
-  newlyAddedOrderIds?: Set<string>; // Track newly added orders for flash animation
+  newlyAddedOrderIds?: Map<string, number>; // Track newly added orders for flash animation: orderId -> orderType
 }
 
 export function DataTable<TData, TValue>({
@@ -42,7 +42,7 @@ export function DataTable<TData, TValue>({
   data,
   renderSubComponent,
   onNewOrder,
-  newlyAddedOrderIds = new Set(),
+  newlyAddedOrderIds = new Map(),
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -224,7 +224,11 @@ export function DataTable<TData, TValue>({
                         data-state={row.getIsSelected() && "selected"}
                         data-expanded={row.getIsExpanded()}
                         className={`cursor-pointer transition-colors hover:bg-muted/50 data-[expanded=true]:bg-muted/50 ${
-                          newlyAddedOrderIds.has(row.id) ? "animate-flash" : ""
+                          newlyAddedOrderIds.has(row.id)
+                            ? newlyAddedOrderIds.get(row.id) === 2
+                              ? "animate-flash-buy"
+                              : "animate-flash-sell"
+                            : ""
                         }`}
                         onClick={() => {
                           // Close all other rows first (only one pane open at a time)

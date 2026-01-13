@@ -187,19 +187,19 @@ button[name="next-month"] {
   order: 3 !important;
 }
 
-/* Flash animation for newly added orders */
-@keyframes flash {
+/* Flash animation for newly added orders - Buy (green) */
+@keyframes flash-buy {
   0% {
-    background-color: rgb(59 130 246 / 0.8); /* blue-500/80 - very bright start */
-    box-shadow: 0 0 20px rgb(59 130 246 / 0.5); /* Add glow effect */
+    background-color: rgb(16 185 129 / 0.8); /* emerald-500/80 - very bright green start */
+    box-shadow: 0 0 20px rgb(16 185 129 / 0.5); /* Add glow effect */
   }
   30% {
-    background-color: rgb(59 130 246 / 0.6); /* blue-500/60 */
-    box-shadow: 0 0 15px rgb(59 130 246 / 0.3);
+    background-color: rgb(16 185 129 / 0.6); /* emerald-500/60 */
+    box-shadow: 0 0 15px rgb(16 185 129 / 0.3);
   }
   60% {
-    background-color: rgb(59 130 246 / 0.3); /* blue-500/30 */
-    box-shadow: 0 0 10px rgb(59 130 246 / 0.2);
+    background-color: rgb(16 185 129 / 0.3); /* emerald-500/30 */
+    box-shadow: 0 0 10px rgb(16 185 129 / 0.2);
   }
   100% {
     background-color: transparent;
@@ -207,6 +207,48 @@ button[name="next-month"] {
   }
 }
 
-.animate-flash {
-  animation: flash 4s ease-out;
+/* Flash animation for newly added orders - Sell (red) */
+@keyframes flash-sell {
+  0% {
+    background-color: rgb(244 63 94 / 0.8); /* rose-500/80 - very bright red start */
+    box-shadow: 0 0 20px rgb(244 63 94 / 0.5); /* Add glow effect */
+  }
+  30% {
+    background-color: rgb(244 63 94 / 0.6); /* rose-500/60 */
+    box-shadow: 0 0 15px rgb(244 63 94 / 0.3);
+  }
+  60% {
+    background-color: rgb(244 63 94 / 0.3); /* rose-500/30 */
+    box-shadow: 0 0 10px rgb(244 63 94 / 0.2);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+.animate-flash-buy {
+  animation: flash-buy 2s ease-out;
+}
+
+.animate-flash-sell {
+  animation: flash-sell 2s ease-out;
+}
+
+/* Flash animation for entire pane when order is modified */
+@keyframes flash-pane {
+  0% {
+    background-color: rgb(96 165 250 / 0.5) !important; /* faint blue (blue-400) with 50% opacity */
+  }
+  50% {
+    background-color: rgb(96 165 250 / 0.3) !important; /* fade to 30% */
+  }
+  100% {
+    background-color: rgb(47 63 74 / 0.4) !important; /* back to original bg-[#2F3F4A]/40 */
+  }
+}
+
+.animate-flash-pane {
+  animation: flash-pane 1.5s ease-out;
+  animation-fill-mode: both;
 }

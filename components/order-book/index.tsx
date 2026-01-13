@@ -10,7 +10,7 @@ interface OrderBookProps {
   orders: Order[];
   prices?: Record<number, number>; // netuid -> price mapping
   filledOrdersMap?: Record<string, Order[]>; // UUID -> filled orders array
-  newlyAddedOrderIds?: Set<string>; // Track newly added orders for flash animation
+  newlyAddedOrderIds?: Map<string, number>; // Track newly added orders for flash animation: orderId -> orderType
   onUpdateOrder?: (id: string, updates: Partial<Order>) => void;
   onCancelOrder?: (id: string) => void;
   onFillOrder?: () => void;
@@ -22,7 +22,7 @@ export function OrderBook({
   orders,
   prices = {},
   filledOrdersMap = {},
-  newlyAddedOrderIds = new Set(),
+  newlyAddedOrderIds = new Map(),
   onUpdateOrder,
   onCancelOrder,
   onFillOrder,
@@ -40,9 +40,11 @@ export function OrderBook({
         const filledOrders = filledOrdersMap[order.uuid] || [];
         return (
           <OrderBookRowDetails
+            key={`${order.uuid}-${order.status}-${order.stp}-${order.public}`}
             order={order}
             filledOrders={filledOrders}
             prices={prices}
+            newlyAddedOrderIds={newlyAddedOrderIds}
             onUpdateOrder={onUpdateOrder}
             onCancelOrder={onCancelOrder}
             onFillOrder={onFillOrder}
