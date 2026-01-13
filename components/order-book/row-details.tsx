@@ -362,9 +362,10 @@ export function OrderBookRowDetails({
               <table className="w-full text-sm table-fixed">
                 <tbody>
                   {filledOrders.map((filledOrder, index) => {
-                    // Use parent order values for type, asset, Tao, Alpha, GTD, Partial
+                    // Use filled order's type (opposite of parent order)
+                    // Use parent order values for asset, Tao, Alpha, GTD, Partial
                     // Use filled order's stp for Price (fixed at fill time)
-                    const orderTypeLabel = getOrderType(order.type);
+                    const orderTypeLabel = getOrderType(filledOrder.type);
                     // Use a unique key combining UUID, escrow, and index for uniqueness
                     const uniqueKey = `${filledOrder.uuid}-${filledOrder.escrow}-${index}`;
 

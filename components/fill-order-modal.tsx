@@ -58,14 +58,19 @@ export function FillOrderModal({
     const currentPrice =
       livePrice !== undefined && livePrice > 0 ? livePrice : order.stp;
 
-    // Calculate Tao (bid) and Alpha (ask) from escrow balance and price
-    // For now, use the parent order's values as fixed
-    const tao = order.type === 2 ? order.bid : 0; // Buy orders have bid (Tao)
-    const alpha = order.type === 1 ? order.ask : 0; // Sell orders have ask (Alpha)
+    // Fill order type is opposite of parent order
+    // If parent is Sell (1), fill is Buy (2)
+    // If parent is Buy (2), fill is Sell (1)
+    const fillOrderType = order.type === 1 ? 2 : 1;
 
+    // Calculate Tao (bid) and Alpha (ask) for fill order
+    // When filling a Sell order: fill Buy order's bid = parent Sell order's ask
+    // When filling a Buy order: fill Sell order's ask = parent Buy order's bid
+    const tao = fillOrderType === 2 ? order.ask : 0; // Buy fill: use parent's ask as bid
+    const alpha = fillOrderType === 1 ? order.bid : 0; // Sell fill: use parent's bid as ask
     return {
       asset: Number(order.asset),
-      type: Number(order.type),
+      type: fillOrderType, // Opposite of parent order
       tao: Number(tao),
       alpha: Number(alpha),
       price: Number(currentPrice),
