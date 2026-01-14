@@ -223,7 +223,7 @@ export function DataTable<TData, TValue>({
                       <TableRow
                         data-state={row.getIsSelected() && "selected"}
                         data-expanded={row.getIsExpanded()}
-                        className={`cursor-pointer transition-colors hover:bg-muted/50 data-[expanded=true]:bg-muted/50 ${
+                        className={`cursor-pointer transition-colors hover:bg-muted/50 data-[expanded=true]:bg-[#2F3F4A]/40 ${
                           newlyAddedOrderIds.has(row.id)
                             ? newlyAddedOrderIds.get(row.id) === 2
                               ? "animate-flash-buy"

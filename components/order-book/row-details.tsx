@@ -290,9 +290,7 @@ export function OrderBookRowDetails({
       <div className="space-y-4">
         <div
           ref={paneRef}
-          className={`p-4 rounded-lg border space-y-4 ${
-            isFlashing ? "animate-flash-pane" : "bg-[#2F3F4A]/40"
-          }`}
+          className={`p-4 rounded-lg border space-y-4 `}
           style={
             isFlashing
               ? {
