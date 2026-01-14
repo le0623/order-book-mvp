@@ -26,6 +26,7 @@ import {
   Plus,
   ChevronUp,
   ChevronDown,
+  ExternalLink,
 } from "lucide-react";
 import { formatDate, formatPrice, formatNumber } from "./columns";
 import { FillOrderModal } from "../fill-order-modal";
@@ -387,10 +388,27 @@ export function OrderBookRowDetails({
                           {formatDate(filledOrder.date)}
                         </td>
                         <td
-                          className="pr-3 pt-3 pb-3 pl-[0.5rem] font-mono whitespace-nowrap overflow-hidden text-ellipsis"
+                          className="pr-3 pt-3 pb-3 pl-[0.5rem] font-mono whitespace-nowrap"
                           style={{ width: 100, fontSize: "0.875rem" }}
                         >
-                          {formatWalletAddress(filledOrder.escrow)}
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className="overflow-hidden text-ellipsis block"
+                              title={filledOrder.escrow}
+                            >
+                              {formatWalletAddress(filledOrder.escrow)}
+                            </span>
+                            <a
+                              href={`https://taostats.io/account/${filledOrder.escrow}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                              title={`View on Taostats: ${filledOrder.escrow}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </div>
                         </td>
                         <td
                           className="pr-3 pt-3 pb-3 pl-[0.5rem]"
@@ -413,7 +431,23 @@ export function OrderBookRowDetails({
                           className="pr-3 pt-3 pb-3 pl-[0.5rem] font-mono text-sm"
                           style={{ width: 50 }}
                         >
-                          {order.asset === 0 ? "—" : `SN${order.asset}`}
+                          {order.asset === 0 ? (
+                            "—"
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <span>SN{order.asset}</span>
+                              <a
+                                href={`https://taostats.io/subnets/${order.asset}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                                title={`View subnet ${order.asset} on Taostats`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            </div>
+                          )}
                         </td>
                         <td
                           className="pr-3 pt-3 pb-3 pl-[0.5rem] text-right font-mono text-sm"

@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronsUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronsUpDown, ArrowUp, ArrowDown, ExternalLink } from "lucide-react";
 import {
   Order,
   formatWalletAddress,
@@ -129,15 +129,31 @@ export const columns = (
   {
     accessorKey: "escrow",
     header: "Escrow",
-    cell: ({ row }) => (
-      <span
-        className="font-mono whitespace-nowrap overflow-hidden text-ellipsis block"
-        title={row.getValue("escrow")}
-        style={{ fontSize: "0.875rem" }}
-      >
-        {formatWalletAddress(row.getValue("escrow"))}
-      </span>
-    ),
+    cell: ({ row }) => {
+      const escrowAddress = row.getValue("escrow") as string;
+      const taostatsUrl = `https://taostats.io/account/${escrowAddress}`;
+      return (
+        <div className="flex items-center gap-1.5">
+          <span
+            className="font-mono whitespace-nowrap overflow-hidden text-ellipsis block"
+            title={escrowAddress}
+            style={{ fontSize: "0.875rem" }}
+          >
+            {formatWalletAddress(escrowAddress)}
+          </span>
+          <a
+            href={taostatsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+            title={`View on Taostats: ${escrowAddress}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </div>
+      );
+    },
     size: 100,
     minSize: 100,
   },
@@ -167,11 +183,28 @@ export const columns = (
     header: ({ column }) => (
       <SortableColumnHeader column={column} title="Asset" />
     ),
-    cell: ({ row }) => (
-      <span className="font-mono text-sm">
-        {row.getValue("asset") === 0 ? "—" : `SN${row.getValue("asset")}`}
-      </span>
-    ),
+    cell: ({ row }) => {
+      const asset = row.getValue("asset") as number;
+      if (asset === 0) {
+        return <span className="font-mono text-sm">—</span>;
+      }
+      const taostatsUrl = `https://taostats.io/subnets/${asset}`;
+      return (
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-sm">SN{asset}</span>
+          <a
+            href={taostatsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+            title={`View subnet ${asset} on Taostats`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </div>
+      );
+    },
     size: 50,
     minSize: 50,
   },
