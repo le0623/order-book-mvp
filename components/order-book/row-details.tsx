@@ -290,17 +290,7 @@ export function OrderBookRowDetails({
       <div className="space-y-4">
         <div
           ref={paneRef}
-          className={`p-4 rounded-lg border border-border/50 space-y-4 ${
-            isFlashing ? "animate-flash-pane" : "bg-[#2F3F4A]/40"
-          }`}
-          style={
-            isFlashing
-              ? {
-                  backgroundColor: "rgb(96 165 250 / 0.5)",
-                  animation: "flash-pane 1.5s ease-out",
-                }
-              : {}
-          }
+          className="p-4 rounded-lg border border-border/50 space-y-4"
         >
           {order.wallet && (
             <div className="grid gap-2">
