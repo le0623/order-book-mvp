@@ -392,17 +392,14 @@ export function OrderBookRowDetails({
                           style={{ width: 100, fontSize: "0.875rem" }}
                         >
                           <div className="flex items-center gap-1.5">
-                            <span
-                              className="overflow-hidden text-ellipsis block"
-                              title={filledOrder.escrow}
-                            >
+                            <span className="block" title={filledOrder.escrow}>
                               {formatWalletAddress(filledOrder.escrow)}
                             </span>
                             <a
                               href={`https://taostats.io/account/${filledOrder.escrow}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                              className="text-muted-foreground hover:text-muted-foreground/80 transition-all flex-shrink-0 opacity-80 hover:opacity-90"
                               title={`View on Taostats: ${filledOrder.escrow}`}
                               onClick={(e) => e.stopPropagation()}
                             >
@@ -440,7 +437,7 @@ export function OrderBookRowDetails({
                                 href={`https://taostats.io/subnets/${order.asset}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                                className="text-muted-foreground/80 hover:text-muted-foreground/80 transition-all flex-shrink-0 opacity-80 hover:opacity-90"
                                 title={`View subnet ${order.asset} on Taostats`}
                                 onClick={(e) => e.stopPropagation()}
                               >

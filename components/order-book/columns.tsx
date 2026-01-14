@@ -135,7 +135,7 @@ export const columns = (
       return (
         <div className="flex items-center gap-1.5">
           <span
-            className="font-mono whitespace-nowrap overflow-hidden text-ellipsis block"
+            className="font-mono whitespace-nowrap block"
             title={escrowAddress}
             style={{ fontSize: "0.875rem" }}
           >
@@ -145,7 +145,7 @@ export const columns = (
             href={taostatsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+            className="text-muted-foreground hover:text-muted-foreground/80 transition-all flex-shrink-0 opacity-80 hover:opacity-90"
             title={`View on Taostats: ${escrowAddress}`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -196,7 +196,7 @@ export const columns = (
             href={taostatsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+            className="text-muted-foreground/80 hover:text-muted-foreground/80 transition-all flex-shrink-0 opacity-80 hover:opacity-90"
             title={`View subnet ${asset} on Taostats`}
             onClick={(e) => e.stopPropagation()}
           >
