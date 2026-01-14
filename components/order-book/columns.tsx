@@ -145,7 +145,7 @@ export const columns = (
             href={taostatsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-muted-foreground/80 transition-all flex-shrink-0 opacity-80 hover:opacity-90"
+            className="text-muted-foreground transition-all flex-shrink-0 opacity-60 hover:opacity-90"
             title={`View on Taostats: ${escrowAddress}`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -196,7 +196,7 @@ export const columns = (
             href={taostatsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground/80 hover:text-muted-foreground/80 transition-all flex-shrink-0 opacity-80 hover:opacity-90"
+            className="text-muted-foreground transition-all flex-shrink-0 opacity-60 hover:opacity-90"
             title={`View subnet ${asset} on Taostats`}
             onClick={(e) => e.stopPropagation()}
           >
