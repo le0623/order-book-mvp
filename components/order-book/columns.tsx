@@ -1,9 +1,17 @@
 "use client";
 
+import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronsUpDown, ArrowUp, ArrowDown, ExternalLink } from "lucide-react";
+import {
+  ChevronsUpDown,
+  ArrowUp,
+  ArrowDown,
+  ExternalLink,
+  Copy,
+  CheckIcon,
+} from "lucide-react";
 import {
   Order,
   formatWalletAddress,
@@ -132,6 +140,18 @@ export const columns = (
     cell: ({ row }) => {
       const escrowAddress = row.getValue("escrow") as string;
       const taostatsUrl = `https://taostats.io/account/${escrowAddress}`;
+      const [copied, setCopied] = React.useState(false);
+
+      const copyToClipboard = async (text: string) => {
+        try {
+          await navigator.clipboard.writeText(text);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+          console.error("Failed to copy:", err);
+        }
+      };
+
       return (
         <div className="flex items-center gap-1.5">
           <span
@@ -141,11 +161,25 @@ export const columns = (
           >
             {formatWalletAddress(escrowAddress)}
           </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              copyToClipboard(escrowAddress);
+            }}
+            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 opacity-60 hover:opacity-90"
+            title="Copy escrow address"
+          >
+            {copied ? (
+              <CheckIcon className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
+          </button>
           <a
             href={taostatsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground transition-all flex-shrink-0 opacity-60 hover:opacity-90"
+            className="text-muted-foreground hover:text-muted-foreground/80 transition-all flex-shrink-0 opacity-60 hover:opacity-90"
             title={`View on Taostats: ${escrowAddress}`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -196,7 +230,7 @@ export const columns = (
             href={taostatsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground transition-all flex-shrink-0 opacity-60 hover:opacity-90"
+            className="text-muted-foreground/80 hover:text-muted-foreground/80 transition-all flex-shrink-0 opacity-80 hover:opacity-90"
             title={`View subnet ${asset} on Taostats`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -260,51 +294,6 @@ export const columns = (
     },
     size: 90,
     minSize: 90,
-  },
-  {
-    accessorKey: "gtd",
-    header: "GTD",
-    cell: ({ row }) => {
-      const gtd = row.getValue("gtd") as string;
-      // For "gtc", display as "2026-01-31 UTC", otherwise format as date
-      let displayValue = "—";
-      if (gtd) {
-        if (gtd.toLowerCase() === "gtc") {
-          displayValue = "2026-01-31 UTC";
-        } else {
-          // Format as date if it's a date string
-          try {
-            displayValue = formatDate(gtd);
-          } catch {
-            displayValue = gtd; // Fallback to original value if parsing fails
-          }
-        }
-      }
-      return (
-        <span
-          className="font-mono whitespace-nowrap"
-          style={{ fontSize: "0.875rem" }}
-        >
-          {displayValue}
-        </span>
-      );
-    },
-    size: 110,
-    minSize: 110,
-  },
-  {
-    accessorKey: "partial",
-    header: "Partial",
-    cell: ({ row }) => {
-      const partial = row.getValue("partial");
-      return (
-        <div className="flex justify-center">
-          <span className="text-sm">{partial ? "✓" : "✗"}</span>
-        </div>
-      );
-    },
-    size: 80,
-    minSize: 80,
   },
   {
     accessorKey: "status",

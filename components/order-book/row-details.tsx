@@ -27,10 +27,26 @@ import {
   ChevronUp,
   ChevronDown,
   ExternalLink,
+  CalendarIcon,
 } from "lucide-react";
 import { formatDate, formatPrice, formatNumber } from "./columns";
 import { FillOrderModal } from "../fill-order-modal";
 import { getOrderType, formatWalletAddress } from "@/lib/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 interface OrderBookRowDetailsProps {
   order: Order;
@@ -54,33 +70,85 @@ export function OrderBookRowDetails({
   apiUrl,
 }: OrderBookRowDetailsProps) {
   const [copiedWalletId, setCopiedWalletId] = React.useState(false);
+  const [copiedEscrowId, setCopiedEscrowId] = React.useState(false);
+  const [copiedFilledEscrowIds, setCopiedFilledEscrowIds] = React.useState<
+    Set<string>
+  >(new Set());
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isFillOrderModalOpen, setIsFillOrderModalOpen] = React.useState(false);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = React.useState(false);
   const [editStp, setEditStp] = React.useState(order.stp);
   const [editPublic, setEditPublic] = React.useState(order.public);
+  const [editGtd, setEditGtd] = React.useState(order.gtd || "gtc");
+  const [editPartial, setEditPartial] = React.useState(order.partial || false);
+  const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
+    undefined
+  );
   const [isFlashing, setIsFlashing] = React.useState(false);
   const paneRef = React.useRef<HTMLDivElement>(null);
+
+  // Parse GTD value to date if it's not "gtc"
+  const parseGtdToDate = React.useCallback(
+    (gtd: string | undefined): Date | undefined => {
+      if (!gtd || gtd.toLowerCase() === "gtc") {
+        return undefined;
+      }
+      try {
+        const date = new Date(gtd);
+        if (!isNaN(date.getTime())) {
+          return date;
+        }
+      } catch {
+        // Invalid date, return undefined
+      }
+      return undefined;
+    },
+    []
+  );
 
   // Update local state when order prop changes (after modification)
   React.useEffect(() => {
     setEditStp(order.stp);
     setEditPublic(order.public);
-  }, [order.stp, order.public]);
+    setEditGtd(order.gtd || "gtc");
+    setEditPartial(order.partial || false);
+    setSelectedDate(parseGtdToDate(order.gtd));
+  }, [order.stp, order.public, order.gtd, order.partial]);
 
   // Reset edit values when dialog opens
   React.useEffect(() => {
     if (isEditDialogOpen) {
       setEditStp(order.stp);
       setEditPublic(order.public);
+      setEditGtd(order.gtd || "gtc");
+      setEditPartial(order.partial || false);
+      setSelectedDate(parseGtdToDate(order.gtd));
     }
-  }, [isEditDialogOpen, order.stp, order.public]);
+  }, [isEditDialogOpen, order.stp, order.public, order.gtd, order.partial]);
 
-  const copyToClipboard = async (text: string) => {
+  const copyToClipboard = async (
+    text: string,
+    type: "wallet" | "escrow" | "filledEscrow",
+    filledEscrowId?: string
+  ) => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopiedWalletId(true);
-      setTimeout(() => setCopiedWalletId(false), 2000);
+      if (type === "wallet") {
+        setCopiedWalletId(true);
+        setTimeout(() => setCopiedWalletId(false), 2000);
+      } else if (type === "escrow") {
+        setCopiedEscrowId(true);
+        setTimeout(() => setCopiedEscrowId(false), 2000);
+      } else if (type === "filledEscrow" && filledEscrowId) {
+        setCopiedFilledEscrowIds((prev) => new Set(prev).add(filledEscrowId));
+        setTimeout(() => {
+          setCopiedFilledEscrowIds((prev) => {
+            const next = new Set(prev);
+            next.delete(filledEscrowId);
+            return next;
+          });
+        }, 2000);
+      }
     } catch (err) {
       console.error("Failed to copy:", err);
     }
@@ -88,13 +156,26 @@ export function OrderBookRowDetails({
 
   const handleSaveEdit = async () => {
     if (onUpdateOrder) {
+      // Convert selectedDate to ISO string if date is selected, otherwise use "gtc"
+      const gtdValue =
+        editGtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc";
+
       // Check if any fields changed
-      const hasChanges = editStp !== order.stp || editPublic !== order.public;
+      const hasChanges =
+        editStp !== order.stp ||
+        editPublic !== order.public ||
+        gtdValue !== (order.gtd || "gtc") ||
+        editPartial !== (order.partial || false);
 
       // Close the modal first
       setIsEditDialogOpen(false);
 
-      await onUpdateOrder(order.uuid, { stp: editStp, public: editPublic });
+      await onUpdateOrder(order.uuid, {
+        stp: editStp,
+        public: editPublic,
+        gtd: gtdValue,
+        partial: editPartial,
+      });
 
       // Flash the entire pane if there were changes
       if (hasChanges) {
@@ -194,6 +275,63 @@ export function OrderBookRowDetails({
                         Stop price for this order
                       </p>
                     </div>
+                    <div className="space-y-2">
+                      <Label>Good Till Date (GTD)</Label>
+                      <div className="flex gap-2">
+                        <Select
+                          value={editGtd === "gtc" ? "gtc" : "date"}
+                          onValueChange={(value) => {
+                            if (value === "gtc") {
+                              setEditGtd("gtc");
+                              setSelectedDate(undefined);
+                            } else {
+                              setEditGtd("");
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-32 focus:ring-1 focus:ring-blue-500/30 focus:ring-offset-0 focus:border-blue-500/40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="gtc">GTC</SelectItem>
+                            <SelectItem value="date">Specific Date</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {editGtd !== "gtc" && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "flex-1 justify-start text-left font-normal",
+                                  !selectedDate && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {selectedDate ? (
+                                  format(selectedDate, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={setSelectedDate}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        GTC = Good Till Cancel (order stays active until you
+                        cancel it)
+                      </p>
+                    </div>
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="public"
@@ -209,6 +347,21 @@ export function OrderBookRowDetails({
                         Public Order
                       </Label>
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="partial"
+                        checked={editPartial}
+                        onCheckedChange={(checked: boolean) =>
+                          setEditPartial(checked === true)
+                        }
+                      />
+                      <Label
+                        htmlFor="partial"
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        Partial Order
+                      </Label>
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button
@@ -216,6 +369,9 @@ export function OrderBookRowDetails({
                       onClick={() => {
                         setEditStp(order.stp);
                         setEditPublic(order.public);
+                        setEditGtd(order.gtd || "gtc");
+                        setEditPartial(order.partial || false);
+                        setSelectedDate(parseGtdToDate(order.gtd));
                         setIsEditDialogOpen(false);
                       }}
                     >
@@ -287,41 +443,66 @@ export function OrderBookRowDetails({
         )}
       </div>
 
-      {/* Simplified Order Details - Only Wallet, Stop Price, Public */}
+      {/* Order Details - Wallet, Escrow, Stop Price, Public, GTD, Partial */}
       <div className="space-y-4">
-        <div
-          ref={paneRef}
-          className="p-4 rounded-lg border border-border/50 space-y-4"
-        >
-          {order.wallet && (
-            <div className="grid gap-2">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                WALLET
-              </span>
-              <div className="flex items-start gap-2">
-                <code
-                  className="font-mono py-2 break-all"
-                  style={{ fontSize: "0.875rem" }}
-                >
-                  {order.wallet}
-                </code>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 shrink-0 bg-transparent border-transparent hover:bg-transparent hover:border-transparent"
-                  onClick={() => copyToClipboard(order.wallet)}
-                >
-                  {copiedWalletId ? (
-                    <CheckIcon className="h-4 w-4 text-emerald-500" />
-                  ) : (
-                    <Copy className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </Button>
+        <div ref={paneRef}>
+          <div className="flex justify-between gap-4 grid grid-cols-2">
+            {order.wallet && (
+              <div className="grid gap-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  WALLET
+                </span>
+                <div className="flex items-start gap-2">
+                  <code
+                    className="font-mono py-2 break-all"
+                    style={{ fontSize: "0.875rem" }}
+                  >
+                    {order.wallet}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 bg-transparent border-transparent hover:bg-transparent hover:border-transparent"
+                    onClick={() => copyToClipboard(order.wallet, "wallet")}
+                  >
+                    {copiedWalletId ? (
+                      <CheckIcon className="h-4 w-4 text-emerald-500" />
+                    ) : (
+                      <Copy className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
+            )}
+            {order.escrow && (
+              <div className="grid gap-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  ESCROW
+                </span>
+                <div className="flex items-start gap-2">
+                  <code
+                    className="font-mono py-2 break-all"
+                    style={{ fontSize: "0.875rem" }}
+                  >
+                    {order.escrow}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 bg-transparent border-transparent hover:bg-transparent hover:border-transparent"
+                    onClick={() => copyToClipboard(order.escrow, "escrow")}
+                  >
+                    {copiedEscrowId ? (
+                      <CheckIcon className="h-4 w-4 text-emerald-500" />
+                    ) : (
+                      <Copy className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mr-2">
                 STOP
@@ -336,6 +517,26 @@ export function OrderBookRowDetails({
               </span>
               <span className="text-sm font-bold">
                 {order.public ? "Yes" : "No"}
+              </span>
+            </div>
+            <div>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mr-2">
+                GTD
+              </span>
+              <span className="font-mono text-sm">
+                {order.gtd && order.gtd.toLowerCase() === "gtc"
+                  ? "2026-01-31 UTC"
+                  : order.gtd
+                  ? formatDate(order.gtd)
+                  : "—"}
+              </span>
+            </div>
+            <div>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mr-2">
+                PARTIAL
+              </span>
+              <span className="text-sm font-bold">
+                {order.partial ? "Yes" : "No"}
               </span>
             </div>
           </div>
@@ -395,6 +596,24 @@ export function OrderBookRowDetails({
                             <span className="block" title={filledOrder.escrow}>
                               {formatWalletAddress(filledOrder.escrow)}
                             </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyToClipboard(
+                                  filledOrder.escrow,
+                                  "filledEscrow",
+                                  uniqueKey
+                                );
+                              }}
+                              className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 opacity-60 hover:opacity-90"
+                              title="Copy escrow address"
+                            >
+                              {copiedFilledEscrowIds.has(uniqueKey) ? (
+                                <CheckIcon className="h-3.5 w-3.5 text-emerald-500" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5" />
+                              )}
+                            </button>
                             <a
                               href={`https://taostats.io/account/${filledOrder.escrow}`}
                               target="_blank"
@@ -425,7 +644,7 @@ export function OrderBookRowDetails({
                           </Badge>
                         </td>
                         <td
-                          className="pr-3 pt-3 pb-3 pl-[0.5rem] font-mono text-sm"
+                          className="pr-3 pt-3 pb-3 pl-[1rem] font-mono text-sm"
                           style={{ width: 50 }}
                         >
                           {order.asset === 0 ? (
@@ -453,29 +672,18 @@ export function OrderBookRowDetails({
                           {formatNumber(order.bid || 0)}
                         </td>
                         <td
-                          className="p-3 text-right font-mono text-sm"
+                          className="py-3 pr-2 pl-[2rem] text-right font-mono text-sm"
                           style={{ width: 70 }}
                         >
                           {formatNumber(order.ask || 0)}
                         </td>
                         <td
-                          className="pr-3 pt-3 pb-3 pl-[1rem] font-mono text-sm"
+                          className="pr-3 pt-3 pb-3 pl-[1.5rem] font-mono text-sm"
                           style={{ width: 90 }}
                         >
                           {formatPrice(filledOrder.stp || 0)}
                         </td>
-                        <td
-                          className="pr-3 pt-3 pb-3 pl-[1.5rem] font-mono whitespace-nowrap"
-                          style={{ width: 110, fontSize: "0.875rem" }}
-                        >
-                          {displayGtd}
-                        </td>
-                        <td
-                          className="pr-3 pt-3 pb-3 pl-[2rem] text-center"
-                          style={{ width: 80 }}
-                        >
-                          <span className="text-sm">{""}</span>
-                        </td>
+
                         <td
                           className="pr-3 pt-3 pb-3 pl-[2rem]"
                           style={{ width: 90 }}
