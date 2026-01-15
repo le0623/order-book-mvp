@@ -117,6 +117,58 @@ function SortableColumnHeader({
   );
 }
 
+// Escrow cell component to allow using hooks
+function EscrowCell({ escrowAddress }: { escrowAddress: string }) {
+  const [copied, setCopied] = React.useState(false);
+  const taostatsUrl = `https://taostats.io/account/${escrowAddress}`;
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span
+        className="font-mono whitespace-nowrap block"
+        title={escrowAddress}
+        style={{ fontSize: "0.875rem" }}
+      >
+        {formatWalletAddress(escrowAddress)}
+      </span>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          copyToClipboard(escrowAddress);
+        }}
+        className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 opacity-60 hover:opacity-90"
+        title="Copy escrow address"
+      >
+        {copied ? (
+          <CheckIcon className="h-3.5 w-3.5 text-emerald-500" />
+        ) : (
+          <Copy className="h-3.5 w-3.5" />
+        )}
+      </button>
+      <a
+        href={taostatsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-muted-foreground hover:text-muted-foreground/80 transition-all flex-shrink-0 opacity-60 hover:opacity-90"
+        title={`View on Taostats: ${escrowAddress}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <ExternalLink className="h-3.5 w-3.5" />
+      </a>
+    </div>
+  );
+}
+
 export const columns = (
   prices: Record<number, number> = {}
 ): ColumnDef<Order>[] => [
@@ -139,54 +191,7 @@ export const columns = (
     header: "Escrow",
     cell: ({ row }) => {
       const escrowAddress = row.getValue("escrow") as string;
-      const taostatsUrl = `https://taostats.io/account/${escrowAddress}`;
-      const [copied, setCopied] = React.useState(false);
-
-      const copyToClipboard = async (text: string) => {
-        try {
-          await navigator.clipboard.writeText(text);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
-          console.error("Failed to copy:", err);
-        }
-      };
-
-      return (
-        <div className="flex items-center gap-1.5">
-          <span
-            className="font-mono whitespace-nowrap block"
-            title={escrowAddress}
-            style={{ fontSize: "0.875rem" }}
-          >
-            {formatWalletAddress(escrowAddress)}
-          </span>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              copyToClipboard(escrowAddress);
-            }}
-            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 opacity-60 hover:opacity-90"
-            title="Copy escrow address"
-          >
-            {copied ? (
-              <CheckIcon className="h-3.5 w-3.5 text-emerald-500" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-          </button>
-          <a
-            href={taostatsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-muted-foreground/80 transition-all flex-shrink-0 opacity-60 hover:opacity-90"
-            title={`View on Taostats: ${escrowAddress}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        </div>
-      );
+      return <EscrowCell escrowAddress={escrowAddress} />;
     },
     size: 100,
     minSize: 100,

@@ -113,7 +113,7 @@ export function OrderBookRowDetails({
     setEditGtd(order.gtd || "gtc");
     setEditPartial(order.partial || false);
     setSelectedDate(parseGtdToDate(order.gtd));
-  }, [order.stp, order.public, order.gtd, order.partial]);
+  }, [order.stp, order.public, order.gtd, order.partial, parseGtdToDate]);
 
   // Reset edit values when dialog opens
   React.useEffect(() => {
@@ -124,7 +124,14 @@ export function OrderBookRowDetails({
       setEditPartial(order.partial || false);
       setSelectedDate(parseGtdToDate(order.gtd));
     }
-  }, [isEditDialogOpen, order.stp, order.public, order.gtd, order.partial]);
+  }, [
+    isEditDialogOpen,
+    order.stp,
+    order.public,
+    order.gtd,
+    order.partial,
+    parseGtdToDate,
+  ]);
 
   const copyToClipboard = async (
     text: string,
