@@ -69,6 +69,32 @@ export const formatDate = (date: string | Date) => {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} UTC`;
 };
 
+export const formatDateOnly = (date: string | Date) => {
+  let d: Date;
+  if (typeof date === "string") {
+    // If string already has timezone info (Z, +, -), use as-is
+    // Otherwise, treat as UTC by appending 'Z' or replacing ' UTC' with 'Z'
+    let dateStr = date.trim();
+    if (dateStr.endsWith(" UTC")) {
+      dateStr = dateStr.replace(" UTC", "Z");
+    } else if (!dateStr.includes("Z") && !dateStr.match(/[+-]\d{2}:?\d{2}$/)) {
+      // No timezone info, append 'Z' to force UTC interpretation
+      dateStr = dateStr + "Z";
+    }
+    d = new Date(dateStr);
+  } else {
+    d = date;
+  }
+
+  if (!d || isNaN(d.getTime())) return "—";
+
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day} UTC`;
+};
+
 export const formatNumber = (num: number) => {
   if (num === 0) return "—";
   return new Intl.NumberFormat("en-US", {
@@ -193,8 +219,8 @@ export const columns = (
       const escrowAddress = row.getValue("escrow") as string;
       return <EscrowCell escrowAddress={escrowAddress} />;
     },
-    size: 100,
-    minSize: 100,
+    size: 110,
+    minSize: 110,
   },
   {
     accessorKey: "type",
@@ -214,14 +240,12 @@ export const columns = (
         </Badge>
       );
     },
-    size: 75,
-    minSize: 75,
+    size: 60,
+    minSize: 60,
   },
   {
     accessorKey: "asset",
-    header: ({ column }) => (
-      <SortableColumnHeader column={column} title="Asset" />
-    ),
+    header: "Asset",
     cell: ({ row }) => {
       const asset = row.getValue("asset") as number;
       if (asset === 0) {
@@ -285,7 +309,11 @@ export const columns = (
   },
   {
     accessorKey: "stp",
-    header: "Price",
+    header: () => (
+      <div className="flex justify-center pr-4">
+        <span>Price</span>
+      </div>
+    ),
     cell: ({ row }) => {
       // Use live price from /ws/price if available, otherwise fall back to stop price (stp)
       const asset = row.original.asset;
@@ -294,7 +322,9 @@ export const columns = (
         livePrice !== undefined && livePrice > 0 ? livePrice : row.original.stp;
 
       return (
-        <div className="font-mono text-sm">{formatPrice(displayPrice)}</div>
+        <div className="flex justify-center pr-4">
+          <div className="font-mono text-sm">{formatPrice(displayPrice)}</div>
+        </div>
       );
     },
     size: 90,
@@ -302,18 +332,24 @@ export const columns = (
   },
   {
     accessorKey: "status",
-    header: "Status",
+    header: () => (
+      <div className="flex justify-center pr-4">
+        <span>Status</span>
+      </div>
+    ),
     cell: ({ row }) => {
       const status = row.getValue("status") as number;
       const statusText = getOrderStatus(status);
 
       return (
-        <Badge
-          variant="outline"
-          className={`${getStatusColor(status)} font-medium`}
-        >
-          {statusText}
-        </Badge>
+        <div className="flex justify-center pr-4">
+          <Badge
+            variant="outline"
+            className={`${getStatusColor(status)} font-medium`}
+          >
+            {statusText}
+          </Badge>
+        </div>
       );
     },
     filterFn: (row, id, value) => {

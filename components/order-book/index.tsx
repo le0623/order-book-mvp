@@ -39,17 +39,17 @@ export function OrderBook({
         const order = row.original;
         const filledOrders = filledOrdersMap[order.uuid] || [];
         return (
-          <OrderBookRowDetails
+        <OrderBookRowDetails
             key={`${order.uuid}-${order.status}-${order.stp}-${order.public}`}
             order={order}
             filledOrders={filledOrders}
             prices={prices}
             newlyAddedOrderIds={newlyAddedOrderIds}
-            onUpdateOrder={onUpdateOrder}
-            onCancelOrder={onCancelOrder}
+          onUpdateOrder={onUpdateOrder} 
+          onCancelOrder={onCancelOrder}
             onFillOrder={onFillOrder}
             apiUrl={apiUrl}
-          />
+        />
         );
       }}
     />

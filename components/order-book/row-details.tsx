@@ -29,7 +29,12 @@ import {
   ExternalLink,
   CalendarIcon,
 } from "lucide-react";
-import { formatDate, formatPrice, formatNumber } from "./columns";
+import {
+  formatDate,
+  formatDateOnly,
+  formatPrice,
+  formatNumber,
+} from "./columns";
 import { FillOrderModal } from "../fill-order-modal";
 import { getOrderType, formatWalletAddress } from "@/lib/types";
 import {
@@ -452,7 +457,10 @@ export function OrderBookRowDetails({
 
       {/* Order Details - Wallet, Escrow, Stop Price, Public, GTD, Partial */}
       <div className="space-y-4">
-        <div ref={paneRef}>
+        <div
+          ref={paneRef}
+          className="p-4 rounded-lg border border-border/50 space-y-4"
+        >
           <div className="flex justify-between gap-4 grid grid-cols-2">
             {order.wallet && (
               <div className="grid gap-2">
@@ -469,37 +477,10 @@ export function OrderBookRowDetails({
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 shrink-0 bg-transparent border-transparent hover:bg-transparent hover:border-transparent"
+                    className="h-8 w-8 shrink-0 bg-transparent border-transparent hover:bg-transparent hover:border-transparent opacity-60"
                     onClick={() => copyToClipboard(order.wallet, "wallet")}
                   >
                     {copiedWalletId ? (
-                      <CheckIcon className="h-4 w-4 text-emerald-500" />
-                    ) : (
-                      <Copy className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-            {order.escrow && (
-              <div className="grid gap-2">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  ESCROW
-                </span>
-                <div className="flex items-start gap-2">
-                  <code
-                    className="font-mono py-2 break-all"
-                    style={{ fontSize: "0.875rem" }}
-                  >
-                    {order.escrow}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 shrink-0 bg-transparent border-transparent hover:bg-transparent hover:border-transparent"
-                    onClick={() => copyToClipboard(order.escrow, "escrow")}
-                  >
-                    {copiedEscrowId ? (
                       <CheckIcon className="h-4 w-4 text-emerald-500" />
                     ) : (
                       <Copy className="h-4 w-4 text-muted-foreground" />
@@ -534,7 +515,7 @@ export function OrderBookRowDetails({
                 {order.gtd && order.gtd.toLowerCase() === "gtc"
                   ? "2026-01-31 UTC"
                   : order.gtd
-                  ? formatDate(order.gtd)
+                  ? formatDateOnly(order.gtd)
                   : "—"}
               </span>
             </div>
@@ -591,7 +572,7 @@ export function OrderBookRowDetails({
                       >
                         <td
                           className="pr-3 pt-3 pb-3 pl-[0.5rem] font-mono whitespace-nowrap"
-                          style={{ width: 160, fontSize: "0.875rem" }}
+                          style={{ width: 156, fontSize: "0.875rem" }}
                         >
                           {formatDate(filledOrder.date)}
                         </td>
@@ -633,22 +614,23 @@ export function OrderBookRowDetails({
                             </a>
                           </div>
                         </td>
-                        <td
-                          className="pr-3 pt-3 pb-3 pl-[0.5rem]"
-                          style={{ width: 75 }}
-                        >
-                          <Badge
-                            variant={
-                              orderTypeLabel === "Buy" ? "outline" : "secondary"
-                            }
-                            className={`font-medium ${
-                              orderTypeLabel === "Buy"
-                                ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
-                                : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
-                            }`}
-                          >
-                            {orderTypeLabel}
-                          </Badge>
+                        <td className="pr-3 pt-3 pb-3" style={{ width: 75 }}>
+                          <div className="flex justify-center">
+                            <Badge
+                              variant={
+                                orderTypeLabel === "Buy"
+                                  ? "outline"
+                                  : "secondary"
+                              }
+                              className={`font-medium ${
+                                orderTypeLabel === "Buy"
+                                  ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
+                                  : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
+                              }`}
+                            >
+                              {orderTypeLabel}
+                            </Badge>
+                          </div>
                         </td>
                         <td
                           className="pr-3 pt-3 pb-3 pl-[1rem] font-mono text-sm"
@@ -688,16 +670,20 @@ export function OrderBookRowDetails({
                           className="pr-3 pt-3 pb-3 pl-[1.5rem] font-mono text-sm"
                           style={{ width: 90 }}
                         >
-                          {formatPrice(filledOrder.stp || 0)}
+                          <div className="flex justify-center pr-4">
+                            {formatPrice(filledOrder.stp || 0)}
+                          </div>
                         </td>
 
                         <td
-                          className="pr-3 pt-3 pb-3 pl-[2rem]"
+                          className="pr-3 pt-3 pb-3 pl-[2rem] text-center"
                           style={{ width: 90 }}
                         >
-                          <Badge variant="outline" className="font-medium">
-                            Filled
-                          </Badge>
+                          <div className="flex justify-center">
+                            <Badge variant="outline" className="font-medium">
+                              Filled
+                            </Badge>
+                          </div>
                         </td>
                       </tr>
                     );
