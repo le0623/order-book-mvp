@@ -26,8 +26,21 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, ChevronUp, ChevronDown, ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -49,7 +62,15 @@ export function DataTable<TData, TValue>({
     []
   );
   const [expanded, setExpanded] = React.useState({});
-  const [searchQuery, setSearchQuery] = React.useState<string>("");
+  const [searchPopoverOpen, setSearchPopoverOpen] = React.useState(false);
+  const [searchAddress, setSearchAddress] = React.useState<string>("");
+  const [searchOrderType, setSearchOrderType] = React.useState<
+    number | undefined
+  >(undefined);
+  const [searchAssetId, setSearchAssetId] = React.useState<number | undefined>(
+    undefined
+  );
+  const [isSearchActive, setIsSearchActive] = React.useState(false);
 
   const cardHeaderRef = React.useRef<HTMLDivElement | null>(null);
   const tableHeaderRef = React.useRef<HTMLTableSectionElement | null>(null);
@@ -94,33 +115,52 @@ export function DataTable<TData, TValue>({
     };
   }, []);
 
-  // Filter data by ss58 address search (origin, escrow, wallet)
+  // Filter data by search parameters (address, orderType, assetId) with AND logic
   // Default: only show Open (status=1) AND public orders
-  // When searching: show all matching orders regardless of status/public
-  // Keep expanded orders visible even if they don't match default filter
+  // When searching: show all matching orders regardless of status/public using AND logic
   const filteredData = React.useMemo(() => {
-    // Get list of expanded order UUIDs
-    const expandedOrderIds = Object.keys(expanded).filter(
-      (id) => (expanded as Record<string, boolean>)[id]
-    );
+    // If search is active, filter by all search parameters with AND logic
+    if (isSearchActive) {
+      return data.filter((order: any) => {
+        // Address filter: match origin, escrow, or wallet with partial search
+        let addressMatch = true;
+        if (searchAddress && searchAddress.trim() !== "") {
+          const searchLower = searchAddress.toLowerCase().trim();
+          const originMatch = order.origin
+            ? String(order.origin).toLowerCase().includes(searchLower)
+            : false;
+          const escrowMatch = order.escrow
+            ? String(order.escrow).toLowerCase().includes(searchLower)
+            : false;
+          const walletMatch = order.wallet
+            ? String(order.wallet).toLowerCase().includes(searchLower)
+            : false;
+          addressMatch = originMatch || escrowMatch || walletMatch;
+        }
 
-    // If searching, show all matching orders regardless of status/public
-    if (searchQuery && searchQuery.trim() !== "") {
-      const searchLower = searchQuery.toLowerCase().trim();
-      const filtered = data.filter((order: any) => {
-        const originMatch =
-          order.origin?.toLowerCase().includes(searchLower) || false;
-        const escrowMatch =
-          order.escrow?.toLowerCase().includes(searchLower) || false;
-        const walletMatch =
-          order.wallet?.toLowerCase().includes(searchLower) || false;
-        return originMatch || escrowMatch || walletMatch;
+        // Order type filter
+        let orderTypeMatch = true;
+        if (searchOrderType !== undefined && searchOrderType !== null) {
+          orderTypeMatch = Number(order.type) === Number(searchOrderType);
+        }
+
+        // Asset ID filter
+        let assetIdMatch = true;
+        if (searchAssetId !== undefined && searchAssetId !== null) {
+          assetIdMatch = Number(order.asset) === Number(searchAssetId);
+        }
+
+        // AND logic: all non-empty filters must match
+        return addressMatch && orderTypeMatch && assetIdMatch;
       });
-      return filtered;
     }
 
     // Default: only show Open (status=1) AND public orders
     // But keep expanded orders visible even if they don't match
+    const expandedOrderIds = Object.keys(expanded).filter(
+      (id) => (expanded as Record<string, boolean>)[id]
+    );
+
     const filtered = data.filter((order: any) => {
       // Match expanded state using the same ID format as getRowId
       const orderId = `${order.uuid}-${order.status}-${order.escrow || ""}`;
@@ -131,7 +171,14 @@ export function DataTable<TData, TValue>({
       return matches || isExpanded;
     });
     return filtered;
-  }, [data, searchQuery, expanded]);
+  }, [
+    data,
+    isSearchActive,
+    searchAddress,
+    searchOrderType,
+    searchAssetId,
+    expanded,
+  ]);
 
   const table = useReactTable({
     data: filteredData,
@@ -158,32 +205,177 @@ export function DataTable<TData, TValue>({
         >
           <div className="flex items-center justify-between mb-4">
             <CardTitle className="text-xl font-semibold tracking-tight">
-              Order Book
+              {isSearchActive ? "Order History" : "Order Book"}
             </CardTitle>
 
             <div className="flex items-center gap-2">
-              {/* SEARCH INPUT */}
-              <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
-                />
-              </div>
+              {/* SEARCH BUTTON WITH POPOVER */}
+              <Popover
+                open={searchPopoverOpen}
+                onOpenChange={setSearchPopoverOpen}
+              >
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9">
+                    <Search className="h-4 w-4 mr-2" />
+                    Search
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[480px] bg-background" align="end">
+                  <div className="grid gap-4">
+                    <div className="space-y-2">
+                      <h4 className="font-medium leading-none">
+                        Search Orders
+                      </h4>
+                    </div>
+                    <div className="grid gap-4">
+                      {/* Search Address */}
+                      <div className="grid gap-2">
+                        <Label htmlFor="search-address">
+                          History(by wallet address)
+                        </Label>
+                        <Input
+                          id="search-address"
+                          type="text"
+                          placeholder="Search by ss58 address"
+                          value={searchAddress}
+                          onChange={(e) => setSearchAddress(e.target.value)}
+                          className="h-9 focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 bg-background"
+                        />
+                      </div>
 
-              {/* NEW ORDER BUTTON */}
-              {onNewOrder && (
+                      {/* Order Type */}
+                      <div className="grid gap-2">
+                        <Label htmlFor="search-order-type">Order Type</Label>
+                        <Select
+                          value={
+                            searchOrderType === undefined
+                              ? undefined
+                              : String(searchOrderType)
+                          }
+                          onValueChange={(value) => {
+                            setSearchOrderType(parseInt(value));
+                          }}
+                        >
+                          <SelectTrigger
+                            id="search-order-type"
+                            className="focus:ring-1 focus:ring-blue-500/30 focus:ring-offset-0 focus:border-blue-500/40 bg-background"
+                          >
+                            <SelectValue placeholder="Select order type" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background">
+                            <SelectItem value="1">Sell</SelectItem>
+                            <SelectItem value="2">Buy</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Asset ID */}
+                      <div className="grid gap-2">
+                        <Label htmlFor="search-asset-id">Asset ID</Label>
+                        <div className="relative flex items-center">
+                          <Input
+                            id="search-asset-id"
+                            type="number"
+                            min="0"
+                            placeholder="Asset ID (NETUID)"
+                            value={searchAssetId ?? ""}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setSearchAssetId(
+                                value === ""
+                                  ? undefined
+                                  : parseInt(value) || undefined
+                              );
+                            }}
+                            className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none bg-background"
+                          />
+                          <div className="absolute right-1 flex flex-col gap-0.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSearchAssetId((prev) =>
+                                  prev === undefined ? 0 : Math.max(0, prev + 1)
+                                );
+                              }}
+                              className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              aria-label="Increase asset ID"
+                            >
+                              <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSearchAssetId((prev) => {
+                                  if (prev === undefined || prev === 0) {
+                                    return undefined;
+                                  }
+                                  return prev - 1;
+                                });
+                              }}
+                              className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              aria-label="Decrease asset ID"
+                            >
+                              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSearchAddress("");
+                          setSearchOrderType(undefined);
+                          setSearchAssetId(undefined);
+                          setSearchPopoverOpen(false);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                        onClick={() => {
+                          setIsSearchActive(true);
+                          setSearchPopoverOpen(false);
+                        }}
+                      >
+                        Search
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* BACK BUTTON (when search active) OR NEW ORDER BUTTON (when not searching) */}
+              {isSearchActive ? (
                 <Button
-                  onClick={onNewOrder}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                  onClick={() => {
+                    setIsSearchActive(false);
+                    setSearchAddress("");
+                    setSearchOrderType(undefined);
+                    setSearchAssetId(undefined);
+                  }}
+                  variant="outline"
                   size="sm"
+                  className="h-9"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Order
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
                 </Button>
+              ) : (
+                onNewOrder && (
+                  <Button
+                    onClick={onNewOrder}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Order
+                  </Button>
+                )
               )}
             </div>
           </div>
