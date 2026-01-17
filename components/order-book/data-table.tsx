@@ -382,7 +382,7 @@ export function DataTable<TData, TValue>({
         </CardHeader>
 
         <CardContent className="p-0">
-          <div className="min-w-[1200px]">
+          <div className="">
             <Table noWrapper className="w-full table-fixed">
               <TableHeader
                 ref={tableHeaderRef as any}
