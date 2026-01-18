@@ -67,6 +67,9 @@ export function DataTable<TData, TValue>({
   const [searchOrderType, setSearchOrderType] = React.useState<
     number | undefined
   >(undefined);
+  const [searchStatus, setSearchStatus] = React.useState<number | undefined>(
+    undefined
+  );
   const [searchAssetId, setSearchAssetId] = React.useState<number | undefined>(
     undefined
   );
@@ -144,6 +147,17 @@ export function DataTable<TData, TValue>({
           orderTypeMatch = Number(order.type) === Number(searchOrderType);
         }
 
+        // Order status filter
+        let statusMatch = true;
+        if (searchStatus !== undefined && searchStatus !== null) {
+          // Handle both -1 and 0 as Init status
+          if (searchStatus === -1 || searchStatus === 0) {
+            statusMatch = order.status === -1 || order.status === 0;
+          } else {
+            statusMatch = Number(order.status) === Number(searchStatus);
+          }
+        }
+
         // Asset ID filter
         let assetIdMatch = true;
         if (searchAssetId !== undefined && searchAssetId !== null) {
@@ -151,7 +165,7 @@ export function DataTable<TData, TValue>({
         }
 
         // AND logic: all non-empty filters must match
-        return addressMatch && orderTypeMatch && assetIdMatch;
+        return addressMatch && orderTypeMatch && statusMatch && assetIdMatch;
       });
     }
 
@@ -176,6 +190,7 @@ export function DataTable<TData, TValue>({
     isSearchActive,
     searchAddress,
     searchOrderType,
+    searchStatus,
     searchAssetId,
     expanded,
   ]);
@@ -229,7 +244,7 @@ export function DataTable<TData, TValue>({
                     </div>
                     <div className="grid gap-4">
                       {/* Search Address */}
-                      <div className="grid gap-2">
+                      <div className="grid gap-2 opacity-60">
                         <Label htmlFor="search-address">
                           History(by wallet address)
                         </Label>
@@ -258,13 +273,46 @@ export function DataTable<TData, TValue>({
                         >
                           <SelectTrigger
                             id="search-order-type"
-                            className="focus:ring-1 focus:ring-blue-500/30 focus:ring-offset-0 focus:border-blue-500/40 bg-background"
+                            className="focus:ring-1 focus:ring-blue-500/30 opacity-60 focus:ring-offset-0 focus:border-blue-500/40 bg-background"
                           >
                             <SelectValue placeholder="Select order type" />
                           </SelectTrigger>
                           <SelectContent className="bg-background">
                             <SelectItem value="1">Sell</SelectItem>
                             <SelectItem value="2">Buy</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Order Status */}
+                      <div className="grid gap-2">
+                        <Label htmlFor="search-order-status">
+                          Order Status
+                        </Label>
+                        <Select
+                          value={
+                            searchStatus === undefined
+                              ? undefined
+                              : String(searchStatus)
+                          }
+                          onValueChange={(value) => {
+                            setSearchStatus(parseInt(value));
+                          }}
+                        >
+                          <SelectTrigger
+                            id="search-order-status"
+                            className="focus:ring-1 focus:ring-blue-500/30 opacity-60 focus:ring-offset-0 focus:border-blue-500/40 bg-background"
+                          >
+                            <SelectValue placeholder="Select order status" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background">
+                            <SelectItem value="-1">Init</SelectItem>
+                            <SelectItem value="1">Open</SelectItem>
+                            <SelectItem value="2">Filled</SelectItem>
+                            <SelectItem value="3">Error</SelectItem>
+                            <SelectItem value="4">Closed</SelectItem>
+                            <SelectItem value="5">Stopped</SelectItem>
+                            <SelectItem value="6">Expired</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -328,6 +376,7 @@ export function DataTable<TData, TValue>({
                         onClick={() => {
                           setSearchAddress("");
                           setSearchOrderType(undefined);
+                          setSearchStatus(undefined);
                           setSearchAssetId(undefined);
                           setSearchPopoverOpen(false);
                         }}
@@ -356,6 +405,7 @@ export function DataTable<TData, TValue>({
                     setIsSearchActive(false);
                     setSearchAddress("");
                     setSearchOrderType(undefined);
+                    setSearchStatus(undefined);
                     setSearchAssetId(undefined);
                   }}
                   variant="outline"
