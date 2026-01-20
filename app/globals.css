@@ -105,6 +105,15 @@
   .smooth-scroll::-webkit-scrollbar-thumb:hover {
     @apply bg-border/80;
   }
+
+  /* Hide scrollbar but keep scroll functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
 }
 
 /* React Day Picker - Equal column widths */
