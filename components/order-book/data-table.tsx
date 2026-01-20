@@ -80,6 +80,7 @@ export function DataTable<TData, TValue>({
   );
   const [isSearchActive, setIsSearchActive] = React.useState(false);
   const [showScrollToTop, setShowScrollToTop] = React.useState(false);
+  const [isMobileView, setIsMobileView] = React.useState(false);
 
   const cardHeaderRef = React.useRef<HTMLDivElement | null>(null);
   const tableHeaderRef = React.useRef<HTMLTableSectionElement | null>(null);
@@ -90,15 +91,34 @@ export function DataTable<TData, TValue>({
     }
   }, [columnFilters.length]);
 
+  // Detect mobile view (under 968px)
+  React.useEffect(() => {
+    const checkMobileView = () => {
+      setIsMobileView(window.innerWidth < 968);
+    };
+
+    // Check on mount
+    checkMobileView();
+
+    window.addEventListener("resize", checkMobileView);
+    return () => window.removeEventListener("resize", checkMobileView);
+  }, []);
+
   // Set CSS variable for sticky table header position (below CardHeader)
   React.useLayoutEffect(() => {
     const setTopVar = () => {
-      const cardHeaderHeight =
-        cardHeaderRef.current?.getBoundingClientRect().height ?? 0;
-      const pageHeaderHeight = 100; // Page header height
-      const totalOffset = pageHeaderHeight + cardHeaderHeight;
       if (tableHeaderRef.current) {
-        tableHeaderRef.current.style.top = `${totalOffset}px`;
+        if (isMobileView) {
+          // On mobile with overflow-x-auto, sticky is relative to container
+          tableHeaderRef.current.style.top = "0px";
+        } else {
+          // On desktop, calculate position below page header and card header
+          const cardHeaderHeight =
+            cardHeaderRef.current?.getBoundingClientRect().height ?? 0;
+          const pageHeaderHeight = 100; // Page header height
+          const totalOffset = pageHeaderHeight + cardHeaderHeight;
+          tableHeaderRef.current.style.top = `${totalOffset}px`;
+        }
       }
     };
 
@@ -122,7 +142,7 @@ export function DataTable<TData, TValue>({
       window.removeEventListener("resize", setTopVar);
       window.removeEventListener("scroll", setTopVar);
     };
-  }, []);
+  }, [isMobileView]);
 
   // Show scroll to top button when scrolled down enough
   React.useEffect(() => {
@@ -414,107 +434,109 @@ export function DataTable<TData, TValue>({
         </CardHeader>
 
         <CardContent className="p-0">
-          <div className="">
-            <Table noWrapper className="w-full table-fixed">
-              <TableHeader
-                ref={tableHeaderRef as any}
-                className="sticky z-30 bg-background shadow-sm border-b"
-              >
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHeadCell
-                        key={header.id}
-                        className="text-sm font-semibold normal-case"
-                        style={{ width: header.getSize() }}
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHeadCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
+          <div className={isMobileView ? "overflow-x-auto" : ""}>
+            <div className={isMobileView ? "min-w-[1200px]" : ""}>
+              <Table noWrapper className="w-full table-fixed">
+                <TableHeader
+                  ref={tableHeaderRef as any}
+                  className="sticky z-30 bg-background shadow-sm border-b"
+                >
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHeadCell
+                          key={header.id}
+                          className="text-sm font-semibold normal-case"
+                          style={{ width: header.getSize() }}
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </TableHeadCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
 
-              <TableBody>
-                {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <React.Fragment key={row.id}>
-                      <TableRow
-                        data-state={row.getIsSelected() && "selected"}
-                        data-expanded={row.getIsExpanded()}
-                        className={`cursor-pointer transition-colors hover:bg-muted/50 data-[expanded=true]:bg-muted/30 ${
-                          newlyAddedOrderIds.has(row.id)
-                            ? newlyAddedOrderIds.get(row.id) === 2
-                              ? "animate-flash-buy"
-                              : "animate-flash-sell"
-                            : ""
-                        }`}
-                        onClick={() => {
-                          // Close all other rows first (only one pane open at a time)
-                          const currentExpanded = expanded as Record<
-                            string,
-                            boolean
-                          >;
-                          const allExpandedIds = Object.keys(
-                            currentExpanded
-                          ).filter((id) => currentExpanded[id]);
+                <TableBody>
+                  {table.getRowModel().rows?.length ? (
+                    table.getRowModel().rows.map((row) => (
+                      <React.Fragment key={row.id}>
+                        <TableRow
+                          data-state={row.getIsSelected() && "selected"}
+                          data-expanded={row.getIsExpanded()}
+                          className={`cursor-pointer transition-colors hover:bg-muted/50 data-[expanded=true]:bg-muted/30 ${
+                            newlyAddedOrderIds.has(row.id)
+                              ? newlyAddedOrderIds.get(row.id) === 2
+                                ? "animate-flash-buy"
+                                : "animate-flash-sell"
+                              : ""
+                          }`}
+                          onClick={() => {
+                            // Close all other rows first (only one pane open at a time)
+                            const currentExpanded = expanded as Record<
+                              string,
+                              boolean
+                            >;
+                            const allExpandedIds = Object.keys(
+                              currentExpanded
+                            ).filter((id) => currentExpanded[id]);
 
-                          // Close all expanded rows
-                          const newExpanded: Record<string, boolean> = {};
-                          allExpandedIds.forEach((id) => {
-                            newExpanded[id] = false;
-                          });
+                            // Close all expanded rows
+                            const newExpanded: Record<string, boolean> = {};
+                            allExpandedIds.forEach((id) => {
+                              newExpanded[id] = false;
+                            });
 
-                          // If current row is not expanded, expand it
-                          if (!row.getIsExpanded()) {
-                            newExpanded[row.id] = true;
-                          }
+                            // If current row is not expanded, expand it
+                            if (!row.getIsExpanded()) {
+                              newExpanded[row.id] = true;
+                            }
 
-                          setExpanded(newExpanded);
-                        }}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell
-                            key={cell.id}
-                            style={{ width: cell.column.getSize() }}
-                          >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-
-                      {row.getIsExpanded() && renderSubComponent && (
-                        <TableRow>
-                          <TableCell
-                            colSpan={columns.length}
-                            className="p-0 border-t-0"
-                          >
-                            {renderSubComponent({ row })}
-                          </TableCell>
+                            setExpanded(newExpanded);
+                          }}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell
+                              key={cell.id}
+                              style={{ width: cell.column.getSize() }}
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                              )}
+                            </TableCell>
+                          ))}
                         </TableRow>
-                      )}
-                    </React.Fragment>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center text-muted-foreground"
-                    >
-                      No results found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+
+                        {row.getIsExpanded() && renderSubComponent && (
+                          <TableRow>
+                            <TableCell
+                              colSpan={columns.length}
+                              className="p-0 border-t-0"
+                            >
+                              {renderSubComponent({ row })}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={columns.length}
+                        className="h-24 text-center text-muted-foreground"
+                      >
+                        No results found.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
           <div className="flex items-center justify-end space-x-2 p-4 rounded-b-md bg-white dark:bg-background">
             <div className="text-xs text-muted-foreground">
