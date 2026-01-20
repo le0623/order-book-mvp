@@ -33,6 +33,7 @@ import {
   ChevronDown,
   ArrowLeft,
   X,
+  ArrowUp,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -78,6 +79,7 @@ export function DataTable<TData, TValue>({
     undefined
   );
   const [isSearchActive, setIsSearchActive] = React.useState(false);
+  const [showScrollToTop, setShowScrollToTop] = React.useState(false);
 
   const cardHeaderRef = React.useRef<HTMLDivElement | null>(null);
   const tableHeaderRef = React.useRef<HTMLTableSectionElement | null>(null);
@@ -120,6 +122,17 @@ export function DataTable<TData, TValue>({
       window.removeEventListener("resize", setTopVar);
       window.removeEventListener("scroll", setTopVar);
     };
+  }, []);
+
+  // Show scroll to top button when scrolled down enough
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const scrollThreshold = 400; // Show button after scrolling 400px
+      setShowScrollToTop(window.scrollY > scrollThreshold);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Filter data by search parameters (address, orderType, assetId) with AND logic
@@ -510,6 +523,20 @@ export function DataTable<TData, TValue>({
           </div>
         </CardContent>
       </Card>
+
+      {/* Scroll to Top Button */}
+      {showScrollToTop && (
+        <Button
+          onClick={() => {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          className="fixed bottom-8 right-8 z-50 h-12 w-12 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 text-white"
+          size="icon"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp className="h-5 w-5" />
+        </Button>
+      )}
     </div>
   );
 }
