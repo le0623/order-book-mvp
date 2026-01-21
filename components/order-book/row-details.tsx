@@ -92,7 +92,6 @@ export function OrderBookRowDetails({
   const [isFlashing, setIsFlashing] = React.useState(false);
   const paneRef = React.useRef<HTMLDivElement>(null);
 
-  // Parse GTD value to date if it's not "gtc"
   const parseGtdToDate = React.useCallback(
     (gtd: string | undefined): Date | undefined => {
       if (!gtd || gtd.toLowerCase() === "gtc") {
@@ -104,14 +103,12 @@ export function OrderBookRowDetails({
           return date;
         }
       } catch {
-        // Invalid date, return undefined
       }
       return undefined;
     },
     []
   );
 
-  // Update local state when order prop changes (after modification)
   React.useEffect(() => {
     setEditStp(order.stp);
     setEditPublic(order.public);
@@ -120,7 +117,6 @@ export function OrderBookRowDetails({
     setSelectedDate(parseGtdToDate(order.gtd));
   }, [order.stp, order.public, order.gtd, order.partial, parseGtdToDate]);
 
-  // Reset edit values when dialog opens
   React.useEffect(() => {
     if (isEditDialogOpen) {
       setEditStp(order.stp);
@@ -168,18 +164,15 @@ export function OrderBookRowDetails({
 
   const handleSaveEdit = async () => {
     if (onUpdateOrder) {
-      // Convert selectedDate to ISO string if date is selected, otherwise use "gtc"
       const gtdValue =
         editGtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc";
 
-      // Check if any fields changed
       const hasChanges =
         editStp !== order.stp ||
         editPublic !== order.public ||
         gtdValue !== (order.gtd || "gtc") ||
         editPartial !== (order.partial || false);
 
-      // Close the modal first
       setIsEditDialogOpen(false);
 
       await onUpdateOrder(order.uuid, {
@@ -189,17 +182,11 @@ export function OrderBookRowDetails({
         partial: editPartial,
       });
 
-      // Flash the entire pane if there were changes
       if (hasChanges) {
-        console.log("Triggering flash animation");
-        // Small delay to ensure dialog is closed and pane is visible
         setTimeout(() => {
-          setIsFlashing(false); // Reset first
-          // Force browser reflow to restart animation
+          setIsFlashing(false);
           setTimeout(() => {
             setIsFlashing(true);
-            console.log("Flash animation triggered");
-            // Reset after animation completes
             setTimeout(() => {
               setIsFlashing(false);
             }, 1500);
@@ -211,7 +198,6 @@ export function OrderBookRowDetails({
 
   return (
     <div className="bg-muted/30 p-6 space-y-6 shadow-inner border-t border-border/50">
-      {/* Header / Actions */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <h3 className="text-base font-semibold tracking-tight text-foreground">
@@ -455,7 +441,6 @@ export function OrderBookRowDetails({
         )}
       </div>
 
-      {/* Order Details - Wallet, Escrow, Stop Price, Public, GTD, Partial */}
       <div className="space-y-4">
         <div
           ref={paneRef}
@@ -531,7 +516,6 @@ export function OrderBookRowDetails({
         </div>
       </div>
 
-      {/* Filled Orders List */}
       {filledOrders.length > 0 && (
         <>
           <div className="space-y-3">
@@ -542,17 +526,11 @@ export function OrderBookRowDetails({
               <table className="w-full text-sm table-fixed">
                 <tbody>
                   {filledOrders.map((filledOrder, index) => {
-                    // Use filled order's type (opposite of parent order)
-                    // Use parent order values for asset, Tao, Alpha, GTD, Partial
-                    // Use filled order's stp for Price (fixed at fill time)
                     const orderTypeLabel = getOrderType(filledOrder.type);
-                    // Use a unique key combining UUID, escrow, and index for uniqueness
                     const uniqueKey = `${filledOrder.uuid}-${filledOrder.escrow}-${index}`;
 
-                    // For filled orders, GTD is empty
                     const displayGtd = "";
 
-                    // Check if this filled order should flash
                     const filledOrderId = `${filledOrder.uuid}-${
                       filledOrder.status
                     }-${filledOrder.escrow || ""}`;
@@ -695,7 +673,6 @@ export function OrderBookRowDetails({
         </>
       )}
 
-      {/* Fill Order Modal */}
       <FillOrderModal
         open={isFillOrderModalOpen}
         onOpenChange={setIsFillOrderModalOpen}

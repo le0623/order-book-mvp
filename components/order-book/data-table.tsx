@@ -54,9 +54,9 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   renderSubComponent?: (props: { row: Row<TData> }) => React.ReactElement;
-  onNewOrder?: () => void; // NEW: Callback to open New Order modal
-  newlyAddedOrderIds?: Map<string, number>; // Track newly added orders for flash animation: orderId -> orderType
-  filledOrdersMap?: Record<string, TData[]>; // UUID -> filled orders array for search
+  onNewOrder?: () => void;
+  newlyAddedOrderIds?: Map<string, number>;
+  filledOrdersMap?: Record<string, TData[]>;
 }
 
 export function DataTable<TData, TValue>({
@@ -89,25 +89,19 @@ export function DataTable<TData, TValue>({
   const headerScrollRef = React.useRef<HTMLDivElement | null>(null);
   const bodyScrollRef = React.useRef<HTMLDivElement | null>(null);
 
-  // Initialize default status filter on mount
   React.useEffect(() => {
     setColumnFilters([{ id: "status", value: [0, 1] }]);
   }, []);
 
-  // When search is active, clear status filter to show all statuses including filled orders
-  // When search is inactive, restore default status filter
   React.useEffect(() => {
     if (isSearchActive) {
-      // Remove status filter when searching to show all statuses
       setColumnFilters((prev) => prev.filter((filter) => filter.id !== "status"));
     } else {
-      // Restore default status filter when not searching
       setColumnFilters((prev) => {
         const hasStatusFilter = prev.some((filter) => filter.id === "status");
         if (!hasStatusFilter) {
           return [...prev, { id: "status", value: [0, 1] }];
         }
-        // Ensure status filter has correct values
         return prev.map((filter) =>
           filter.id === "status" ? { id: "status", value: [0, 1] } : filter
         );
@@ -115,39 +109,32 @@ export function DataTable<TData, TValue>({
     }
   }, [isSearchActive]);
 
-  // Detect mobile view (under 968px)
   React.useEffect(() => {
     const checkMobileView = () => {
       setIsMobileView(window.innerWidth < 968);
     };
 
-    // Check on mount
     checkMobileView();
 
     window.addEventListener("resize", checkMobileView);
     return () => window.removeEventListener("resize", checkMobileView);
   }, []);
 
-  // Set CSS variable for sticky table header position (below CardHeader)
   React.useLayoutEffect(() => {
     const setTopVar = () => {
-      // Calculate position below page header and card header
-          const cardHeaderHeight =
-            cardHeaderRef.current?.getBoundingClientRect().height ?? 0;
-          const pageHeaderHeight = 100; // Page header height
-          const totalOffset = pageHeaderHeight + cardHeaderHeight;
+      const cardHeaderHeight =
+        cardHeaderRef.current?.getBoundingClientRect().height ?? 0;
+      const pageHeaderHeight = 100;
+      const totalOffset = pageHeaderHeight + cardHeaderHeight;
 
-      // For mobile view, set on the header scroll container
       if (isMobileView && headerScrollRef.current) {
         headerScrollRef.current.style.top = `${totalOffset}px`;
       }
-      // For desktop view, set on the table header
       if (!isMobileView && tableHeaderRef.current) {
-          tableHeaderRef.current.style.top = `${totalOffset}px`;
+        tableHeaderRef.current.style.top = `${totalOffset}px`;
       }
     };
 
-    // Initial calculation with a small delay to ensure DOM is ready
     const timeoutId = setTimeout(setTopVar, 0);
 
     const ro = new ResizeObserver(() => {
@@ -169,7 +156,6 @@ export function DataTable<TData, TValue>({
     };
   }, [isMobileView]);
 
-  // Sync horizontal scroll between header and body on mobile
   React.useEffect(() => {
     if (!isMobileView) return;
 
@@ -207,10 +193,9 @@ export function DataTable<TData, TValue>({
     };
   }, [isMobileView]);
 
-  // Show scroll to top button when scrolled down enough
   React.useEffect(() => {
     const handleScroll = () => {
-      const scrollThreshold = 400; // Show button after scrolling 400px
+      const scrollThreshold = 400;
       setShowScrollToTop(window.scrollY > scrollThreshold);
     };
 
@@ -218,18 +203,12 @@ export function DataTable<TData, TValue>({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Filter data by search parameters (address, orderType, assetId) with AND logic
-  // Default: only show Open (status=1) AND public orders
-  // When searching: show all matching orders regardless of status/public using AND logic, including filled orders
   const filteredData = React.useMemo(() => {
-    // If search is active, filter by all search parameters with AND logic
     if (isSearchActive) {
-      // Combine regular orders with all filled orders from filledOrdersMap
       const allFilledOrders = Object.values(filledOrdersMap).flat() as any[];
       const allOrders = [...data, ...allFilledOrders];
       
       return allOrders.filter((order: any) => {
-        // Address filter: match origin, escrow, or wallet with partial search
         let addressMatch = true;
         if (searchAddress && searchAddress.trim() !== "") {
           const searchLower = searchAddress.toLowerCase().trim();
@@ -245,37 +224,30 @@ export function DataTable<TData, TValue>({
           addressMatch = originMatch || escrowMatch || walletMatch;
         }
 
-        // Order type filter
         let orderTypeMatch = true;
         if (searchOrderType !== undefined && searchOrderType !== null) {
           orderTypeMatch = Number(order.type) === Number(searchOrderType);
         }
 
-        // Asset ID filter
         let assetIdMatch = true;
         if (searchAssetId !== undefined && searchAssetId !== null) {
           assetIdMatch = Number(order.asset) === Number(searchAssetId);
         }
 
-        // AND logic: all non-empty filters must match
         const matches = addressMatch && orderTypeMatch && assetIdMatch;
         return matches;
       });
     }
 
-    // Default: only show Open (status=1) AND public orders
-    // But keep expanded orders visible even if they don't match
     const expandedOrderIds = Object.keys(expanded).filter(
       (id) => (expanded as Record<string, boolean>)[id]
     );
 
     const filtered = data.filter((order: any) => {
-      // Match expanded state using the same ID format as getRowId
       const orderId = `${order.uuid}-${order.status}-${order.escrow || ""}`;
       const isExpanded = expandedOrderIds.includes(orderId);
       const matches = order.status === 1 && order.public === true;
 
-      // Include order if it matches filter OR if it's currently expanded
       return matches || isExpanded;
     });
     return filtered;
@@ -293,7 +265,6 @@ export function DataTable<TData, TValue>({
   const table = useReactTable({
     data: filteredData,
     columns,
-    // Use UUID + status + escrow to ensure uniqueness (filled orders can have same UUID but different escrow)
     getRowId: (row: any) => `${row.uuid}-${row.status}-${row.escrow || ""}`,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -319,7 +290,6 @@ export function DataTable<TData, TValue>({
             </CardTitle>
 
             <div className="flex items-center gap-2">
-              {/* SEARCH BUTTON WITH POPOVER */}
               <Popover
                 open={searchPopoverOpen}
                 onOpenChange={setSearchPopoverOpen}
@@ -350,7 +320,6 @@ export function DataTable<TData, TValue>({
                       </Button>
                     </div>
                     <div className="grid gap-4">
-                      {/* Search Address */}
                       <div className="grid gap-2">
                         <Label htmlFor="search-address">
                           History (by wallet address)
@@ -365,7 +334,6 @@ export function DataTable<TData, TValue>({
                         />
                       </div>
 
-                      {/* Order Type */}
                       <div className="grid gap-2">
                         <Label htmlFor="search-order-type">Order Type</Label>
                         <Select
@@ -391,7 +359,6 @@ export function DataTable<TData, TValue>({
                         </Select>
                       </div>
 
-                      {/* Asset ID */}
                       <div className="grid gap-2">
                         <Label htmlFor="search-asset-id">Asset ID</Label>
                         <div className="relative flex items-center">
@@ -471,7 +438,6 @@ export function DataTable<TData, TValue>({
                 </PopoverContent>
               </Popover>
 
-              {/* BACK BUTTON (when search active) OR NEW ORDER BUTTON (when not searching) */}
               {isSearchActive ? (
                 <Button
                   onClick={() => {
@@ -506,7 +472,6 @@ export function DataTable<TData, TValue>({
         <CardContent className="p-0">
           {isMobileView ? (
             <>
-              {/* Mobile: Separate sticky header with synced horizontal scroll */}
               <div
                 ref={headerScrollRef}
                 className="overflow-x-auto overflow-y-hidden sticky z-30 bg-background shadow-sm border-b scrollbar-hide"
@@ -537,7 +502,6 @@ export function DataTable<TData, TValue>({
                 </div>
               </div>
 
-              {/* Mobile: Scrollable body */}
               <div ref={bodyScrollRef} className="overflow-x-auto scrollbar-hide">
                 <div className="min-w-[1200px]">
                   <Table noWrapper className="w-full table-fixed">
@@ -617,8 +581,7 @@ export function DataTable<TData, TValue>({
               </div>
             </>
           ) : (
-            /* Desktop: Original single table structure */
-              <Table noWrapper className="w-full table-fixed">
+            <Table noWrapper className="w-full table-fixed">
                 <TableHeader
                   ref={tableHeaderRef as any}
                   className="sticky z-30 bg-background shadow-sm border-b"
@@ -724,7 +687,6 @@ export function DataTable<TData, TValue>({
         </CardContent>
       </Card>
 
-      {/* Scroll to Top Button */}
       {showScrollToTop && (
         <Button
           onClick={() => {

@@ -1,10 +1,6 @@
-// Type definitions for Order Book system
-// This file contains TypeScript interfaces and types that match the backend schema
-
 export type OrderType = "Sell" | "Buy"
 export type OrderStatus = "Init" | "Open" | "Filled" | "Error" | "Closed" | "Stopped" | "Expired"
 
-// Backend order structure from WebSocket and API
 export interface Order {
   uuid: string // Order UUID from backend (unique identifier)
   date: string // datetime UTC (ISO format)
@@ -23,7 +19,6 @@ export interface Order {
   status: number // -1: init, 1: open, 2: filled, 3: error, 4: closed, 5: stopped, 6: expired
 }
 
-// Form data for creating a new order
 export interface NewOrderFormData {
   type: number // 1: sell, 2: buy
   asset: number // subnet ID
@@ -35,7 +30,6 @@ export interface NewOrderFormData {
 
 export const formatWalletAddress = (address: string) => {
   if (!address) return '—';
-  // Show first 4 and last 4 characters to fit in narrow columns
   return `${address.slice(0, 4)}...${address.slice(-4)}`
 }
 
@@ -45,8 +39,8 @@ export const getOrderType = (type: number): OrderType => {
 
 export const getOrderStatus = (status: number): OrderStatus => {
   switch (status) {
-    case -1: 
-    case 0: return "Init" // 0 is also initialization status from backend
+    case -1:
+    case 0: return "Init"
     case 1: return "Open"
     case 2: return "Filled"
     case 3: return "Error"

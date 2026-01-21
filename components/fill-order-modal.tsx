@@ -25,7 +25,6 @@ interface FillOrderModalProps {
   onOrderFilled?: () => void;
 }
 
-// Generate a mock SS58 address (fallback if backend doesn't return escrow)
 function generateMockEscrowAddress(): string {
   const chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
   let address = "5";
@@ -51,33 +50,25 @@ export function FillOrderModal({
   const [error, setError] = React.useState<string>("");
   const [copiedEscrow, setCopiedEscrow] = React.useState(false);
 
-  // Capture fixed values when modal opens (same as New Order workflow)
   const fixedValues = React.useMemo(() => {
     const asset = Number(order.asset);
     const livePrice = prices[asset];
     const currentPrice =
       livePrice !== undefined && livePrice > 0 ? livePrice : order.stp;
 
-    // Fill order type is opposite of parent order
-    // If parent is Sell (1), fill is Buy (2)
-    // If parent is Buy (2), fill is Sell (1)
     const fillOrderType = order.type === 1 ? 2 : 1;
 
-    // Calculate Tao (bid) and Alpha (ask) for fill order
-    // When filling a Sell order: fill Buy order's bid = parent Sell order's ask
-    // When filling a Buy order: fill Sell order's ask = parent Buy order's bid
-    const tao = fillOrderType === 2 ? order.ask : 0; // Buy fill: use parent's ask as bid
-    const alpha = fillOrderType === 1 ? order.bid : 0; // Sell fill: use parent's bid as ask
+    const tao = fillOrderType === 2 ? order.ask : 0;
+    const alpha = fillOrderType === 1 ? order.bid : 0;
     return {
       asset: Number(order.asset),
-      type: fillOrderType, // Opposite of parent order
+      type: fillOrderType,
       tao: Number(tao),
       alpha: Number(alpha),
       price: Number(currentPrice),
     };
   }, [order, prices]);
 
-  // Reset form when modal closes
   React.useEffect(() => {
     if (!open) {
       setEscrowWallet("");
@@ -100,28 +91,25 @@ export function FillOrderModal({
     }
   };
 
-  // Step 1: Create Escrow (same logic as New Order's handleNext)
   const handleCreateEscrow = async () => {
     try {
       setLoading(true);
       setError("");
 
-      // Generate unique UUID for this fill order (each fill is a separate record)
       const fillOrderUuid = uuidv4();
 
-      // Prepare data for backend with status=-1 to generate escrow (same as New Order)
       const orderData = {
-        uuid: fillOrderUuid, // Unique identifier for this fill order
-        origin: "", // Backend will populate this when status=-1 (escrow generation)
-        escrow: "", // Backend will populate this when status=-1 (escrow generation)
+        uuid: fillOrderUuid,
+        origin: "",
+        escrow: "",
         wallet:
-          order.wallet || "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty", // User wallet
-        asset: fixedValues.asset, // From parent order
-        type: fixedValues.type, // From parent order
-        ask: fixedValues.alpha, // Alpha (ask) at fill time
-        bid: fixedValues.tao, // Tao (bid) at fill time
-        stp: fixedValues.price, // Price (live or stp) at fill time
-        lmt: fixedValues.price, // Limit price same as stop price
+          order.wallet || "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+        asset: fixedValues.asset,
+        type: fixedValues.type,
+        ask: fixedValues.alpha,
+        bid: fixedValues.tao,
+        stp: fixedValues.price,
+        lmt: fixedValues.price,
         gtd: "gtc", // No GTD for filled orders
         partial: false, // No partial for filled orders
         public: false, // No public flag for filled orders
@@ -170,7 +158,6 @@ export function FillOrderModal({
         );
       }
 
-      // Parse response - backend returns JSON array with the created order
       let data: any;
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
@@ -185,8 +172,6 @@ export function FillOrderModal({
         data = { message: text };
       }
 
-      // Backend returns array of records: [{"date": "...", "uuid": "...", "origin": "...", "escrow": "...", ...}]
-      // Extract escrow and origin addresses from the response
       let escrowAddress = "";
       let originAddress = "";
       if (Array.isArray(data) && data.length > 0) {
@@ -197,15 +182,14 @@ export function FillOrderModal({
         originAddress = data.origin || "";
       }
 
-      // If no escrow found in response, use mock (shouldn't happen if backend works correctly)
       if (!escrowAddress) {
         escrowAddress = generateMockEscrowAddress();
       }
 
       setEscrowWallet(escrowAddress);
-      setOriginWallet(originAddress || escrowAddress); // Use origin if available, otherwise use escrow
-      setOrderUuid(fillOrderUuid); // Store UUID for reuse when filling order
-      setEscrowGenerated(true); // Mark escrow as generated
+      setOriginWallet(originAddress || escrowAddress);
+      setOrderUuid(fillOrderUuid);
+      setEscrowGenerated(true);
     } catch (err: any) {
       console.error("Error creating escrow:", err);
       setError(err.message || "Failed to create escrow");
@@ -214,10 +198,8 @@ export function FillOrderModal({
     }
   };
 
-  // Step 2: Fill Order (same logic as New Order's handleFinalPlaceOrder, but with status=2)
   const handleFillOrder = async () => {
     if (!escrowGenerated) {
-      // First, create escrow
       await handleCreateEscrow();
       return;
     }
@@ -229,24 +211,22 @@ export function FillOrderModal({
       if (!orderUuid || !escrowWallet) {
         throw new Error("Missing order UUID or escrow wallet address");
       }
-
-      // Prepare order data with fixed values (same origin logic as New Order)
       const fillOrderData = {
-        uuid: orderUuid, // Reuse the same UUID from escrow generation
-        origin: order.uuid, // Store parent order UUID in origin field to link them
-        escrow: escrowWallet, // Escrow wallet address from backend
+        uuid: orderUuid,
+        origin: order.uuid,
+        escrow: escrowWallet,
         wallet:
-          order.wallet || "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty", // User wallet
-        asset: fixedValues.asset, // Fixed: from parent order
-        type: fixedValues.type, // Fixed: from parent order
-        ask: fixedValues.alpha, // Fixed: Alpha (ask) at fill time
-        bid: fixedValues.tao, // Fixed: Tao (bid) at fill time
-        stp: fixedValues.price, // Fixed: Price (live or stp) at fill time
-        lmt: fixedValues.price, // Fixed: Limit price same as stop price
-        gtd: "gtc", // No GTD for filled orders
-        partial: "False", // No partial for filled orders
-        public: "False", // No public flag for filled orders
-        status: 2, // 2 = Filled
+          order.wallet || "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+        asset: fixedValues.asset,
+        type: fixedValues.type,
+        ask: fixedValues.alpha,
+        bid: fixedValues.tao,
+        stp: fixedValues.price,
+        lmt: fixedValues.price,
+        gtd: "gtc",
+        partial: "False",
+        public: "False",
+        status: 2,
       };
 
       const backendUrl =
@@ -291,7 +271,6 @@ export function FillOrderModal({
         );
       }
 
-      // Success - order filled with status=2
       onOrderFilled?.();
       onOpenChange(false);
       setEscrowWallet("");

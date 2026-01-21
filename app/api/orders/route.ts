@@ -15,10 +15,8 @@ const EXTERNAL_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.subnet1
  */
 export async function POST(request: NextRequest) {
   try {
-    // Get the request body from the frontend
     const body = await request.json();
 
-    // Forward the request to the external API
     const response = await fetch(`${EXTERNAL_API_URL}/rec`, {
       method: 'POST',
       headers: {
@@ -27,27 +25,21 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    // Get the response data - handle both JSON and plain text responses
     let data: any;
     const contentType = response.headers.get('content-type');
-    
+
     if (contentType && contentType.includes('application/json')) {
-      // Try to parse as JSON
       try {
         data = await response.json();
       } catch (error) {
-        // If JSON parsing fails, get as text
         const text = await response.text();
         data = { error: text || response.statusText };
       }
     } else {
-      // If not JSON, get as text
       const text = await response.text();
       data = { error: text || response.statusText };
     }
 
-    // Return the response to the frontend with proper CORS headers
-    // (Not needed for same-origin, but good practice)
     return NextResponse.json(data, {
       status: response.status,
       headers: {
@@ -65,10 +57,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * Handle OPTIONS requests for CORS preflight
- * (Not strictly necessary for same-origin, but included for completeness)
- */
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,

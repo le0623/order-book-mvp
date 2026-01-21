@@ -46,8 +46,6 @@ interface NewOrderModalProps {
   apiUrl?: string;
 }
 
-// Generate a random mock ss58 address (coldkey format)
-// SS58 addresses are base58 encoded, typically 48 characters
 const generateMockEscrowAddress = (): string => {
   const chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"; // Base58 alphabet
   const prefix = "5"; // Common Substrate/Polkadot address prefix
@@ -123,30 +121,25 @@ export function NewOrderModal({
       setLoading(true);
       setError("");
 
-      // Prepare data for backend with all required fields
-      // Backend expects: uuid, origin, escrow, wallet, asset, type, ask, bid, stp, lmt, gtd, partial, public, status
-      // Note: 'date' is automatically added by backend
-      // Column order from records.ini: date,uuid,origin,escrow,wallet,asset,type,ask,bid,stp,lmt,gtd,partial,public,status
-      const orderUuid = uuidv4(); // Generate unique UUID for this order
+      const orderUuid = uuidv4();
       const orderData = {
-        uuid: orderUuid, // Unique identifier for the order (required by backend)
-        origin: "", // Backend will populate this when status=-1 (escrow generation)
-        escrow: "", // Backend will populate this when status=-1 (escrow generation)
-        wallet: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty", // Mock ss58 address (user wallet)
-        asset: Number(formData.asset), // NETUID - ensure it's a number
-        type: Number(formData.type), // 1: sell, 2: buy - ensure it's a number
-        ask: Number(formData.type === 1 ? formData.stp : 0.0), // For sell orders, ask = stop price
-        bid: Number(formData.type === 2 ? formData.stp : 0.0), // For buy orders, bid = stop price
-        stp: Number(formData.stp), // Stop price - ensure it's a number
-        lmt: Number(formData.stp), // Limit price (using stop price for now) - ensure it's a number
+        uuid: orderUuid,
+        origin: "",
+        escrow: "",
+        wallet: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+        asset: Number(formData.asset),
+        type: Number(formData.type),
+        ask: Number(formData.type === 1 ? formData.stp : 0.0),
+        bid: Number(formData.type === 2 ? formData.stp : 0.0),
+        stp: Number(formData.stp),
+        lmt: Number(formData.stp),
         gtd:
-          formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc", // Good till date
-        partial: Boolean(formData.partial), // Allow partial fills - ensure it's a boolean
-        public: Boolean(formData.public), // Public order visibility - ensure it's a boolean
-        status: -1, // -1 = Init status (triggers escrow generation in backend)
+          formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
+        partial: Boolean(formData.partial),
+        public: Boolean(formData.public),
+        status: -1,
       };
 
-      // Call backend API directly (CORS is now handled by backend)
       const backendUrl =
         apiUrl ||
         process.env.NEXT_PUBLIC_API_URL ||
@@ -189,14 +182,12 @@ export function NewOrderModal({
         );
       }
 
-      // Parse response - backend returns JSON array with the created order
       let data: any;
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         try {
           data = await response.json();
         } catch {
-          // If JSON parsing fails, try as text
           const text = await response.text();
           data = { message: text };
         }
@@ -205,35 +196,29 @@ export function NewOrderModal({
         data = { message: text };
       }
 
-      // Backend returns array of records: [{"date": "...", "uuid": "...", "origin": "...", "escrow": "...", ...}]
-      // Extract uuid, escrow and origin addresses from the response
       let responseUuid = "";
       let escrowAddress = "";
       let originAddress = "";
       if (Array.isArray(data) && data.length > 0) {
-        // Response is an array of records
         responseUuid = data[0].uuid || "";
         escrowAddress = data[0].escrow || "";
         originAddress = data[0].origin || "";
       } else if (data && typeof data === "object") {
-        // Response might be a single object
         responseUuid = data.uuid || "";
         escrowAddress = data.escrow || "";
         originAddress = data.origin || "";
       }
 
-      // If no escrow found in response, use mock (shouldn't happen if backend works correctly)
       if (!escrowAddress) {
         escrowAddress = generateMockEscrowAddress();
       }
 
-      // Use UUID from backend response if available, otherwise fallback to the one we sent
       const finalUuid = responseUuid || orderUuid;
 
       setEscrowWallet(escrowAddress);
-      setOriginWallet(originAddress || escrowAddress); // Use origin if available, otherwise use escrow
-      setOrderUuid(finalUuid); // Store UUID from backend response (or fallback to sent UUID)
-      setEscrowGenerated(true); // Mark escrow as generated, form becomes read-only
+      setOriginWallet(originAddress || escrowAddress);
+      setOrderUuid(finalUuid);
+      setEscrowGenerated(true);
     } catch (err: any) {
       console.error("Error creating order:", err);
       setError(err.message || "Failed to create order");
@@ -244,17 +229,13 @@ export function NewOrderModal({
 
   const handlePlaceOrder = async () => {
     if (!escrowGenerated) {
-      // First "Place Order" click - show review buttons
       setShowReviewButtons(true);
     } else if (showReviewButtons) {
-      // "Place Order" from review - proceed to payment
       setShowReviewButtons(false);
       setShowPaymentButtons(true);
     } else if (showPaymentButtons) {
-      // Final "Place Order" - send order to backend with status = 1 (Open)
       await handleFinalPlaceOrder();
     } else if (escrowGenerated && !isInReviewMode) {
-      // Escrow generated, user clicks "Place Order" for the first time
       await handleFinalPlaceOrder();
     }
   };
@@ -268,27 +249,24 @@ export function NewOrderModal({
         throw new Error("Missing order UUID or escrow wallet address");
       }
 
-      // Prepare data for backend with status = 1 (Open)
-      // Backend expects: uuid, origin, escrow, wallet, asset, type, ask, bid, stp, lmt, gtd, partial, public, status
       const orderData = {
-        uuid: orderUuid, // Reuse the same UUID from escrow generation
-        origin: originWallet || escrowWallet, // Use origin wallet from backend response, fallback to escrow
-        escrow: escrowWallet, // Escrow wallet address
-        wallet: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty", // Mock ss58 address (user wallet)
-        asset: Number(formData.asset), // NETUID
-        type: Number(formData.type), // 1: sell, 2: buy
-        ask: Number(formData.type === 1 ? formData.stp : 0.0), // For sell orders, ask = stop price
-        bid: Number(formData.type === 2 ? formData.stp : 0.0), // For buy orders, bid = stop price
-        stp: Number(formData.stp), // Stop price
-        lmt: Number(formData.stp), // Limit price (using stop price)
+        uuid: orderUuid,
+        origin: originWallet || escrowWallet,
+        escrow: escrowWallet,
+        wallet: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+        asset: Number(formData.asset),
+        type: Number(formData.type),
+        ask: Number(formData.type === 1 ? formData.stp : 0.0),
+        bid: Number(formData.type === 2 ? formData.stp : 0.0),
+        stp: Number(formData.stp),
+        lmt: Number(formData.stp),
         gtd:
-          formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc", // Good till date
-        partial: formData.partial ? "True" : "False", // Backend expects string "True"/"False"
-        public: formData.public ? "True" : "False", // Backend expects string "True"/"False"
-        status: 1, // 1 = Open status (order is now active)
+          formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
+        partial: formData.partial ? "True" : "False",
+        public: formData.public ? "True" : "False",
+        status: 1,
       };
 
-      // Call backend API
       const backendUrl =
         apiUrl ||
         process.env.NEXT_PUBLIC_API_URL ||
@@ -331,7 +309,6 @@ export function NewOrderModal({
         );
       }
 
-      // Order placed successfully
       onOrderPlaced?.();
       onOpenChange(false);
       resetForm();
@@ -345,35 +322,28 @@ export function NewOrderModal({
 
   const handleBack = () => {
     if (showPaymentButtons) {
-      // Back from payment to review
       setShowPaymentButtons(false);
       setShowReviewButtons(true);
     } else if (showReviewButtons) {
-      // Back from review to initial place order
       setShowReviewButtons(false);
     } else if (escrowGenerated && isInReviewMode) {
-      // Back from review mode - exit review mode, reset to before escrow generation
       setIsInReviewMode(false);
       setEscrowGenerated(false);
       setEscrowWallet("");
     } else if (escrowGenerated && !isInReviewMode) {
-      // Back from place order state - enter review mode (form becomes editable)
       setIsInReviewMode(true);
     }
   };
 
   const handleCancel = () => {
-    // Close modal and reset everything
     onOpenChange(false);
     resetForm();
   };
 
   const handleReviewOrder = () => {
     if (isInReviewMode) {
-      // Review Order clicked - exit review mode, make form read-only again
       setIsInReviewMode(false);
     } else {
-      // Move from review to payment buttons
       setShowReviewButtons(false);
       setShowPaymentButtons(true);
     }

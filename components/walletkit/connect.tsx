@@ -5,7 +5,6 @@ import { useEffect } from "react";
 
 export const ConnectButton = () => {
   useEffect(() => {
-    // Add custom styles to appkit-button
     const style = document.createElement("style");
     style.textContent = `
       appkit-button {

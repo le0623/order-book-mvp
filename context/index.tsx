@@ -4,9 +4,7 @@ import React, { ReactNode, useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider, cookieToInitialState, type Config } from 'wagmi'
 import { createAppKit } from '@reown/appkit/react'
-// Import config, networks, projectId, and wagmiAdapter from your config file
 import { config, networks, projectId, wagmiAdapter } from '@/config'
-// Import the default network separately if needed
 import { mainnet } from '@reown/appkit/networks'
 
 const queryClient = new QueryClient()
@@ -18,7 +16,6 @@ const metadata = {
   icons: [], 
 }
 
-// Flag to ensure AppKit is only initialized once on the client
 let appKitInitialized = false
 
 export default function ContextProvider({
@@ -30,7 +27,6 @@ export default function ContextProvider({
 }) {
   const initialState = cookieToInitialState(config as Config, cookies)
 
-  // Initialize AppKit only on the client side to prevent hydration errors
   useEffect(() => {
     if (typeof window !== 'undefined' && !appKitInitialized && projectId) {
       createAppKit({

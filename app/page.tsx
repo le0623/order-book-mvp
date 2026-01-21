@@ -10,11 +10,9 @@ import { WebSocketMessage } from "../lib/websocket-types";
 import { ConnectButton } from "../components/walletkit/connect";
 import { NewOrderModal } from "../components/new-order-modal";
 
-// Normalize WebSocket URL to ensure it ends with /book exactly once
 const getWebSocketUrl = (): string => {
   const baseUrl =
     process.env.NEXT_PUBLIC_WS_URL || "wss://api.subnet118.com/ws";
-  // Remove trailing /book if present, then append /book
   const normalized = baseUrl.replace(/\/book\/?$/, "");
   return `${normalized}/book`;
 };
@@ -30,14 +28,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.subnet118.com";
 export default function Home() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [newOrderModalOpen, setNewOrderModalOpen] = useState(false);
-  const [prices, setPrices] = useState<Record<number, number>>({}); // netuid -> price mapping
+  const [prices, setPrices] = useState<Record<number, number>>({});
   const [newlyAddedOrderIds, setNewlyAddedOrderIds] = useState<
     Map<string, number>
-  >(new Map()); // Track newly added orders for flash animation: orderId -> orderType (1=sell, 2=buy)
+  >(new Map());
 
   const isTerminalStatus = (status: number) => {
-    // Status 3 (error), 4 (closed), 6 (expired) are terminal and should be filtered out
-    // Status 2 (filled) should be kept for display under parent order
     return [3, 4, 6].includes(status);
   };
 
@@ -48,17 +44,15 @@ export default function Home() {
       );
 
       if (index === -1) {
-        // NEW ORDER DETECTED - add to flash animation set with order type
         const orderId = `${updatedOrder.uuid}-${updatedOrder.status}-${
           updatedOrder.escrow || ""
         }`;
         setNewlyAddedOrderIds((prev) => {
           const next = new Map(prev);
-          next.set(orderId, updatedOrder.type); // Store order type (1=sell, 2=buy)
+          next.set(orderId, updatedOrder.type);
           return next;
         });
 
-        // Remove flash after 2 seconds
         setTimeout(() => {
           setNewlyAddedOrderIds((prev) => {
             const next = new Map(prev);
@@ -67,7 +61,6 @@ export default function Home() {
           });
         }, 2000);
 
-        // For filled orders (status=2), always add them (they can coexist with parent)
         if (updatedOrder.status === 2) {
           return [updatedOrder, ...prevOrders];
         }
@@ -78,7 +71,6 @@ export default function Home() {
       }
 
       if (isTerminalStatus(updatedOrder.status)) {
-        // Only remove if it's not a filled order (status=2)
         if (updatedOrder.status !== 2) {
           return prevOrders.filter(
             (o) =>
@@ -102,14 +94,12 @@ export default function Home() {
   const normalizeOrder = useCallback((order: any): Order => {
     return {
       ...order,
-      // Convert string "True"/"False", numeric 1/0, or boolean to boolean
       partial:
         order.partial === "True" ||
         order.partial === true ||
         order.partial === 1,
       public:
         order.public === "True" || order.public === true || order.public === 1,
-      // Ensure numeric fields are numbers
       status: Number(order.status),
       type: Number(order.type),
       asset: Number(order.asset),
@@ -137,18 +127,14 @@ export default function Home() {
         return null;
       }
 
-      // Check if message has nested data structure (WebSocketMessage format)
       if ("data" in message && message.data !== undefined) {
         const wsMessage = message as WebSocketMessage;
-        // We've already checked data !== undefined, so use non-null assertion
         return {
           orderData: wsMessage.data!,
           messageUuid: wsMessage.uuid || "",
         };
       }
 
-      // Check if message itself is an order (flat format from backend)
-      // An Order must have at least 'uuid' and 'date' fields
       if ("uuid" in message && "date" in message) {
         return {
           orderData: message as Order,
@@ -163,7 +149,6 @@ export default function Home() {
 
   const handleWebSocketMessage = useCallback(
     (message: WebSocketMessage) => {
-      // Extract order data from message (handles both nested and flat formats)
       const extracted = extractOrderData(message);
       if (!extracted) {
         return;
@@ -171,13 +156,11 @@ export default function Home() {
 
       const { orderData, messageUuid } = extracted;
 
-      // Handle array of orders
       if (Array.isArray(orderData)) {
         setOrders((prev) => {
           const map = new Map(prev.map((o) => [o.uuid, o]));
 
           for (const order of orderData) {
-            // Normalize order data (convert string booleans to actual booleans)
             const normalized = normalizeOrder({
               ...order,
               uuid: order.uuid || messageUuid,
@@ -197,8 +180,6 @@ export default function Home() {
           return Array.from(map.values());
         });
       } else {
-        // Handle single order
-        // Normalize order data (convert string booleans to actual booleans)
         const normalized = normalizeOrder({
           ...orderData,
           uuid: orderData.uuid || messageUuid,
@@ -217,34 +198,27 @@ export default function Home() {
     onMessage: handleWebSocketMessage,
   });
 
-  // WebSocket connection for live price updates from /ws/price
   const handlePriceMessage = useCallback((message: any) => {
     try {
-      // Backend sends: {1: {price: 0.010463465}, 2: {price: 0.006411586}, ...} where keys are netuid (asset IDs)
-      // Handle double-encoded JSON if needed
       let priceData = message;
       if (typeof message === "string") {
         priceData = JSON.parse(message);
-        // Check if still a string (double-encoded)
         if (typeof priceData === "string") {
           priceData = JSON.parse(priceData);
         }
       }
 
       if (priceData && typeof priceData === "object") {
-        // Convert string keys to numbers and extract price from each object
         const priceMap: Record<number, number> = {};
         for (const [key, value] of Object.entries(priceData)) {
           const netuid = Number(key);
-          // Value is an object like {price: 0.010463465}, extract the price property
           let price: number;
           if (typeof value === "object" && value !== null && "price" in value) {
             price = Number((value as any).price);
           } else if (typeof value === "number") {
-            // Fallback: if value is directly a number
             price = Number(value);
           } else {
-            continue; // Skip invalid entries
+            continue;
           }
 
           if (!isNaN(netuid) && !isNaN(price) && price > 0) {
@@ -263,7 +237,6 @@ export default function Home() {
     onMessage: handlePriceMessage,
   });
 
-  // Fetch initial open orders on component mount
   useEffect(() => {
     const fetchInitialOrders = async () => {
       try {
@@ -276,7 +249,6 @@ export default function Home() {
 
         const data = await response.json();
 
-        // Parse JSON string if needed (API might return stringified JSON)
         const ordersArray = typeof data === "string" ? JSON.parse(data) : data;
 
         if (!Array.isArray(ordersArray)) {
@@ -284,7 +256,6 @@ export default function Home() {
           return;
         }
 
-        // Normalize and filter orders: only Open (status=1) AND public orders
         const normalizedOrders = ordersArray
           .map((order: any) => normalizeOrder(order))
           .filter((order: Order) => {
@@ -309,7 +280,6 @@ export default function Home() {
       const order = orders.find((o) => o.uuid === uuid && o.status === 1);
       if (!order) return;
 
-      // Prepare updated order data with all required fields
       const updatedOrderData = {
         uuid: order.uuid,
         origin: order.origin || "",
@@ -331,10 +301,9 @@ export default function Home() {
             : order.public
             ? "True"
             : "False",
-        status: 1, // Keep status as Open
+        status: 1,
       };
 
-      // Call backend API to persist changes
       const response = await fetch(`${API_URL}/rec`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -345,7 +314,6 @@ export default function Home() {
         throw new Error("Failed to update order");
       }
 
-      // Update local state optimistically - order will also be updated via WebSocket
       setOrders((prev) =>
         prev.map((o) => {
           if (o.uuid === uuid && o.status === 1) {
@@ -359,7 +327,6 @@ export default function Home() {
       );
     } catch (error) {
       console.error("Error updating order:", error);
-      // Optionally show an error message to the user
     }
   };
 
@@ -368,7 +335,6 @@ export default function Home() {
       const order = orders.find((o) => o.uuid === uuid && o.status === 1);
       if (!order) return;
 
-      // Call backend to close order (status=4)
       const closeOrderData = {
         uuid: order.uuid,
         origin: order.origin || "",
@@ -383,7 +349,7 @@ export default function Home() {
         gtd: order.gtd || "gtc",
         partial: order.partial ? "True" : "False",
         public: order.public ? "True" : "False",
-        status: 4, // 4 = Closed
+        status: 4,
       };
 
       const response = await fetch(`${API_URL}/rec`, {
@@ -396,7 +362,6 @@ export default function Home() {
         throw new Error("Failed to close order");
       }
 
-      // Update local state - the order will be removed by WebSocket update
       setOrders((prev) =>
         prev.map((o) => {
           if (o.uuid === uuid && o.status === 1) {
@@ -411,12 +376,8 @@ export default function Home() {
   };
 
   const handleFillOrder = () => {
-    // This will be called after a successful fill order
-    // The filled order will come via WebSocket automatically
-    // Just refresh or wait for WebSocket update
   };
 
-  // Separate orders: open orders (status=1) and filled orders (status=2)
   const { openOrders, filledOrdersMap } = useMemo(() => {
     const open: Order[] = [];
     const filled: Record<string, Order[]> = {}; // Parent UUID -> filled orders array
@@ -425,9 +386,7 @@ export default function Home() {
       if (order.status === 1) {
         open.push(order);
       } else if (order.status === 2) {
-        // For filled orders, the origin field contains the parent order UUID
-        // Group filled orders by their parent UUID
-        const parentUuid = order.origin || order.uuid; // Fallback to own UUID if origin not set
+        const parentUuid = order.origin || order.uuid;
         if (!filled[parentUuid]) {
           filled[parentUuid] = [];
         }
@@ -435,7 +394,6 @@ export default function Home() {
       }
     });
 
-    // Sort filled orders by date (newest first)
     Object.keys(filled).forEach((uuid) => {
       filled[uuid].sort((a, b) => {
         const dateA = new Date(a.date).getTime();
@@ -448,14 +406,12 @@ export default function Home() {
   }, [orders]);
 
   const sortedOrders = useMemo(() => {
-    // Deduplicate orders by UUID (keep the most recent one)
     const uniqueOrdersMap = new Map<string, Order>();
     openOrders.forEach((order) => {
       const existing = uniqueOrdersMap.get(order.uuid);
       if (!existing) {
         uniqueOrdersMap.set(order.uuid, order);
       } else {
-        // If duplicate, keep the one with more recent date
         const existingDate = new Date(existing.date).getTime();
         const currentDate = new Date(order.date).getTime();
         if (currentDate > existingDate) {

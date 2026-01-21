@@ -43,13 +43,10 @@ const getStatusColor = (status: number): string => {
 export const formatDate = (date: string | Date) => {
   let d: Date;
   if (typeof date === "string") {
-    // If string already has timezone info (Z, +, -), use as-is
-    // Otherwise, treat as UTC by appending 'Z' or replacing ' UTC' with 'Z'
     let dateStr = date.trim();
     if (dateStr.endsWith(" UTC")) {
       dateStr = dateStr.replace(" UTC", "Z");
     } else if (!dateStr.includes("Z") && !dateStr.match(/[+-]\d{2}:?\d{2}$/)) {
-      // No timezone info, append 'Z' to force UTC interpretation
       dateStr = dateStr + "Z";
     }
     d = new Date(dateStr);
@@ -72,13 +69,10 @@ export const formatDate = (date: string | Date) => {
 export const formatDateOnly = (date: string | Date) => {
   let d: Date;
   if (typeof date === "string") {
-    // If string already has timezone info (Z, +, -), use as-is
-    // Otherwise, treat as UTC by appending 'Z' or replacing ' UTC' with 'Z'
     let dateStr = date.trim();
     if (dateStr.endsWith(" UTC")) {
       dateStr = dateStr.replace(" UTC", "Z");
     } else if (!dateStr.includes("Z") && !dateStr.match(/[+-]\d{2}:?\d{2}$/)) {
-      // No timezone info, append 'Z' to force UTC interpretation
       dateStr = dateStr + "Z";
     }
     d = new Date(dateStr);
@@ -143,7 +137,6 @@ function SortableColumnHeader({
   );
 }
 
-// Escrow cell component to allow using hooks
 function EscrowCell({ escrowAddress }: { escrowAddress: string }) {
   const [copied, setCopied] = React.useState(false);
   const taostatsUrl = `https://taostats.io/account/${escrowAddress}`;
@@ -315,7 +308,6 @@ export const columns = (
       </div>
     ),
     cell: ({ row }) => {
-      // Use live price from /ws/price if available, otherwise fall back to stop price (stp)
       const asset = row.original.asset;
       const livePrice = prices[asset];
       const displayPrice =
@@ -341,8 +333,6 @@ export const columns = (
       const status = row.getValue("status") as number;
       const statusText = getOrderStatus(status);
 
-      // For filled orders (status=2), use plain outline badge like in row-details
-      // For other statuses, use color-coded badges
       const badgeVariant = "outline";
       const badgeClassName = status === 2 ? "font-medium" : `${getStatusColor(status)} font-medium`;
 

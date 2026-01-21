@@ -28,17 +28,17 @@ export function useWebSocket({
     onMessageRef.current = onMessage;
     onErrorRef.current = onError;
   }, [onMessage, onError]);
-  
+
   const connect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
 
     if (!enabled) return;
-    
-    if (wsRef.current?.readyState === WebSocket.OPEN || 
-        wsRef.current?.readyState === WebSocket.CONNECTING) {
+
+    if (wsRef.current?.readyState === WebSocket.OPEN ||
+      wsRef.current?.readyState === WebSocket.CONNECTING) {
       return;
     }
 
@@ -56,13 +56,13 @@ export function useWebSocket({
       ws.onclose = (event: CloseEvent) => {
         wsRef.current = null;
         setConnectionState("disconnected");
-        
+
         if (enabled && reconnectAttemptsRef.current < 10) {
           reconnectAttemptsRef.current++;
           const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
-          
-            reconnectTimeoutRef.current = setTimeout(() => {
-                connect();
+
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connect();
           }, delay);
         } else if (reconnectAttemptsRef.current >= 10) {
           setConnectionState("error");
@@ -71,17 +71,16 @@ export function useWebSocket({
 
       ws.onerror = (event: Event) => {
         setConnectionState("error");
-        
+
         if (onErrorRef.current) {
           onErrorRef.current(event);
         }
       };
-      
+
       ws.onmessage = async (event: MessageEvent) => {
         try {
           let rawData: string;
-          
-          // Handle different data types from WebSocket
+
           if (typeof event.data === 'string') {
             rawData = event.data;
           } else if (event.data instanceof Blob) {
@@ -89,44 +88,33 @@ export function useWebSocket({
           } else if (event.data instanceof ArrayBuffer) {
             rawData = new TextDecoder().decode(event.data);
           } else {
-            // If it's already an object, use it directly
             if (onMessageRef.current) {
               onMessageRef.current(event.data as WebSocketMessage);
             }
             return;
           }
 
-          // Trim whitespace
           rawData = rawData.trim();
-          
-          // Skip empty messages
+
           if (!rawData) {
             return;
           }
 
-          // First message from backend:
-          // - /ws/book: UUID string (skip it)
-          // - /ws/price: empty string '' (skip it, then process actual price data)
           if (isFirstMessageRef.current) {
             isFirstMessageRef.current = false;
-            // Skip first message (UUID for /ws/book, empty string for /ws/price)
             return;
           }
 
-          // Parse subsequent messages as JSON
           let message: WebSocketMessage = JSON.parse(rawData);
-          
-          // Handle double-encoded JSON (backend sends json.dumps() inside send_json())
-          // If the parsed result is a string, parse it again
+
           if (typeof message === 'string') {
             message = JSON.parse(message);
           }
-          
+
           if (onMessageRef.current) {
             onMessageRef.current(message);
           }
         } catch (error) {
-          // Silently skip invalid messages
         }
       };
     } catch (error) {
@@ -162,11 +150,11 @@ export function useWebSocket({
 
     return () => {
       if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
-          reconnectTimeoutRef.current = null;
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
       if (wsRef.current) {
-        wsRef.current.onclose = null; 
+        wsRef.current.onclose = null;
         wsRef.current.onerror = null;
         wsRef.current.onmessage = null;
         wsRef.current.onopen = null;
