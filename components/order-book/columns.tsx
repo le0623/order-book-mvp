@@ -341,11 +341,16 @@ export const columns = (
       const status = row.getValue("status") as number;
       const statusText = getOrderStatus(status);
 
+      // For filled orders (status=2), use plain outline badge like in row-details
+      // For other statuses, use color-coded badges
+      const badgeVariant = "outline";
+      const badgeClassName = status === 2 ? "font-medium" : `${getStatusColor(status)} font-medium`;
+
       return (
         <div className="flex justify-center pr-4">
           <Badge
-            variant="outline"
-            className={`${getStatusColor(status)} font-medium`}
+            variant={badgeVariant}
+            className={badgeClassName}
           >
             {statusText}
           </Badge>

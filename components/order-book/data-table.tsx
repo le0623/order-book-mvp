@@ -56,6 +56,7 @@ interface DataTableProps<TData, TValue> {
   renderSubComponent?: (props: { row: Row<TData> }) => React.ReactElement;
   onNewOrder?: () => void; // NEW: Callback to open New Order modal
   newlyAddedOrderIds?: Map<string, number>; // Track newly added orders for flash animation: orderId -> orderType
+  filledOrdersMap?: Record<string, TData[]>; // UUID -> filled orders array for search
 }
 
 export function DataTable<TData, TValue>({
@@ -64,6 +65,7 @@ export function DataTable<TData, TValue>({
   renderSubComponent,
   onNewOrder,
   newlyAddedOrderIds = new Map(),
+  filledOrdersMap = {},
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -87,11 +89,31 @@ export function DataTable<TData, TValue>({
   const headerScrollRef = React.useRef<HTMLDivElement | null>(null);
   const bodyScrollRef = React.useRef<HTMLDivElement | null>(null);
 
+  // Initialize default status filter on mount
   React.useEffect(() => {
-    if (columnFilters.length === 0) {
-      setColumnFilters([{ id: "status", value: [0, 1] }]);
+    setColumnFilters([{ id: "status", value: [0, 1] }]);
+  }, []);
+
+  // When search is active, clear status filter to show all statuses including filled orders
+  // When search is inactive, restore default status filter
+  React.useEffect(() => {
+    if (isSearchActive) {
+      // Remove status filter when searching to show all statuses
+      setColumnFilters((prev) => prev.filter((filter) => filter.id !== "status"));
+    } else {
+      // Restore default status filter when not searching
+      setColumnFilters((prev) => {
+        const hasStatusFilter = prev.some((filter) => filter.id === "status");
+        if (!hasStatusFilter) {
+          return [...prev, { id: "status", value: [0, 1] }];
+        }
+        // Ensure status filter has correct values
+        return prev.map((filter) =>
+          filter.id === "status" ? { id: "status", value: [0, 1] } : filter
+        );
+      });
     }
-  }, [columnFilters.length]);
+  }, [isSearchActive]);
 
   // Detect mobile view (under 968px)
   React.useEffect(() => {
@@ -198,11 +220,15 @@ export function DataTable<TData, TValue>({
 
   // Filter data by search parameters (address, orderType, assetId) with AND logic
   // Default: only show Open (status=1) AND public orders
-  // When searching: show all matching orders regardless of status/public using AND logic
+  // When searching: show all matching orders regardless of status/public using AND logic, including filled orders
   const filteredData = React.useMemo(() => {
     // If search is active, filter by all search parameters with AND logic
     if (isSearchActive) {
-      return data.filter((order: any) => {
+      // Combine regular orders with all filled orders from filledOrdersMap
+      const allFilledOrders = Object.values(filledOrdersMap).flat() as any[];
+      const allOrders = [...data, ...allFilledOrders];
+      
+      return allOrders.filter((order: any) => {
         // Address filter: match origin, escrow, or wallet with partial search
         let addressMatch = true;
         if (searchAddress && searchAddress.trim() !== "") {
@@ -232,7 +258,8 @@ export function DataTable<TData, TValue>({
         }
 
         // AND logic: all non-empty filters must match
-        return addressMatch && orderTypeMatch && assetIdMatch;
+        const matches = addressMatch && orderTypeMatch && assetIdMatch;
+        return matches;
       });
     }
 
@@ -259,7 +286,9 @@ export function DataTable<TData, TValue>({
     searchOrderType,
     searchAssetId,
     expanded,
+    filledOrdersMap,
   ]);
+
 
   const table = useReactTable({
     data: filteredData,
@@ -322,7 +351,7 @@ export function DataTable<TData, TValue>({
                     </div>
                     <div className="grid gap-4">
                       {/* Search Address */}
-                      <div className="grid gap-2 opacity-60">
+                      <div className="grid gap-2">
                         <Label htmlFor="search-address">
                           History(by wallet address)
                         </Label>
@@ -332,12 +361,12 @@ export function DataTable<TData, TValue>({
                           placeholder="Search by ss58 address"
                           value={searchAddress}
                           onChange={(e) => setSearchAddress(e.target.value)}
-                          className="h-9 focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 bg-background"
+                          className="h-9 text-sm font-normal focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 bg-background placeholder:opacity-60 placeholder:text-muted-foreground"
                         />
                       </div>
 
                       {/* Order Type */}
-                      <div className="grid gap-2 opacity-60">
+                      <div className="grid gap-2">
                         <Label htmlFor="search-order-type">Order Type</Label>
                         <Select
                           value={
@@ -351,19 +380,19 @@ export function DataTable<TData, TValue>({
                         >
                           <SelectTrigger
                             id="search-order-type"
-                            className="focus:ring-1 focus:ring-blue-500/30 focus:ring-offset-0 focus:border-blue-500/40 bg-background"
+                            className="text-sm font-normal focus:ring-1 focus:ring-blue-500/30 focus:ring-offset-0 focus:border-blue-500/40 bg-background [&[data-placeholder]>span]:opacity-60 [&[data-placeholder]>span]:text-muted-foreground"
                           >
                             <SelectValue placeholder="Select order type" />
                           </SelectTrigger>
                           <SelectContent className="bg-background">
-                            <SelectItem value="1">Sell</SelectItem>
-                            <SelectItem value="2">Buy</SelectItem>
+                            <SelectItem value="1" className="opacity-60">Sell</SelectItem>
+                            <SelectItem value="2" className="opacity-60">Buy</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
                       {/* Asset ID */}
-                      <div className="grid gap-2 opacity-60">
+                      <div className="grid gap-2">
                         <Label htmlFor="search-asset-id">Asset ID</Label>
                         <div className="relative flex items-center">
                           <Input
@@ -380,7 +409,7 @@ export function DataTable<TData, TValue>({
                                   : parseInt(value) || undefined
                               );
                             }}
-                            className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none bg-background"
+                            className="text-sm font-normal focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none bg-background placeholder:opacity-60 placeholder:text-muted-foreground"
                           />
                           <div className="absolute right-1 flex flex-col gap-0.5">
                             <button

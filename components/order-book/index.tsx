@@ -35,6 +35,7 @@ export function OrderBook({
       data={orders}
       onNewOrder={onNewOrder}
       newlyAddedOrderIds={newlyAddedOrderIds}
+      filledOrdersMap={filledOrdersMap}
       renderSubComponent={({ row }) => {
         const order = row.original;
         const filledOrders = filledOrdersMap[order.uuid] || [];

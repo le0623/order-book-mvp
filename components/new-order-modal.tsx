@@ -448,8 +448,8 @@ export function NewOrderModal({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">Sell</SelectItem>
-                <SelectItem value="2">Buy</SelectItem>
+                <SelectItem value="1" className="opacity-60">Sell</SelectItem>
+                <SelectItem value="2" className="opacity-60">Buy</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -529,8 +529,8 @@ export function NewOrderModal({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="gtc">GTC</SelectItem>
-                  <SelectItem value="date">Specific Date</SelectItem>
+                  <SelectItem value="gtc" className="opacity-60">GTC</SelectItem>
+                  <SelectItem value="date" className="opacity-60">Specific Date</SelectItem>
                 </SelectContent>
               </Select>
 
