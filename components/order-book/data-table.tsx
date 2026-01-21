@@ -691,13 +691,14 @@ export function DataTable<TData, TValue>({
               </TableBody>
             </Table>
           )}
-          <div className="flex items-center justify-end space-x-2 p-4 rounded-b-md bg-white dark:bg-background">
-            <div className="text-xs text-muted-foreground">
-              Showing {table.getRowModel().rows.length} rows
-            </div>
-          </div>
         </CardContent>
       </Card>
+
+      <div className="flex items-center justify-end space-x-2 p-4 rounded-b-md bg-white dark:bg-background">
+        <div className="text-xs text-muted-foreground">
+          Showing {table.getRowModel().rows.length} rows
+        </div>
+      </div>
 
       {showScrollToTop && (
         <Button
