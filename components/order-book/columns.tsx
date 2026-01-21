@@ -303,7 +303,7 @@ export const columns = (
   {
     accessorKey: "stp",
     header: () => (
-      <div className="flex justify-center pr-4">
+      <div className="flex justify-end pr-4">
         <span>Price</span>
       </div>
     ),
@@ -314,7 +314,7 @@ export const columns = (
         livePrice !== undefined && livePrice > 0 ? livePrice : row.original.stp;
 
       return (
-        <div className="flex justify-center pr-4">
+        <div className="flex justify-end pr-4">
           <div className="font-mono text-sm">{formatPrice(displayPrice)}</div>
         </div>
       );
