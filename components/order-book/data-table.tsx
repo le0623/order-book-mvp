@@ -353,7 +353,7 @@ export function DataTable<TData, TValue>({
                       {/* Search Address */}
                       <div className="grid gap-2">
                         <Label htmlFor="search-address">
-                          History(by wallet address)
+                          History (by wallet address)
                         </Label>
                         <Input
                           id="search-address"
