@@ -57,6 +57,7 @@ interface DataTableProps<TData, TValue> {
   onNewOrder?: () => void;
   newlyAddedOrderIds?: Map<string, number>;
   filledOrdersMap?: Record<string, TData[]>;
+  allOrdersForSearch?: TData[];
 }
 
 export function DataTable<TData, TValue>({
@@ -66,6 +67,7 @@ export function DataTable<TData, TValue>({
   onNewOrder,
   newlyAddedOrderIds = new Map(),
   filledOrdersMap = {},
+  allOrdersForSearch = [],
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -206,9 +208,20 @@ export function DataTable<TData, TValue>({
   const filteredData = React.useMemo(() => {
     if (isSearchActive) {
       const allFilledOrders = Object.values(filledOrdersMap).flat() as any[];
-      const allOrders = [...data, ...allFilledOrders];
-      
-      return allOrders.filter((order: any) => {
+      const searchOrders = allOrdersForSearch.length > 0
+        ? allOrdersForSearch
+        : [...data, ...allFilledOrders];
+
+      const uniqueOrdersMap = new Map<string, any>();
+      searchOrders.forEach((order: any) => {
+        const key = `${order.uuid}-${order.status}-${order.escrow || ""}`;
+        if (!uniqueOrdersMap.has(key)) {
+          uniqueOrdersMap.set(key, order);
+        }
+      });
+      const uniqueOrders = Array.from(uniqueOrdersMap.values());
+
+      return uniqueOrders.filter((order: any) => {
         let addressMatch = true;
         if (searchAddress && searchAddress.trim() !== "") {
           const searchLower = searchAddress.toLowerCase().trim();
@@ -259,6 +272,7 @@ export function DataTable<TData, TValue>({
     searchAssetId,
     expanded,
     filledOrdersMap,
+    allOrdersForSearch,
   ]);
 
 
@@ -490,9 +504,9 @@ export function DataTable<TData, TValue>({
                               {header.isPlaceholder
                                 ? null
                                 : flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext()
-                                  )}
+                                  header.column.columnDef.header,
+                                  header.getContext()
+                                )}
                             </TableHeadCell>
                           ))}
                         </TableRow>
@@ -512,13 +526,12 @@ export function DataTable<TData, TValue>({
                             <TableRow
                               data-state={row.getIsSelected() && "selected"}
                               data-expanded={row.getIsExpanded()}
-                              className={`cursor-pointer transition-colors hover:bg-muted/50 data-[expanded=true]:bg-muted/30 ${
-                                newlyAddedOrderIds.has(row.id)
-                                  ? newlyAddedOrderIds.get(row.id) === 2
-                                    ? "animate-flash-buy"
-                                    : "animate-flash-sell"
-                                  : ""
-                              }`}
+                              className={`cursor-pointer transition-colors hover:bg-muted/50 data-[expanded=true]:bg-muted/30 ${newlyAddedOrderIds.has(row.id)
+                                ? newlyAddedOrderIds.get(row.id) === 2
+                                  ? "animate-flash-buy"
+                                  : "animate-flash-sell"
+                                : ""
+                                }`}
                               onClick={() => {
                                 const currentExpanded = expanded as Record<
                                   string,
@@ -582,102 +595,101 @@ export function DataTable<TData, TValue>({
             </>
           ) : (
             <Table noWrapper className="w-full table-fixed">
-                <TableHeader
-                  ref={tableHeaderRef as any}
-                  className="sticky z-30 bg-background shadow-sm border-b"
-                >
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <TableHeadCell
-                          key={header.id}
-                          className="text-sm font-semibold normal-case"
-                          style={{ width: header.getSize() }}
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </TableHeadCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-
-                <TableBody>
-                  {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                      <React.Fragment key={row.id}>
-                        <TableRow
-                          data-state={row.getIsSelected() && "selected"}
-                          data-expanded={row.getIsExpanded()}
-                          className={`cursor-pointer transition-colors hover:bg-muted/50 data-[expanded=true]:bg-muted/30 ${
-                            newlyAddedOrderIds.has(row.id)
-                              ? newlyAddedOrderIds.get(row.id) === 2
-                                ? "animate-flash-buy"
-                                : "animate-flash-sell"
-                              : ""
-                          }`}
-                          onClick={() => {
-                            const currentExpanded = expanded as Record<
-                              string,
-                              boolean
-                            >;
-                            const allExpandedIds = Object.keys(
-                              currentExpanded
-                            ).filter((id) => currentExpanded[id]);
-
-                            const newExpanded: Record<string, boolean> = {};
-                            allExpandedIds.forEach((id) => {
-                              newExpanded[id] = false;
-                            });
-
-                            if (!row.getIsExpanded()) {
-                              newExpanded[row.id] = true;
-                            }
-
-                            setExpanded(newExpanded);
-                          }}
-                        >
-                          {row.getVisibleCells().map((cell) => (
-                            <TableCell
-                              key={cell.id}
-                              style={{ width: cell.column.getSize() }}
-                            >
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext()
-                              )}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-
-                        {row.getIsExpanded() && renderSubComponent && (
-                          <TableRow>
-                            <TableCell
-                              colSpan={columns.length}
-                              className="p-0 border-t-0"
-                            >
-                              {renderSubComponent({ row })}
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={columns.length}
-                        className="h-24 text-center text-muted-foreground"
+              <TableHeader
+                ref={tableHeaderRef as any}
+                className="sticky z-30 bg-background shadow-sm border-b"
+              >
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHeadCell
+                        key={header.id}
+                        className="text-sm font-semibold normal-case"
+                        style={{ width: header.getSize() }}
                       >
-                        No results found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                      </TableHeadCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <React.Fragment key={row.id}>
+                      <TableRow
+                        data-state={row.getIsSelected() && "selected"}
+                        data-expanded={row.getIsExpanded()}
+                        className={`cursor-pointer transition-colors hover:bg-muted/50 data-[expanded=true]:bg-muted/30 ${newlyAddedOrderIds.has(row.id)
+                          ? newlyAddedOrderIds.get(row.id) === 2
+                            ? "animate-flash-buy"
+                            : "animate-flash-sell"
+                          : ""
+                          }`}
+                        onClick={() => {
+                          const currentExpanded = expanded as Record<
+                            string,
+                            boolean
+                          >;
+                          const allExpandedIds = Object.keys(
+                            currentExpanded
+                          ).filter((id) => currentExpanded[id]);
+
+                          const newExpanded: Record<string, boolean> = {};
+                          allExpandedIds.forEach((id) => {
+                            newExpanded[id] = false;
+                          });
+
+                          if (!row.getIsExpanded()) {
+                            newExpanded[row.id] = true;
+                          }
+
+                          setExpanded(newExpanded);
+                        }}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell
+                            key={cell.id}
+                            style={{ width: cell.column.getSize() }}
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+
+                      {row.getIsExpanded() && renderSubComponent && (
+                        <TableRow>
+                          <TableCell
+                            colSpan={columns.length}
+                            className="p-0 border-t-0"
+                          >
+                            {renderSubComponent({ row })}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      No results found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           )}
           <div className="flex items-center justify-end space-x-2 p-4 rounded-b-md bg-white dark:bg-background">
             <div className="text-xs text-muted-foreground">

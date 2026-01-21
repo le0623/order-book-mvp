@@ -39,51 +39,42 @@ export default function Home() {
 
   const updateOrders = useCallback((updatedOrder: Order) => {
     setOrders((prevOrders) => {
-      const index = prevOrders.findIndex(
+      const sameStatusIndex = prevOrders.findIndex(
         (o) => o.uuid === updatedOrder.uuid && o.status === updatedOrder.status
       );
 
-      if (index === -1) {
-        const orderId = `${updatedOrder.uuid}-${updatedOrder.status}-${
-          updatedOrder.escrow || ""
-        }`;
+      if (sameStatusIndex !== -1) {
+        const newOrders = [...prevOrders];
+        newOrders[sameStatusIndex] = updatedOrder;
+        return newOrders;
+      }
+
+      const sameUuidIndex = prevOrders.findIndex(
+        (o) => o.uuid === updatedOrder.uuid
+      );
+
+      if (sameUuidIndex !== -1) {
+        const newOrders = [...prevOrders];
+        newOrders[sameUuidIndex] = updatedOrder;
+        return newOrders;
+      }
+
+      const orderId = `${updatedOrder.uuid}-${updatedOrder.status}-${updatedOrder.escrow || ""}`;
+      setNewlyAddedOrderIds((prev) => {
+        const next = new Map(prev);
+        next.set(orderId, updatedOrder.type);
+        return next;
+      });
+
+      setTimeout(() => {
         setNewlyAddedOrderIds((prev) => {
           const next = new Map(prev);
-          next.set(orderId, updatedOrder.type);
+          next.delete(orderId);
           return next;
         });
+      }, 2000);
 
-        setTimeout(() => {
-          setNewlyAddedOrderIds((prev) => {
-            const next = new Map(prev);
-            next.delete(orderId);
-            return next;
-          });
-        }, 2000);
-
-        if (updatedOrder.status === 2) {
-          return [updatedOrder, ...prevOrders];
-        }
-        if (isTerminalStatus(updatedOrder.status)) {
-          return prevOrders;
-        }
-        return [updatedOrder, ...prevOrders];
-      }
-
-      if (isTerminalStatus(updatedOrder.status)) {
-        if (updatedOrder.status !== 2) {
-          return prevOrders.filter(
-            (o) =>
-              !(
-                o.uuid === updatedOrder.uuid && o.status === updatedOrder.status
-              )
-          );
-        }
-      }
-
-      const newOrders = [...prevOrders];
-      newOrders[index] = updatedOrder;
-      return newOrders;
+      return [updatedOrder, ...prevOrders];
     });
   }, []);
 
@@ -257,12 +248,7 @@ export default function Home() {
         }
 
         const normalizedOrders = ordersArray
-          .map((order: any) => normalizeOrder(order))
-          .filter((order: Order) => {
-            const isOpen = order.status === 1;
-            const isPublic = order.public === true;
-            return isOpen && isPublic;
-          });
+          .map((order: any) => normalizeOrder(order));
 
         if (normalizedOrders.length > 0) {
           setOrders(normalizedOrders);
@@ -299,8 +285,8 @@ export default function Home() {
               ? "True"
               : "False"
             : order.public
-            ? "True"
-            : "False",
+              ? "True"
+              : "False",
         status: 1,
       };
 
@@ -361,15 +347,6 @@ export default function Home() {
       if (!response.ok) {
         throw new Error("Failed to close order");
       }
-
-      setOrders((prev) =>
-        prev.map((o) => {
-          if (o.uuid === uuid && o.status === 1) {
-            return { ...o, status: 4 };
-          }
-          return o;
-        })
-      );
     } catch (error) {
       console.error("Error closing order:", error);
     }
@@ -383,7 +360,7 @@ export default function Home() {
     const filled: Record<string, Order[]> = {}; // Parent UUID -> filled orders array
 
     orders.forEach((order) => {
-      if (order.status === 1) {
+      if (order.status === 1 && order.public === true) {
         open.push(order);
       } else if (order.status === 2) {
         const parentUuid = order.origin || order.uuid;
@@ -487,6 +464,7 @@ export default function Home() {
           prices={prices}
           filledOrdersMap={filledOrdersMap}
           newlyAddedOrderIds={newlyAddedOrderIds}
+          allOrdersForSearch={orders}
           onUpdateOrder={handleUpdateOrder}
           onCancelOrder={handleCancelOrder}
           onFillOrder={handleFillOrder}
