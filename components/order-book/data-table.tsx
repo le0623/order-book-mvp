@@ -293,7 +293,7 @@ export function DataTable<TData, TValue>({
   const rows = table.getRowModel().rows;
   return (
     <div className="w-full smooth-scroll">
-      <Card className="w-full border-border/60 shadow-sm bg-card/50 backdrop-blur-sm mb-8">
+      <Card className="w-full border-border/60 shadow-sm bg-card/50 backdrop-blur-sm mb-3">
         <CardHeader
           ref={cardHeaderRef as any}
           className="sticky top-[100px] z-30 rounded-t-md bg-background border-b border-border/40 pb-4 shadow-sm"
@@ -694,7 +694,7 @@ export function DataTable<TData, TValue>({
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-end space-x-2 p-4 rounded-b-md bg-white dark:bg-background">
+      <div className="flex items-center justify-end space-x-2 rounded-b-md bg-white dark:bg-background mb-8">
         <div className="text-xs text-muted-foreground">
           Showing {table.getRowModel().rows.length} rows
         </div>
