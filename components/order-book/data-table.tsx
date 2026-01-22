@@ -694,7 +694,7 @@ export function DataTable<TData, TValue>({
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-end space-x-2 rounded-b-md bg-white dark:bg-background mb-8">
+      <div className="flex items-center justify-end space-x-2 rounded-b-md bg-white dark:bg-background mb-12">
         <div className="text-xs text-muted-foreground">
           Showing {table.getRowModel().rows.length} rows
         </div>
