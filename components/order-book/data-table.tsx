@@ -296,7 +296,7 @@ export function DataTable<TData, TValue>({
       <Card className="w-full border-border/60 shadow-sm bg-card/50 backdrop-blur-sm mb-3">
         <CardHeader
           ref={cardHeaderRef as any}
-          className="sticky top-[100px] z-30 rounded-t-md bg-[#E8EBED] dark:bg-background border-b border-border/40 pb-4 shadow-sm"
+          className="sticky top-[100px] z-30 rounded-t-md bg-background border-b border-border/40 pb-4 shadow-sm"
         >
           <div className="flex items-center justify-between mb-4">
             <CardTitle className="text-xl font-semibold tracking-tight">
@@ -493,7 +493,7 @@ export function DataTable<TData, TValue>({
             <>
               <div
                 ref={headerScrollRef}
-                className="overflow-x-auto overflow-y-hidden sticky z-30 shadow-sm border-b scrollbar-hide"
+                className="overflow-x-auto overflow-y-hidden sticky z-30 bg-background shadow-sm border-b scrollbar-hide"
               >
                 <div className="min-w-[1200px]">
                   <Table noWrapper className="w-full table-fixed">
@@ -531,7 +531,7 @@ export function DataTable<TData, TValue>({
                             <TableRow
                               data-state={row.getIsSelected() && "selected"}
                               data-expanded={row.getIsExpanded()}
-                              className={`cursor-pointer transition-colors data-[expanded=true]:bg-slate-100 dark:data-[expanded=true]:bg-muted/30 ${newlyAddedOrderIds.has(row.id)
+                              className={`cursor-pointer transition-colors hover:bg-muted/50 data-[expanded=true]:bg-muted/30 ${newlyAddedOrderIds.has(row.id)
                                 ? newlyAddedOrderIds.get(row.id) === 2
                                   ? "animate-flash-buy"
                                   : "animate-flash-sell"
@@ -602,7 +602,7 @@ export function DataTable<TData, TValue>({
             <Table noWrapper className="w-full table-fixed">
               <TableHeader
                 ref={tableHeaderRef as any}
-                className="sticky z-30 shadow-sm border-b"
+                className="sticky z-30 bg-background shadow-sm border-b"
               >
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
@@ -631,7 +631,7 @@ export function DataTable<TData, TValue>({
                       <TableRow
                         data-state={row.getIsSelected() && "selected"}
                         data-expanded={row.getIsExpanded()}
-                        className={`cursor-pointer transition-colors data-[expanded=true]:bg-slate-100 dark:data-[expanded=true]:bg-muted/30 ${newlyAddedOrderIds.has(row.id)
+                        className={`cursor-pointer transition-colors hover:bg-muted/50 data-[expanded=true]:bg-muted/30 ${newlyAddedOrderIds.has(row.id)
                           ? newlyAddedOrderIds.get(row.id) === 2
                             ? "animate-flash-buy"
                             : "animate-flash-sell"
