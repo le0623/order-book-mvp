@@ -176,8 +176,7 @@ export function NewOrderModal({
           errorText = await response.text();
         }
         throw new Error(
-          `Server error (${response.status}): ${
-            errorText || response.statusText
+          `Server error (${response.status}): ${errorText || response.statusText
           }`
         );
       }
@@ -303,8 +302,7 @@ export function NewOrderModal({
           errorText = await response.text();
         }
         throw new Error(
-          `Server error (${response.status}): ${
-            errorText || response.statusText
+          `Server error (${response.status}): ${errorText || response.statusText
           }`
         );
       }
@@ -431,12 +429,12 @@ export function NewOrderModal({
               <Input
                 id="asset"
                 type="number"
-                min="0"
+                min="1"
                 value={formData.asset}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    asset: parseInt(e.target.value) || 0,
+                    asset: parseInt(e.target.value) || 1,
                   })
                 }
                 disabled={escrowGenerated && !isInReviewMode}
@@ -449,7 +447,7 @@ export function NewOrderModal({
                     if (!escrowGenerated || isInReviewMode) {
                       setFormData({
                         ...formData,
-                        asset: Math.max(0, formData.asset + 1),
+                        asset: Math.max(1, formData.asset + 1),
                       });
                     }
                   }}
@@ -465,7 +463,7 @@ export function NewOrderModal({
                     if (!escrowGenerated || isInReviewMode) {
                       setFormData({
                         ...formData,
-                        asset: Math.max(0, formData.asset - 1),
+                        asset: Math.max(1, formData.asset - 1),
                       });
                     }
                   }}

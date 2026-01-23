@@ -311,7 +311,7 @@ export function DataTable<TData, TValue>({
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="h-9">
                     <Search className="h-4 w-4 mr-2" />
-                    Search
+                    Search Order
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -379,16 +379,21 @@ export function DataTable<TData, TValue>({
                           <Input
                             id="search-asset-id"
                             type="number"
-                            min="0"
+                            min="1"
                             placeholder="Asset ID (NETUID)"
-                            value={searchAssetId ?? ""}
+                            value={searchAssetId === undefined ? "" : searchAssetId}
                             onChange={(e) => {
                               const value = e.target.value;
-                              setSearchAssetId(
-                                value === ""
-                                  ? undefined
-                                  : parseInt(value) || undefined
-                              );
+                              if (value === "" || value === "0") {
+                                setSearchAssetId(undefined);
+                                return;
+                              }
+                              const parsed = parseInt(value);
+                              if (isNaN(parsed) || parsed < 1) {
+                                setSearchAssetId(undefined);
+                                return;
+                              }
+                              setSearchAssetId(parsed);
                             }}
                             className="text-sm font-normal focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none bg-background placeholder:opacity-60 placeholder:text-muted-foreground"
                           />
@@ -397,7 +402,7 @@ export function DataTable<TData, TValue>({
                               type="button"
                               onClick={() => {
                                 setSearchAssetId((prev) =>
-                                  prev === undefined ? 0 : Math.max(0, prev + 1)
+                                  prev === undefined ? 1 : Math.max(1, prev + 1)
                                 );
                               }}
                               className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -409,7 +414,7 @@ export function DataTable<TData, TValue>({
                               type="button"
                               onClick={() => {
                                 setSearchAssetId((prev) => {
-                                  if (prev === undefined || prev === 0) {
+                                  if (prev === undefined || prev <= 1) {
                                     return undefined;
                                   }
                                   return prev - 1;
@@ -445,7 +450,7 @@ export function DataTable<TData, TValue>({
                           setSearchPopoverOpen(false);
                         }}
                       >
-                        Search
+                        Search Order
                       </Button>
                     </div>
                   </div>
