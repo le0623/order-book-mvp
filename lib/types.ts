@@ -39,7 +39,7 @@ export const getOrderType = (type: number): OrderType => {
 
 export const getOrderStatus = (status: number): OrderStatus => {
   switch (status) {
-    case -1:
+    case -1: 
     case 0: return "Init"
     case 1: return "Open"
     case 2: return "Filled"

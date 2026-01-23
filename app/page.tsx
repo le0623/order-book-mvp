@@ -60,21 +60,21 @@ export default function Home() {
       }
 
       const orderId = `${updatedOrder.uuid}-${updatedOrder.status}-${updatedOrder.escrow || ""}`;
-      setNewlyAddedOrderIds((prev) => {
-        const next = new Map(prev);
-        next.set(orderId, updatedOrder.type);
-        return next;
-      });
-
-      setTimeout(() => {
         setNewlyAddedOrderIds((prev) => {
           const next = new Map(prev);
-          next.delete(orderId);
+        next.set(orderId, updatedOrder.type);
           return next;
         });
-      }, 2000);
 
-      return [updatedOrder, ...prevOrders];
+        setTimeout(() => {
+          setNewlyAddedOrderIds((prev) => {
+            const next = new Map(prev);
+            next.delete(orderId);
+            return next;
+          });
+        }, 2000);
+
+        return [updatedOrder, ...prevOrders];
     });
   }, []);
 
@@ -285,8 +285,8 @@ export default function Home() {
               ? "True"
               : "False"
             : order.public
-              ? "True"
-              : "False",
+            ? "True"
+            : "False",
         status: 1,
       };
 

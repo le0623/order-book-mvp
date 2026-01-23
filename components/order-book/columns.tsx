@@ -191,169 +191,169 @@ function EscrowCell({ escrowAddress }: { escrowAddress: string }) {
 export const columns = (
   prices: Record<number, number> = {}
 ): ColumnDef<Order>[] => [
-    {
-      accessorKey: "date",
-      header: () => <div className="pl-4">Date</div>,
-      cell: ({ row }) => (
-        <div
-          className="font-mono whitespace-nowrap pl-4"
-          style={{ fontSize: "0.875rem" }}
-        >
-          {formatDate(row.getValue("date"))}
-        </div>
-      ),
-      size: 160,
-      minSize: 160,
+  {
+    accessorKey: "date",
+    header: () => <div className="pl-4">Date</div>,
+    cell: ({ row }) => (
+      <div
+        className="font-mono whitespace-nowrap pl-4"
+        style={{ fontSize: "0.875rem" }}
+      >
+        {formatDate(row.getValue("date"))}
+      </div>
+    ),
+    size: 160,
+    minSize: 160,
+  },
+  {
+    accessorKey: "escrow",
+    header: "Escrow",
+    cell: ({ row }) => {
+      const escrowAddress = row.getValue("escrow") as string;
+      return <EscrowCell escrowAddress={escrowAddress} />;
     },
-    {
-      accessorKey: "escrow",
-      header: "Escrow",
-      cell: ({ row }) => {
-        const escrowAddress = row.getValue("escrow") as string;
-        return <EscrowCell escrowAddress={escrowAddress} />;
-      },
-      size: 110,
-      minSize: 110,
-    },
-    {
-      accessorKey: "type",
-      header: "Order",
-      cell: ({ row }) => {
-        const orderType = getOrderType(row.getValue("type"));
-        return (
-          <Badge
-            variant={orderType === "Buy" ? "outline" : "secondary"}
+    size: 110,
+    minSize: 110,
+  },
+  {
+    accessorKey: "type",
+    header: "Order",
+    cell: ({ row }) => {
+      const orderType = getOrderType(row.getValue("type"));
+      return (
+        <Badge
+          variant={orderType === "Buy" ? "outline" : "secondary"}
             className={`font-medium ${orderType === "Buy"
-                ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
-                : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
-              }`}
-          >
-            {orderType}
-          </Badge>
-        );
-      },
-      size: 60,
-      minSize: 60,
+              ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
+              : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
+          }`}
+        >
+          {orderType}
+        </Badge>
+      );
     },
-    {
-      accessorKey: "asset",
+    size: 60,
+    minSize: 60,
+  },
+  {
+    accessorKey: "asset",
       header: () => (
         <div className="flex justify-end">
           <span>Asset</span>
         </div>
       ),
-      cell: ({ row }) => {
-        const asset = row.getValue("asset") as number;
-        if (asset === 0) {
+    cell: ({ row }) => {
+      const asset = row.getValue("asset") as number;
+      if (asset === 0) {
           return <span className="font-mono justify-end text-sm">—</span>;
-        }
-        const taostatsUrl = `https://taostats.io/subnets/${asset}`;
-        return (
+      }
+      const taostatsUrl = `https://taostats.io/subnets/${asset}`;
+      return (
           <div className="flex justify-end gap-1.5">
-            <span className="font-mono text-sm">SN{asset}</span>
-            <a
-              href={taostatsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground/80 hover:text-muted-foreground/80 transition-all flex-shrink-0 opacity-80 hover:opacity-90"
-              title={`View subnet ${asset} on Taostats`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          </div>
-        );
-      },
-      size: 50,
-      minSize: 50,
-    },
-    {
-      accessorKey: "bid",
-      id: "tao",
-      header: () => (
-        <div className="flex justify-end">
-          <span>Tao</span>
+          <span className="font-mono text-sm">SN{asset}</span>
+          <a
+            href={taostatsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground/80 hover:text-muted-foreground/80 transition-all flex-shrink-0 opacity-80 hover:opacity-90"
+            title={`View subnet ${asset} on Taostats`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
         </div>
-      ),
-      cell: ({ row }) => {
-        return (
-          <div className="text-right font-mono text-sm">
-            {formatNumber(row.original.bid || 0)}
-          </div>
-        );
-      },
-      size: 70,
-      minSize: 70,
+      );
     },
-    {
-      accessorKey: "ask",
-      id: "alpha",
-      header: () => (
-        <div className="flex justify-end">
-          <span>Alpha</span>
+    size: 50,
+    minSize: 50,
+  },
+  {
+    accessorKey: "bid",
+    id: "tao",
+    header: () => (
+      <div className="flex justify-end">
+        <span>Tao</span>
+      </div>
+    ),
+    cell: ({ row }) => {
+      return (
+        <div className="text-right font-mono text-sm">
+          {formatNumber(row.original.bid || 0)}
         </div>
-      ),
-      cell: ({ row }) => {
-        return (
-          <div className="text-right font-mono text-sm">
-            {formatNumber(row.original.ask || 0)}
-          </div>
-        );
-      },
-      size: 70,
-      minSize: 70,
+      );
     },
-    {
-      accessorKey: "stp",
-      header: () => (
+    size: 70,
+    minSize: 70,
+  },
+  {
+    accessorKey: "ask",
+    id: "alpha",
+    header: () => (
+      <div className="flex justify-end">
+        <span>Alpha</span>
+      </div>
+    ),
+    cell: ({ row }) => {
+      return (
+        <div className="text-right font-mono text-sm">
+          {formatNumber(row.original.ask || 0)}
+        </div>
+      );
+    },
+    size: 70,
+    minSize: 70,
+  },
+  {
+    accessorKey: "stp",
+    header: () => (
         <div className="flex justify-end pr-4">
-          <span>Price</span>
-        </div>
-      ),
-      cell: ({ row }) => {
-        const asset = row.original.asset;
-        const livePrice = prices[asset];
-        const displayPrice =
-          livePrice !== undefined && livePrice > 0 ? livePrice : row.original.stp;
+        <span>Price</span>
+      </div>
+    ),
+    cell: ({ row }) => {
+      const asset = row.original.asset;
+      const livePrice = prices[asset];
+      const displayPrice =
+        livePrice !== undefined && livePrice > 0 ? livePrice : row.original.stp;
 
-        return (
+      return (
           <div className="flex justify-end pr-4">
-            <div className="font-mono text-sm">{formatPrice(displayPrice)}</div>
-          </div>
-        );
-      },
-      size: 90,
-      minSize: 90,
-    },
-    {
-      accessorKey: "status",
-      header: () => (
-        <div className="flex justify-center pr-4">
-          <span>Status</span>
+          <div className="font-mono text-sm">{formatPrice(displayPrice)}</div>
         </div>
-      ),
-      cell: ({ row }) => {
-        const status = row.getValue("status") as number;
-        const statusText = getOrderStatus(status);
+      );
+    },
+    size: 90,
+    minSize: 90,
+  },
+  {
+    accessorKey: "status",
+    header: () => (
+      <div className="flex justify-center pr-4">
+        <span>Status</span>
+      </div>
+    ),
+    cell: ({ row }) => {
+      const status = row.getValue("status") as number;
+      const statusText = getOrderStatus(status);
 
         const badgeVariant = "outline";
         const badgeClassName = status === 2 ? "font-medium" : `${getStatusColor(status)} font-medium`;
 
-        return (
-          <div className="flex justify-center pr-4">
-            <Badge
+      return (
+        <div className="flex justify-center pr-4">
+          <Badge
               variant={badgeVariant}
               className={badgeClassName}
-            >
-              {statusText}
-            </Badge>
-          </div>
-        );
-      },
-      filterFn: (row, id, value) => {
-        return value.includes(row.getValue(id));
-      },
-      size: 90,
-      minSize: 90,
+          >
+            {statusText}
+          </Badge>
+        </div>
+      );
     },
-  ];
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
+    },
+    size: 90,
+    minSize: 90,
+  },
+];

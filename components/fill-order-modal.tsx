@@ -15,6 +15,7 @@ import { Loader2, Copy, CheckIcon } from "lucide-react";
 import { Order } from "@/lib/types";
 import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
+import { useWallet } from "@/context/wallet-context";
 
 interface FillOrderModalProps {
   open: boolean;
@@ -42,13 +43,35 @@ export function FillOrderModal({
   apiUrl,
   onOrderFilled,
 }: FillOrderModalProps) {
+  const { selectedAccount, isConnected } = useWallet();
   const [escrowWallet, setEscrowWallet] = React.useState<string>("");
   const [originWallet, setOriginWallet] = React.useState<string>("");
   const [orderUuid, setOrderUuid] = React.useState<string>("");
   const [escrowGenerated, setEscrowGenerated] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string>("");
+  const [errorVisible, setErrorVisible] = React.useState(false);
   const [copiedEscrow, setCopiedEscrow] = React.useState(false);
+
+  // Auto-dismiss error after 6 seconds with animation
+  React.useEffect(() => {
+    if (error) {
+      setErrorVisible(true);
+      const fadeOutTimer = setTimeout(() => {
+        setErrorVisible(false);
+        // Clear error after fade-out animation completes (300ms)
+        setTimeout(() => {
+          setError("");
+        }, 300);
+      }, 6000);
+
+      return () => {
+        clearTimeout(fadeOutTimer);
+      };
+    } else {
+      setErrorVisible(false);
+    }
+  }, [error]);
 
   const fixedValues = React.useMemo(() => {
     const asset = Number(order.asset);
@@ -96,14 +119,20 @@ export function FillOrderModal({
       setLoading(true);
       setError("");
 
+      // Check if wallet is connected
+      if (!isConnected || !selectedAccount?.address) {
+        setError("Please connect your wallet to fill an order. Click the 'Wallet' button to get started.");
+        setLoading(false);
+        return;
+      }
+
       const fillOrderUuid = uuidv4();
 
       const orderData = {
         uuid: fillOrderUuid,
         origin: "",
         escrow: "",
-        wallet:
-          order.wallet || "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+        wallet: selectedAccount.address,
         asset: fixedValues.asset,
         type: fixedValues.type,
         ask: fixedValues.alpha,
@@ -152,8 +181,7 @@ export function FillOrderModal({
           errorText = await response.text();
         }
         throw new Error(
-          `Server error (${response.status}): ${
-            errorText || response.statusText
+          `Server error (${response.status}): ${errorText || response.statusText
           }`
         );
       }
@@ -208,6 +236,13 @@ export function FillOrderModal({
       setLoading(true);
       setError("");
 
+      // Check if wallet is connected
+      if (!isConnected || !selectedAccount?.address) {
+        setError("Please connect your wallet to fill an order. Click the 'Wallet' button to get started.");
+        setLoading(false);
+        return;
+      }
+
       if (!orderUuid || !escrowWallet) {
         throw new Error("Missing order UUID or escrow wallet address");
       }
@@ -215,8 +250,7 @@ export function FillOrderModal({
         uuid: orderUuid,
         origin: order.uuid,
         escrow: escrowWallet,
-        wallet:
-          order.wallet || "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+        wallet: selectedAccount.address,
         asset: fixedValues.asset,
         type: fixedValues.type,
         ask: fixedValues.alpha,
@@ -265,8 +299,7 @@ export function FillOrderModal({
           errorText = await response.text();
         }
         throw new Error(
-          `Server error (${response.status}): ${
-            errorText || response.statusText
+          `Server error (${response.status}): ${errorText || response.statusText
           }`
         );
       }
@@ -305,7 +338,12 @@ export function FillOrderModal({
         </DialogHeader>
 
         {error && (
-          <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+          <div
+            className={`p-3 rounded-md bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 text-sm transition-all duration-300 ease-in-out ${errorVisible
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 -translate-y-2 pointer-events-none"
+              }`}
+          >
             {error}
           </div>
         )}

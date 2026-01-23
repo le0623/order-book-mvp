@@ -38,6 +38,7 @@ import {
 import { format } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 import { NewOrderFormData } from "@/lib/types";
+import { useWallet } from "@/context/wallet-context";
 
 interface NewOrderModalProps {
   open: boolean;
@@ -62,6 +63,7 @@ export function NewOrderModal({
   onOrderPlaced,
   apiUrl,
 }: NewOrderModalProps) {
+  const { selectedAccount, isConnected } = useWallet();
   const [formData, setFormData] = React.useState<NewOrderFormData>({
     type: 1, // 1 = Sell (default)
     asset: 1, // NETUID (default)
@@ -75,6 +77,7 @@ export function NewOrderModal({
   const [orderUuid, setOrderUuid] = React.useState<string>(""); // Store UUID for reuse when placing order
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string>("");
+  const [errorVisible, setErrorVisible] = React.useState(false);
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
     undefined
   );
@@ -83,6 +86,26 @@ export function NewOrderModal({
   const [showReviewButtons, setShowReviewButtons] = React.useState(false);
   const [showPaymentButtons, setShowPaymentButtons] = React.useState(false);
   const [isInReviewMode, setIsInReviewMode] = React.useState(false);
+
+  // Auto-dismiss error after 6 seconds with animation
+  React.useEffect(() => {
+    if (error) {
+      setErrorVisible(true);
+      const fadeOutTimer = setTimeout(() => {
+        setErrorVisible(false);
+        // Clear error after fade-out animation completes (300ms)
+        setTimeout(() => {
+          setError("");
+        }, 300);
+      }, 6000);
+
+      return () => {
+        clearTimeout(fadeOutTimer);
+      };
+    } else {
+      setErrorVisible(false);
+    }
+  }, [error]);
 
   const resetForm = () => {
     setFormData({
@@ -121,12 +144,19 @@ export function NewOrderModal({
       setLoading(true);
       setError("");
 
+      // Check if wallet is connected
+      if (!isConnected || !selectedAccount?.address) {
+        setError("Please connect your wallet to create an order. Click the 'Wallet' button to get started.");
+        setLoading(false);
+        return;
+      }
+
       const orderUuid = uuidv4();
       const orderData = {
         uuid: orderUuid,
         origin: "",
         escrow: "",
-        wallet: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+        wallet: selectedAccount.address,
         asset: Number(formData.asset),
         type: Number(formData.type),
         ask: Number(formData.type === 1 ? formData.stp : 0.0),
@@ -244,6 +274,13 @@ export function NewOrderModal({
       setLoading(true);
       setError("");
 
+      // Check if wallet is connected
+      if (!isConnected || !selectedAccount?.address) {
+        setError("Please connect your wallet to place an order. Click the 'Wallet' button to get started.");
+        setLoading(false);
+        return;
+      }
+
       if (!orderUuid || !escrowWallet) {
         throw new Error("Missing order UUID or escrow wallet address");
       }
@@ -252,7 +289,7 @@ export function NewOrderModal({
         uuid: orderUuid,
         origin: originWallet || escrowWallet,
         escrow: escrowWallet,
-        wallet: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+        wallet: selectedAccount.address,
         asset: Number(formData.asset),
         type: Number(formData.type),
         ask: Number(formData.type === 1 ? formData.stp : 0.0),
@@ -362,7 +399,12 @@ export function NewOrderModal({
         </DialogHeader>
 
         {error && (
-          <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+          <div
+            className={`p-3 rounded-md bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 text-sm transition-all duration-300 ease-in-out ${errorVisible
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 -translate-y-2 pointer-events-none"
+              }`}
+          >
             {error}
           </div>
         )}

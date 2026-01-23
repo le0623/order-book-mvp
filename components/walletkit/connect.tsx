@@ -1,42 +1,83 @@
 "use client";
 
-import { Wallet } from "lucide-react";
-import { useEffect } from "react";
+import { useState } from "react";
+import { Wallet, ChevronDown } from "lucide-react";
+import { useWallet } from "@/context/wallet-context";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { formatWalletAddress } from "@/lib/types";
+import { WalletModal } from "./wallet-modal";
 
 export const ConnectButton = () => {
-  useEffect(() => {
-    const style = document.createElement("style");
-    style.textContent = `
-      appkit-button {
-        --wui-color-accent-100: transparent !important;
-      }
-      appkit-button button {
-        background: transparent !important;
-        border: 1px solid hsl(var(--border)) !important;
-        border-radius: 0.5rem !important;
-        padding: 0.5rem 1rem !important;
-        transition: all 0.2s !important;
-        display: flex !important;
-        align-items: center !important;
-        gap: 0.5rem !important;
-      }
-      appkit-button button:hover {
-        background: hsl(var(--accent)) !important;
-      }
-    `;
-    document.head.appendChild(style);
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
+  const {
+    isConnected,
+    selectedAccount,
+    accounts,
+    disconnect,
+    selectAccount
+  } = useWallet();
+  const [modalOpen, setModalOpen] = useState(false);
+
+  if (isConnected && selectedAccount) {
+    return (
+      <>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <Wallet className="h-4 w-4" />
+              <span className="hidden sm:inline">
+                {formatWalletAddress(selectedAccount.address)}
+              </span>
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Connected Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {accounts.map((account) => (
+              <DropdownMenuItem
+                key={account.address}
+                onClick={() => selectAccount(account.address)}
+                className={selectedAccount.address === account.address ? "bg-accent" : ""}
+              >
+                <div className="flex flex-col">
+                  <span className="font-medium">{account.name || "Account"}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatWalletAddress(account.address)}
+                  </span>
+                </div>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={disconnect} className="text-red-600">
+              Disconnect
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </>
+    );
+  }
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="px-2.5 py-1.5 gap-4 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-red-500 border border-primary/20"></div>
-        <Wallet className="h-4 w-4 text-muted-foreground" />
-      </div>
-      {/* <appkit-button /> */}
-    </div>
+    <>
+      <Button
+        variant="outline"
+        onClick={() => setModalOpen(true)}
+        className="gap-2"
+      >
+        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+        <Wallet className="h-4 w-4" />
+        <span className="hidden sm:inline">Wallet</span>
+      </Button>
+      <WalletModal open={modalOpen} onOpenChange={setModalOpen} />
+    </>
   );
 };
