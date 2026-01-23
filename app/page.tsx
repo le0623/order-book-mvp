@@ -335,7 +335,7 @@ export default function Home() {
         gtd: order.gtd || "gtc",
         partial: order.partial ? "True" : "False",
         public: order.public ? "True" : "False",
-        status: 4,
+        status: 3,
       };
 
       const response = await fetch(`${API_URL}/rec`, {

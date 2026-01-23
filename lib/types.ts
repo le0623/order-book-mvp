@@ -16,7 +16,7 @@ export interface Order {
   gtd: string // good till datetime UTC
   partial: boolean // allow partial fills
   public: boolean // public order
-  status: number // -1: init, 1: open, 2: filled, 3: error, 4: closed, 5: stopped, 6: expired
+  status: number // -1: init, 1: open, 2: filled, 3: closed, 4: error, 5: stopped, 6: expired
 }
 
 export interface NewOrderFormData {
@@ -43,8 +43,8 @@ export const getOrderStatus = (status: number): OrderStatus => {
     case 0: return "Init"
     case 1: return "Open"
     case 2: return "Filled"
-    case 3: return "Error"
-    case 4: return "Closed"
+    case 3: return "Closed"
+    case 4: return "Error"
     case 5: return "Stopped"
     case 6: return "Expired"
     default: return "Init"
