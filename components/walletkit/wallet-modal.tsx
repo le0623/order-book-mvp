@@ -147,7 +147,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                                 </>
                             ) : (
                                 <>
-                                    <XCircle className="h-5 w-5 text-muted-foreground" />
+                                    <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
                                     <Button
                                         onClick={() => handleInstall('polkadot-js')}
                                         variant="outline"
@@ -201,7 +201,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                                 </>
                             ) : (
                                 <>
-                                    <XCircle className="h-5 w-5 text-muted-foreground" />
+                                    <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
                                     <Button
                                         onClick={() => handleInstall('bittensor-wallet')}
                                         variant="outline"
