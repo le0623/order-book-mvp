@@ -296,26 +296,54 @@ export function DataTable<TData, TValue>({
       <Card className="w-full border-border/60 shadow-sm bg-card/50 backdrop-blur-sm mb-3">
         <CardHeader
           ref={cardHeaderRef as any}
-          className="sticky top-[100px] z-30 rounded-t-md bg-background border-b border-border/40 pb-4 shadow-sm"
+          className="sticky top-[100px] z-30 rounded-t-md bg-[#E0E4E7] dark:bg-background border-b border-[#C0C4C7] dark:border-border/40 pb-4 shadow-[0_2px_4px_rgba(0,0,0,0.1)] dark:shadow-sm"
         >
           <div className="flex items-center justify-between mb-4">
             <CardTitle className="text-xl font-semibold tracking-tight">
               {isSearchActive ? "Order History" : "Order Book"}
             </CardTitle>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col min-[550px]:flex-row items-end min-[550px]:items-center gap-2">
+              {isSearchActive ? (
+                <Button
+                  onClick={() => {
+                    setIsSearchActive(false);
+                    setSearchAddress("");
+                    setSearchOrderType(undefined);
+                    setSearchAssetId(undefined);
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="h-9 w-full min-[550px]:w-auto"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </Button>
+              ) : (
+                onNewOrder && (
+                  <Button
+                    onClick={onNewOrder}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold w-full min-[550px]:w-auto shadow-[0_2px_4px_rgba(0,0,0,0.1)]"
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Order
+                  </Button>
+                )
+              )}
+
               <Popover
                 open={searchPopoverOpen}
                 onOpenChange={setSearchPopoverOpen}
               >
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9">
+                  <Button variant="outline" size="sm" className="h-9 w-full min-[550px]:w-auto bg-[#E0E4E7] hover:bg-[#D0D4D7] border-[#C0C4C7] dark:bg-transparent dark:hover:bg-muted dark:border-border shadow-[0_2px_4px_rgba(0,0,0,0.1)] dark:shadow-none">
                     <Search className="h-4 w-4 mr-2" />
                     Search Order
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[480px] bg-background"
+                  className="w-[480px] max-w-[calc(100vw-2rem)] min-[550px]:w-[480px] bg-[#E0E4E7] dark:bg-background"
                   align="end"
                   sideOffset={1}
                 >
@@ -444,7 +472,7 @@ export function DataTable<TData, TValue>({
                       </Button>
                       <Button
                         size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                        className="bg-[#E0E4E7] hover:bg-[#D0D4D7] text-foreground font-semibold dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white"
                         onClick={() => {
                           setIsSearchActive(true);
                           setSearchPopoverOpen(false);
@@ -456,34 +484,6 @@ export function DataTable<TData, TValue>({
                   </div>
                 </PopoverContent>
               </Popover>
-
-              {isSearchActive ? (
-                <Button
-                  onClick={() => {
-                    setIsSearchActive(false);
-                    setSearchAddress("");
-                    setSearchOrderType(undefined);
-                    setSearchAssetId(undefined);
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="h-9"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back
-                </Button>
-              ) : (
-                onNewOrder && (
-                  <Button
-                    onClick={onNewOrder}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-                    size="sm"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Order
-                  </Button>
-                )
-              )}
             </div>
           </div>
         </CardHeader>
@@ -531,7 +531,7 @@ export function DataTable<TData, TValue>({
                             <TableRow
                               data-state={row.getIsSelected() && "selected"}
                               data-expanded={row.getIsExpanded()}
-                              className={`cursor-pointer transition-colors hover:bg-muted/50 data-[expanded=true]:bg-muted/30 ${newlyAddedOrderIds.has(row.id)
+                              className={`cursor-pointer transition-colors data-[expanded=true]:bg-slate-100 dark:data-[expanded=true]:bg-muted/30 ${newlyAddedOrderIds.has(row.id)
                                 ? newlyAddedOrderIds.get(row.id) === 2
                                   ? "animate-flash-buy"
                                   : "animate-flash-sell"
@@ -631,7 +631,7 @@ export function DataTable<TData, TValue>({
                       <TableRow
                         data-state={row.getIsSelected() && "selected"}
                         data-expanded={row.getIsExpanded()}
-                        className={`cursor-pointer transition-colors hover:bg-muted/50 data-[expanded=true]:bg-muted/30 ${newlyAddedOrderIds.has(row.id)
+                        className={`cursor-pointer transition-colors data-[expanded=true]:bg-slate-100 dark:data-[expanded=true]:bg-muted/30 ${newlyAddedOrderIds.has(row.id)
                           ? newlyAddedOrderIds.get(row.id) === 2
                             ? "animate-flash-buy"
                             : "animate-flash-sell"

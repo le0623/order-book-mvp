@@ -422,21 +422,21 @@ export default function Home() {
                     {connectionState === "connected" ? (
                       <>
                         <Wifi className="h-4 w-4 text-green-500" />
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground hidden md:inline">
                           Live
                         </span>
                       </>
                     ) : connectionState === "connecting" ? (
                       <>
                         <Wifi className="h-4 w-4 text-yellow-500 animate-pulse" />
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground hidden md:inline">
                           Connecting...
                         </span>
                       </>
                     ) : (
                       <>
                         <WifiOff className="h-4 w-4 text-red-500" />
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground hidden md:inline">
                           Disconnected
                         </span>
                       </>

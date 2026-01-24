@@ -15,7 +15,7 @@ const Table = React.forwardRef<
       />
     )
   }
-  
+
   return (
     <div className="relative w-full overflow-auto">
       <table
@@ -32,7 +32,14 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+  <thead
+    ref={ref}
+    className={cn(
+      "[&_tr]:border-b [&_tr]:border-[#C0C4C7] dark:[&_tr]:border-border bg-[#E0E4E7] dark:bg-background [&_tr]:bg-[#E0E4E7] dark:[&_tr]:bg-background shadow-[0_2px_4px_rgba(0,0,0,0.1)] dark:shadow-none",
+      className
+    )}
+    {...props}
+  />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -42,7 +49,7 @@ const TableBody = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tbody
     ref={ref}
-    className={cn("[&_tr:last-child]:border-0", className)}
+    className={cn("[&_tr:last-child]:border-0 bg-[#F5F7F9] dark:bg-transparent", className)}
     {...props}
   />
 ))
@@ -69,10 +76,10 @@ const TableRow = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tr
     ref={ref}
-      className={cn(
-        "border-b border-border/30 transition-all data-[state=selected]:bg-muted shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.2)]",
-        className
-      )}
+    className={cn(
+      "border-b border-border/30 transition-all data-[state=selected]:bg-muted shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.2)] bg-[#F5F7F9] dark:bg-transparent hover:bg-[#E8EBED] dark:hover:bg-muted/50",
+      className
+    )}
     {...props}
   />
 ))
@@ -85,7 +92,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-12 px-4 text-left align-middle font-medium text-muted-foreground uppercase text-xs tracking-wider [&:has([role=checkbox])]:pr-0",
+      "h-12 px-4 text-left align-middle font-medium text-muted-foreground uppercase text-xs tracking-wider [&:has([role=checkbox])]:pr-0 bg-[#E0E4E7] dark:bg-background border-b border-[#C0C4C7] dark:border-border",
       className
     )}
     {...props}

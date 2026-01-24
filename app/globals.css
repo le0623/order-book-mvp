@@ -80,6 +80,7 @@
   * {
     @apply border-border scroll-smooth;
   }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
@@ -92,27 +93,35 @@
   .smooth-scroll {
     scroll-behavior: smooth;
   }
+
   .smooth-scroll::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
+
   .smooth-scroll::-webkit-scrollbar-track {
     @apply bg-muted/30;
   }
+
   .smooth-scroll::-webkit-scrollbar-thumb {
     @apply bg-border rounded-full;
   }
+
   .smooth-scroll::-webkit-scrollbar-thumb:hover {
     @apply bg-border/80;
   }
 
   /* Hide scrollbar but keep scroll functionality */
   .scrollbar-hide {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
   }
+
   .scrollbar-hide::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
+    display: none;
+    /* Chrome, Safari, Opera */
   }
 }
 
@@ -165,13 +174,15 @@
   right: 0 !important;
   pointer-events: none !important;
 }
+
 .rdp-button_next {
   top: 4px !important;
   position: absolute !important;
   right: 106px !important;
 }
+
 .rdp-month_caption {
-  margin-left:30px !important;
+  margin-left: 30px !important;
 }
 
 .rdp-button_previous {
@@ -199,17 +210,24 @@ button[name="next-month"] {
 /* Flash animation for newly added orders - Buy (green) */
 @keyframes flash-buy {
   0% {
-    background-color: rgb(16 185 129 / 0.8); /* emerald-500/80 - very bright green start */
-    box-shadow: 0 0 20px rgb(16 185 129 / 0.5); /* Add glow effect */
+    background-color: rgb(16 185 129 / 0.8);
+    /* emerald-500/80 - very bright green start */
+    box-shadow: 0 0 20px rgb(16 185 129 / 0.5);
+    /* Add glow effect */
   }
+
   30% {
-    background-color: rgb(16 185 129 / 0.6); /* emerald-500/60 */
+    background-color: rgb(16 185 129 / 0.6);
+    /* emerald-500/60 */
     box-shadow: 0 0 15px rgb(16 185 129 / 0.3);
   }
+
   60% {
-    background-color: rgb(16 185 129 / 0.3); /* emerald-500/30 */
+    background-color: rgb(16 185 129 / 0.3);
+    /* emerald-500/30 */
     box-shadow: 0 0 10px rgb(16 185 129 / 0.2);
   }
+
   100% {
     background-color: transparent;
     box-shadow: none;
@@ -219,17 +237,24 @@ button[name="next-month"] {
 /* Flash animation for newly added orders - Sell (red) */
 @keyframes flash-sell {
   0% {
-    background-color: rgb(244 63 94 / 0.8); /* rose-500/80 - very bright red start */
-    box-shadow: 0 0 20px rgb(244 63 94 / 0.5); /* Add glow effect */
+    background-color: rgb(244 63 94 / 0.8);
+    /* rose-500/80 - very bright red start */
+    box-shadow: 0 0 20px rgb(244 63 94 / 0.5);
+    /* Add glow effect */
   }
+
   30% {
-    background-color: rgb(244 63 94 / 0.6); /* rose-500/60 */
+    background-color: rgb(244 63 94 / 0.6);
+    /* rose-500/60 */
     box-shadow: 0 0 15px rgb(244 63 94 / 0.3);
   }
+
   60% {
-    background-color: rgb(244 63 94 / 0.3); /* rose-500/30 */
+    background-color: rgb(244 63 94 / 0.3);
+    /* rose-500/30 */
     box-shadow: 0 0 10px rgb(244 63 94 / 0.2);
   }
+
   100% {
     background-color: transparent;
     box-shadow: none;
@@ -247,13 +272,18 @@ button[name="next-month"] {
 /* Flash animation for entire pane when order is modified */
 @keyframes flash-pane {
   0% {
-    background-color: rgb(96 165 250 / 0.5) !important; /* faint blue (blue-400) with 50% opacity */
+    background-color: rgb(96 165 250 / 0.5) !important;
+    /* faint blue (blue-400) with 50% opacity */
   }
+
   50% {
-    background-color: rgb(96 165 250 / 0.3) !important; /* fade to 30% */
+    background-color: rgb(96 165 250 / 0.3) !important;
+    /* fade to 30% */
   }
+
   100% {
-    background-color: rgb(47 63 74 / 0.4) !important; /* back to original bg-[#2F3F4A]/40 */
+    background-color: rgb(47 63 74 / 0.4) !important;
+    /* back to original bg-[#2F3F4A]/40 */
   }
 }
 

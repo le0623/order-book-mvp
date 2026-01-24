@@ -13,6 +13,7 @@ interface ThemeContextType {
   theme: Theme
   setTheme: (theme: Theme) => void
   toggleTheme: () => void
+  mounted: boolean
 }
 
 const ThemeContext = React.createContext<ThemeContextType | undefined>(undefined)
@@ -62,8 +63,9 @@ export function ThemeProvider({ children, defaultTheme = "dark" }: ThemeProvider
       theme,
       setTheme,
       toggleTheme,
+      mounted,
     }),
-    [theme, toggleTheme]
+    [theme, toggleTheme, mounted]
   )
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>

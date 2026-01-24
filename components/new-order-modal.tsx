@@ -393,7 +393,7 @@ export function NewOrderModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-w-[calc(100vw-2rem)] w-[calc(100vw-2rem)] sm:w-auto bg-[#E0E4E7] dark:bg-background">
         <DialogHeader>
           <DialogTitle>New Order</DialogTitle>
         </DialogHeader>
@@ -698,7 +698,7 @@ export function NewOrderModal({
               <Button
                 onClick={handleNext}
                 disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                className="bg-[#E0E4E7] hover:bg-[#D0D4D7] text-foreground font-semibold dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white"
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Escrow
@@ -716,7 +716,7 @@ export function NewOrderModal({
               <Button
                 onClick={isInReviewMode ? handleReviewOrder : handlePlaceOrder}
                 disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                className="bg-[#E0E4E7] hover:bg-[#D0D4D7] text-foreground font-semibold dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white"
               >
                 {isInReviewMode ? "Review Order" : "Place Order"}
               </Button>
