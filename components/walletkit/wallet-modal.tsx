@@ -116,6 +116,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                                     src="/polkadot-wallet.png"
                                     alt="Polkadot.js Wallet"
                                     fill
+                                    sizes="40px"
                                     className="object-contain"
                                 />
                             </div>
@@ -172,6 +173,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                                     src="/bittesnor-wallet.png"
                                     alt="Bittensor Wallet"
                                     fill
+                                    sizes="40px"
                                     className="object-contain"
                                 />
                             </div>

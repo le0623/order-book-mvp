@@ -496,6 +496,7 @@ export default function Home() {
           onFillOrder={handleFillOrder}
           onNewOrder={() => setNewOrderModalOpen(true)}
           apiUrl={API_URL}
+          showMyOrdersOnly={showMyOrdersOnly}
         />
 
         <NewOrderModal

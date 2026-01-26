@@ -191,16 +191,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
                 throw new Error('Failed to enable wallet extension')
             }
 
-            // Debug: Log extension structure
-            if (process.env.NODE_ENV === 'development') {
-                console.log('Extension object:', extension)
-                console.log('Extension keys:', Object.keys(extension))
-                if (extension.accounts) {
-                    console.log('Accounts API type:', typeof extension.accounts)
-                    console.log('Accounts API keys:', Object.keys(extension.accounts))
-                }
-            }
-
             // Check if accounts API exists
             const accountsApi = extension.accounts
 

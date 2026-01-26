@@ -58,6 +58,8 @@ interface DataTableProps<TData, TValue> {
   newlyAddedOrderIds?: Map<string, number>;
   filledOrdersMap?: Record<string, TData[]>;
   allOrdersForSearch?: TData[];
+  walletAddress?: string;
+  showMyOrdersOnly?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -68,6 +70,8 @@ export function DataTable<TData, TValue>({
   newlyAddedOrderIds = new Map(),
   filledOrdersMap = {},
   allOrdersForSearch = [],
+  walletAddress,
+  showMyOrdersOnly = false,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -300,7 +304,7 @@ export function DataTable<TData, TValue>({
         >
           <div className="flex items-center justify-between mb-4">
             <CardTitle className="text-xl font-semibold tracking-tight">
-              {isSearchActive ? "Order History" : "Order Book"}
+              {isSearchActive ? "Order History" : showMyOrdersOnly ? "My Orders" : "Order Book"}
             </CardTitle>
 
             <div className="flex flex-col min-[550px]:flex-row items-end min-[550px]:items-center gap-2">

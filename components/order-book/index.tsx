@@ -17,6 +17,7 @@ interface OrderBookProps {
   onNewOrder?: () => void;
   apiUrl?: string;
   allOrdersForSearch?: Order[];
+  showMyOrdersOnly?: boolean;
 }
 
 export function OrderBook({
@@ -30,6 +31,7 @@ export function OrderBook({
   onNewOrder,
   apiUrl,
   allOrdersForSearch = [],
+  showMyOrdersOnly = false,
 }: OrderBookProps) {
   return (
     <DataTable
@@ -39,21 +41,22 @@ export function OrderBook({
       newlyAddedOrderIds={newlyAddedOrderIds}
       filledOrdersMap={filledOrdersMap}
       allOrdersForSearch={allOrdersForSearch}
+      showMyOrdersOnly={showMyOrdersOnly}
       renderSubComponent={({ row }) => {
         const order = row.original;
         const filledOrders = filledOrdersMap[order.uuid] || [];
         return (
-        <OrderBookRowDetails
+          <OrderBookRowDetails
             key={`${order.uuid}-${order.status}-${order.stp}-${order.public}`}
             order={order}
             filledOrders={filledOrders}
             prices={prices}
             newlyAddedOrderIds={newlyAddedOrderIds}
-          onUpdateOrder={onUpdateOrder} 
-          onCancelOrder={onCancelOrder}
+            onUpdateOrder={onUpdateOrder}
+            onCancelOrder={onCancelOrder}
             onFillOrder={onFillOrder}
             apiUrl={apiUrl}
-        />
+          />
         );
       }}
     />
