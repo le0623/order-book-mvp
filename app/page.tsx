@@ -11,7 +11,7 @@ import { ConnectButton } from "../components/walletkit/connect";
 import { NewOrderModal } from "../components/new-order-modal";
 import { useWallet } from "../context/wallet-context";
 import { Button } from "../components/ui/button";
-import { ListFilter } from "lucide-react";
+import { Menu } from "lucide-react";
 
 const getWebSocketUrl = (): string => {
   const baseUrl =
@@ -468,7 +468,6 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <ThemeToggle />
               <ConnectButton />
-
               {selectedAccount && (
                 <Button
                   variant={showMyOrdersOnly ? "default" : "outline"}
@@ -476,11 +475,10 @@ export default function Home() {
                   onClick={() => setShowMyOrdersOnly(!showMyOrdersOnly)}
                   className="gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1)] dark:shadow-none"
                 >
-                  <ListFilter className="h-4 w-4" />
+                  <Menu className="h-4 w-4" />
                   <span className="hidden sm:inline">My Orders</span>
                 </Button>
               )}
-
             </div>
           </div>
         </header>

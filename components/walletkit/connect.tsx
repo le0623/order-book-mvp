@@ -30,7 +30,7 @@ export const ConnectButton = () => {
       <>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1)] dark:shadow-none">
+            <Button variant="outline" size="sm" className="gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1)] dark:shadow-none">
               <div className="w-2 h-2 rounded-full bg-green-500"></div>
               <Wallet className="h-4 w-4" />
               <span className="hidden sm:inline">
@@ -70,6 +70,7 @@ export const ConnectButton = () => {
     <>
       <Button
         variant="outline"
+        size="sm"
         onClick={() => setModalOpen(true)}
         className="gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1)] dark:shadow-none"
       >

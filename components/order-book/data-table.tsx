@@ -308,34 +308,6 @@ export function DataTable<TData, TValue>({
             </CardTitle>
 
             <div className="flex flex-col min-[550px]:flex-row items-end min-[550px]:items-center gap-2">
-              {isSearchActive ? (
-                <Button
-                  onClick={() => {
-                    setIsSearchActive(false);
-                    setSearchAddress("");
-                    setSearchOrderType(undefined);
-                    setSearchAssetId(undefined);
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="h-9 w-full min-[550px]:w-auto"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back
-                </Button>
-              ) : (
-                onNewOrder && (
-                  <Button
-                    onClick={onNewOrder}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold w-full min-[550px]:w-auto shadow-[0_2px_4px_rgba(0,0,0,0.1)]"
-                    size="sm"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Order
-                  </Button>
-                )
-              )}
-
               <Popover
                 open={searchPopoverOpen}
                 onOpenChange={setSearchPopoverOpen}
@@ -488,6 +460,33 @@ export function DataTable<TData, TValue>({
                   </div>
                 </PopoverContent>
               </Popover>
+              {isSearchActive ? (
+                <Button
+                  onClick={() => {
+                    setIsSearchActive(false);
+                    setSearchAddress("");
+                    setSearchOrderType(undefined);
+                    setSearchAssetId(undefined);
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="h-9 w-full min-[550px]:w-auto"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </Button>
+              ) : (
+                onNewOrder && (
+                  <Button
+                    onClick={onNewOrder}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold w-full min-[550px]:w-auto shadow-[0_2px_4px_rgba(0,0,0,0.1)]"
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Order
+                  </Button>
+                )
+              )}
             </div>
           </div>
         </CardHeader>
