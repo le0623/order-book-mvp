@@ -459,7 +459,7 @@ export default function Home() {
                 </div>
                 <div className="flex items-center gap-3 mt-0">
                   <p className="text-muted-foreground text-[16px] font-bold leading-[0.375rem]">
-                    by Subnet 118
+                    Powered by Subnet 118
                   </p>
                 </div>
               </div>
