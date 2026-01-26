@@ -48,8 +48,8 @@ interface NewOrderModalProps {
 }
 
 const generateMockEscrowAddress = (): string => {
-  const chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"; // Base58 alphabet
-  const prefix = "5"; // Common Substrate/Polkadot address prefix
+  const chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"; 
+  const prefix = "5"; 
   let address = prefix;
   for (let i = 0; i < 47; i++) {
     address += chars[Math.floor(Math.random() * chars.length)];
@@ -65,16 +65,16 @@ export function NewOrderModal({
 }: NewOrderModalProps) {
   const { selectedAccount, isConnected } = useWallet();
   const [formData, setFormData] = React.useState<NewOrderFormData>({
-    type: 1, // 1 = Sell (default)
-    asset: 1, // NETUID (default)
-    gtd: "gtc", // Good till cancel (default)
+    type: 1, 
+    asset: 1, 
+    gtd: "gtc", 
     stp: 0,
     partial: true,
     public: true,
   });
   const [escrowWallet, setEscrowWallet] = React.useState<string>("");
-  const [originWallet, setOriginWallet] = React.useState<string>(""); // Store origin wallet from backend response
-  const [orderUuid, setOrderUuid] = React.useState<string>(""); // Store UUID for reuse when placing order
+  const [originWallet, setOriginWallet] = React.useState<string>("");
+  const [orderUuid, setOrderUuid] = React.useState<string>("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string>("");
   const [errorVisible, setErrorVisible] = React.useState(false);
@@ -87,13 +87,17 @@ export function NewOrderModal({
   const [showPaymentButtons, setShowPaymentButtons] = React.useState(false);
   const [isInReviewMode, setIsInReviewMode] = React.useState(false);
 
-  // Auto-dismiss error after 6 seconds with animation
+  React.useEffect(() => {
+    if (open && selectedAccount?.address) {
+      setOriginWallet(selectedAccount.address);
+    }
+  }, [open, selectedAccount?.address]);
+
   React.useEffect(() => {
     if (error) {
       setErrorVisible(true);
       const fadeOutTimer = setTimeout(() => {
         setErrorVisible(false);
-        // Clear error after fade-out animation completes (300ms)
         setTimeout(() => {
           setError("");
         }, 300);
@@ -144,7 +148,6 @@ export function NewOrderModal({
       setLoading(true);
       setError("");
 
-      // Check if wallet is connected
       if (!isConnected || !selectedAccount?.address) {
         setError("Please connect your wallet to create an order. Click the 'Wallet' button to get started.");
         setLoading(false);
@@ -154,7 +157,7 @@ export function NewOrderModal({
       const orderUuid = uuidv4();
       const orderData = {
         uuid: orderUuid,
-        origin: "",
+        origin: selectedAccount.address,
         escrow: "",
         wallet: selectedAccount.address,
         asset: Number(formData.asset),
@@ -227,15 +230,12 @@ export function NewOrderModal({
 
       let responseUuid = "";
       let escrowAddress = "";
-      let originAddress = "";
       if (Array.isArray(data) && data.length > 0) {
         responseUuid = data[0].uuid || "";
         escrowAddress = data[0].escrow || "";
-        originAddress = data[0].origin || "";
       } else if (data && typeof data === "object") {
         responseUuid = data.uuid || "";
         escrowAddress = data.escrow || "";
-        originAddress = data.origin || "";
       }
 
       if (!escrowAddress) {
@@ -245,7 +245,6 @@ export function NewOrderModal({
       const finalUuid = responseUuid || orderUuid;
 
       setEscrowWallet(escrowAddress);
-      setOriginWallet(originAddress || escrowAddress);
       setOrderUuid(finalUuid);
       setEscrowGenerated(true);
     } catch (err: any) {
@@ -274,9 +273,20 @@ export function NewOrderModal({
       setLoading(true);
       setError("");
 
-      // Check if wallet is connected
       if (!isConnected || !selectedAccount?.address) {
         setError("Please connect your wallet to place an order. Click the 'Wallet' button to get started.");
+        setLoading(false);
+        return;
+      }
+
+      if (originWallet && originWallet !== selectedAccount.address) {
+        setError("Wallet address changed. Please regenerate escrow with the current wallet or reconnect the original wallet.");
+        setLoading(false);
+        return;
+      }
+
+      if (!originWallet) {
+        setError("Origin wallet not set. Please close and reopen the order modal.");
         setLoading(false);
         return;
       }
@@ -287,7 +297,7 @@ export function NewOrderModal({
 
       const orderData = {
         uuid: orderUuid,
-        origin: originWallet || escrowWallet,
+        origin: originWallet,
         escrow: escrowWallet,
         wallet: selectedAccount.address,
         asset: Number(formData.asset),
@@ -302,7 +312,6 @@ export function NewOrderModal({
         public: formData.public ? "True" : "False",
         status: 1,
       };
-
       const backendUrl =
         apiUrl ||
         process.env.NEXT_PUBLIC_API_URL ||

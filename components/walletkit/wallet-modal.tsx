@@ -121,12 +121,12 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <div className="font-medium">{WALLET_INFO['polkadot-js'].name}</div>
                                     {isWalletInstalled('polkadot-js') ? (
                                         <CheckCircle2 className="h-4 w-4 text-green-500" />
                                     ) : (
                                         <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
                                     )}
+                                    <div className="font-medium">{WALLET_INFO['polkadot-js'].name}</div>
                                 </div>
                                 <div className="text-sm text-muted-foreground">
                                     {WALLET_INFO['polkadot-js'].description}
@@ -177,12 +177,12 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <div className="font-medium">{WALLET_INFO['bittensor-wallet'].name}</div>
                                     {isWalletInstalled('bittensor-wallet') ? (
                                         <CheckCircle2 className="h-4 w-4 text-green-500" />
                                     ) : (
                                         <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
                                     )}
+                                    <div className="font-medium">{WALLET_INFO['bittensor-wallet'].name}</div>
                                 </div>
                                 <div className="text-sm text-muted-foreground">
                                     {WALLET_INFO['bittensor-wallet'].description}

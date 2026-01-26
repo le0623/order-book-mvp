@@ -9,6 +9,9 @@ import { useWebSocket } from "../hooks/useWebSocket";
 import { WebSocketMessage } from "../lib/websocket-types";
 import { ConnectButton } from "../components/walletkit/connect";
 import { NewOrderModal } from "../components/new-order-modal";
+import { useWallet } from "../context/wallet-context";
+import { Button } from "../components/ui/button";
+import { ListFilter } from "lucide-react";
 
 const getWebSocketUrl = (): string => {
   const baseUrl =
@@ -26,12 +29,20 @@ const WS_PRICE_URL =
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.subnet118.com";
 
 export default function Home() {
+  const { selectedAccount } = useWallet();
   const [orders, setOrders] = useState<Order[]>([]);
   const [newOrderModalOpen, setNewOrderModalOpen] = useState(false);
   const [prices, setPrices] = useState<Record<number, number>>({});
   const [newlyAddedOrderIds, setNewlyAddedOrderIds] = useState<
     Map<string, number>
   >(new Map());
+  const [showMyOrdersOnly, setShowMyOrdersOnly] = useState(false);
+
+  useEffect(() => {
+    if (!selectedAccount) {
+      setShowMyOrdersOnly(false);
+    }
+  }, [selectedAccount]);
 
   const isTerminalStatus = (status: number) => {
     return [3, 4, 6].includes(status);
@@ -60,28 +71,24 @@ export default function Home() {
       }
 
       const orderId = `${updatedOrder.uuid}-${updatedOrder.status}-${updatedOrder.escrow || ""}`;
+      setNewlyAddedOrderIds((prev) => {
+        const next = new Map(prev);
+        next.set(orderId, updatedOrder.type);
+        return next;
+      });
+
+      setTimeout(() => {
         setNewlyAddedOrderIds((prev) => {
           const next = new Map(prev);
-        next.set(orderId, updatedOrder.type);
+          next.delete(orderId);
           return next;
         });
+      }, 2000);
 
-        setTimeout(() => {
-          setNewlyAddedOrderIds((prev) => {
-            const next = new Map(prev);
-            next.delete(orderId);
-            return next;
-          });
-        }, 2000);
-
-        return [updatedOrder, ...prevOrders];
+      return [updatedOrder, ...prevOrders];
     });
   }, []);
 
-  /**
-   * Normalizes an order object by converting string boolean values to actual booleans.
-   * Backend sends "True"/"False" strings, but frontend expects boolean values.
-   */
   const normalizeOrder = useCallback((order: any): Order => {
     return {
       ...order,
@@ -285,8 +292,8 @@ export default function Home() {
               ? "True"
               : "False"
             : order.public
-            ? "True"
-            : "False",
+              ? "True"
+              : "False",
         status: 1,
       };
 
@@ -383,8 +390,15 @@ export default function Home() {
   }, [orders]);
 
   const sortedOrders = useMemo(() => {
+    let filteredOrders = openOrders;
+    if (showMyOrdersOnly && selectedAccount?.address) {
+      filteredOrders = orders.filter(
+        (order) => order.origin === selectedAccount.address
+      );
+    }
+
     const uniqueOrdersMap = new Map<string, Order>();
-    openOrders.forEach((order) => {
+    filteredOrders.forEach((order) => {
       const existing = uniqueOrdersMap.get(order.uuid);
       if (!existing) {
         uniqueOrdersMap.set(order.uuid, order);
@@ -402,7 +416,7 @@ export default function Home() {
       const dateB = new Date(b.date).getTime();
       return dateB - dateA;
     });
-  }, [openOrders]);
+  }, [orders, openOrders, showMyOrdersOnly, selectedAccount?.address]);
 
   return (
     <main className="min-h-screen bg-background">
@@ -453,8 +467,20 @@ export default function Home() {
 
             <div className="flex items-center gap-3">
               <ThemeToggle />
-
               <ConnectButton />
+
+              {selectedAccount && (
+                <Button
+                  variant={showMyOrdersOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowMyOrdersOnly(!showMyOrdersOnly)}
+                  className="gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1)] dark:shadow-none"
+                >
+                  <ListFilter className="h-4 w-4" />
+                  <span className="hidden sm:inline">My Orders</span>
+                </Button>
+              )}
+
             </div>
           </div>
         </header>
