@@ -40,18 +40,14 @@ const WALLET_EXTENSIONS = {
     }
 } as const
 
-function findWalletKey(possibleKeys: readonly string[]): string | null {
+function findWalletExtension(possibleNames: readonly string[]): string | null {
     if (typeof window === 'undefined' || !window.injectedWeb3) {
         return null
     }
 
-    if (process.env.NODE_ENV === 'development') {
-        console.log('Available wallet extensions:', Object.keys(window.injectedWeb3))
-    }
-
-    for (const key of possibleKeys) {
-        if (window.injectedWeb3![key]) {
-            return key
+    for (const name of possibleNames) {
+        if (window.injectedWeb3![name]) {
+            return name
         }
     }
 
@@ -75,10 +71,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         if (typeof window === 'undefined') return
 
         const wallets = Object.entries(WALLET_EXTENSIONS).map(([key, value]) => {
-            const foundKey = findWalletKey(value.possibleKeys)
+            const foundExtension = findWalletExtension(value.possibleKeys)
             return {
                 name: value.name,
-                installed: !!foundKey,
+                installed: !!foundExtension,
                 extensionName: value.extensionName
             }
         })
@@ -140,15 +136,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
             const extensionInfo = WALLET_EXTENSIONS[type]
 
-            const actualKey = findWalletKey(extensionInfo.possibleKeys)
+            const extensionName = findWalletExtension(extensionInfo.possibleKeys)
 
-            if (!actualKey) {
+            if (!extensionName) {
                 const available = window.injectedWeb3 ? Object.keys(window.injectedWeb3) : []
                 console.error(`Wallet not found. Available extensions:`, available)
                 throw new Error(`${extensionInfo.name} extension not found. Available: ${available.join(', ') || 'none'}`)
             }
 
-            const injected = window.injectedWeb3![actualKey]
+            const injected = window.injectedWeb3![extensionName]
 
             if (!injected) {
                 throw new Error(`${extensionInfo.name} extension not found. Please install it first.`)
