@@ -12,6 +12,14 @@ import { NewOrderModal } from "../components/new-order-modal";
 import { useWallet } from "../context/wallet-context";
 import { Button } from "../components/ui/button";
 import { List } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
 
 const getWebSocketUrl = (): string => {
   const baseUrl =
@@ -37,12 +45,22 @@ export default function Home() {
     Map<string, number>
   >(new Map());
   const [showMyOrdersOnly, setShowMyOrdersOnly] = useState(false);
+  const [showWalletConnectDialog, setShowWalletConnectDialog] = useState(false);
 
   useEffect(() => {
-    if (!selectedAccount) {
+    // Only reset filter if wallet disconnects while filter is active
+    if (!selectedAccount && showMyOrdersOnly) {
       setShowMyOrdersOnly(false);
     }
-  }, [selectedAccount]);
+  }, [selectedAccount, showMyOrdersOnly]);
+
+  const handleMyOrdersClick = () => {
+    if (!selectedAccount) {
+      setShowWalletConnectDialog(true);
+      return;
+    }
+    setShowMyOrdersOnly(!showMyOrdersOnly);
+  };
 
   const isTerminalStatus = (status: number) => {
     return [3, 4, 6].includes(status);
@@ -467,17 +485,16 @@ export default function Home() {
 
             <div className="flex items-center gap-3">
               <ThemeToggle />
-              {selectedAccount && (
-                <Button
-                  variant={showMyOrdersOnly ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setShowMyOrdersOnly(!showMyOrdersOnly)}
-                  className="gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1)] dark:shadow-none"
-                >
-                  <List className="h-4 w-4" />
-                  <span className="hidden sm:inline">My Orders</span>
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleMyOrdersClick}
+                className={`gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1)] dark:shadow-none ${showMyOrdersOnly ? "bg-blue-600 hover:bg-blue-700 text-white font-semibold border-blue-600" : ""
+                  }`}
+              >
+                <List className="h-4 w-4" />
+                <span className="hidden sm:inline">My Orders</span>
+              </Button>
               <ConnectButton />
             </div>
           </div>
@@ -502,7 +519,27 @@ export default function Home() {
           onOpenChange={setNewOrderModalOpen}
           apiUrl={API_URL}
         />
+
+        <Dialog open={showWalletConnectDialog} onOpenChange={setShowWalletConnectDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Connect Wallet Required</DialogTitle>
+              <DialogDescription>
+                Please connect your wallet to view your orders. Click the "Wallet" button to connect.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                onClick={() => setShowWalletConnectDialog(false)}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </main>
   );
 }
+
