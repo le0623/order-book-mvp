@@ -50,6 +50,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -62,6 +68,7 @@ interface OrderBookRowDetailsProps {
   onCancelOrder?: (uuid: string) => void;
   onFillOrder?: () => void;
   apiUrl?: string;
+  walletAddress?: string;
 }
 
 export function OrderBookRowDetails({
@@ -73,6 +80,7 @@ export function OrderBookRowDetails({
   onCancelOrder,
   onFillOrder,
   apiUrl,
+  walletAddress,
 }: OrderBookRowDetailsProps) {
   const [copiedWalletId, setCopiedWalletId] = React.useState(false);
   const [copiedEscrowId, setCopiedEscrowId] = React.useState(false);
@@ -80,6 +88,9 @@ export function OrderBookRowDetails({
     Set<string>
   >(new Set());
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+
+  // Check if current user is the order creator
+  const isOwner = walletAddress && order.origin === walletAddress;
   const [isFillOrderModalOpen, setIsFillOrderModalOpen] = React.useState(false);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = React.useState(false);
   const [editStp, setEditStp] = React.useState(order.stp);
@@ -205,20 +216,25 @@ export function OrderBookRowDetails({
           </h3>
           {order.status === 1 && ( // Status 1 = Open
             <>
-              <Dialog
-                open={isEditDialogOpen}
-                onOpenChange={setIsEditDialogOpen}
-              >
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 border-gray-600 rounded-md bg-transparent"
-                  >
-                    <Edit2 className="h-3.5 w-3.5 mr-2" />
-                    Modify
-                  </Button>
-                </DialogTrigger>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Dialog
+                        open={isEditDialogOpen}
+                        onOpenChange={setIsEditDialogOpen}
+                      >
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 border-gray-600 rounded-md bg-transparent"
+                            disabled={!isOwner}
+                          >
+                            <Edit2 className="h-3.5 w-3.5 mr-2" />
+                            Modify
+                          </Button>
+                        </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Modify Order</DialogTitle>
@@ -384,16 +400,39 @@ export function OrderBookRowDetails({
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+                    </div>
+                  </TooltipTrigger>
+                  {!isOwner && (
+                    <TooltipContent>
+                      <p>Only the order creator can modify this order.</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
 
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 border-gray-600 rounded-md bg-transparent"
-                onClick={() => setIsCloseConfirmOpen(true)}
-              >
-                <span className="text-sm mr-2">✗</span>
-                Close Order
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 border-gray-600 rounded-md bg-transparent"
+                        onClick={() => setIsCloseConfirmOpen(true)}
+                        disabled={!isOwner}
+                      >
+                        <span className="text-sm mr-2">✗</span>
+                        Close Order
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  {!isOwner && (
+                    <TooltipContent>
+                      <p>Only the order creator can close this order.</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
               <Dialog
                 open={isCloseConfirmOpen}
                 onOpenChange={setIsCloseConfirmOpen}

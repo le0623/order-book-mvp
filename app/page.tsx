@@ -512,6 +512,7 @@ export default function Home() {
           onNewOrder={() => setNewOrderModalOpen(true)}
           apiUrl={API_URL}
           showMyOrdersOnly={showMyOrdersOnly}
+          walletAddress={selectedAccount?.address}
         />
 
         <NewOrderModal
@@ -525,7 +526,7 @@ export default function Home() {
             <DialogHeader>
               <DialogTitle>Connect Wallet Required</DialogTitle>
               <DialogDescription>
-                Please connect your wallet to view your orders. Click the "Wallet" button to connect.
+                Please connect your wallet to view your orders. Click the Wallet button to connect.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>

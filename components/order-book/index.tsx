@@ -18,6 +18,7 @@ interface OrderBookProps {
   apiUrl?: string;
   allOrdersForSearch?: Order[];
   showMyOrdersOnly?: boolean;
+  walletAddress?: string;
 }
 
 export function OrderBook({
@@ -32,6 +33,7 @@ export function OrderBook({
   apiUrl,
   allOrdersForSearch = [],
   showMyOrdersOnly = false,
+  walletAddress,
 }: OrderBookProps) {
   return (
     <DataTable
@@ -56,6 +58,7 @@ export function OrderBook({
             onCancelOrder={onCancelOrder}
             onFillOrder={onFillOrder}
             apiUrl={apiUrl}
+            walletAddress={walletAddress}
           />
         );
       }}
