@@ -325,12 +325,9 @@ button[name="next-month"] {
 
 /* Button hover animations */
 @keyframes btn-pulse {
-
-  0%,
-  100% {
+  0%, 100% {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
-
   50% {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
@@ -346,11 +343,8 @@ button[name="next-month"] {
 .btn-primary-enhanced {
   @apply bg-gradient-to-b from-blue-500 to-blue-600;
   @apply hover:from-blue-500 hover:to-blue-700;
-  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.3);
-}
-
-.btn-primary-enhanced:hover {
-  box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.4);
+  @apply shadow-[0_4px_14px_0_rgba(37,99,235,0.3)];
+  @apply hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.4)];
 }
 
 .btn-outline-enhanced {

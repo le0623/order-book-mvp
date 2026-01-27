@@ -489,10 +489,10 @@ export default function Home() {
                 variant="outline"
                 size="sm"
                 onClick={handleMyOrdersClick}
-                className={`h-9 gap-2 ${showMyOrdersOnly
-                  ? "bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold border-blue-500/50 shadow-[0_4px_14px_0_rgba(37,99,235,0.3)]"
+                className={`h-9 gap-2 ${showMyOrdersOnly 
+                  ? "bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold border-blue-500/50 shadow-[0_4px_14px_0_rgba(37,99,235,0.3)]" 
                   : ""
-                  }`}
+                }`}
               >
                 <List className="h-4 w-4" />
                 <span className="hidden sm:inline">My Orders</span>
@@ -514,7 +514,6 @@ export default function Home() {
           onNewOrder={() => setNewOrderModalOpen(true)}
           apiUrl={API_URL}
           showMyOrdersOnly={showMyOrdersOnly}
-          walletAddress={selectedAccount?.address}
         />
 
         <NewOrderModal

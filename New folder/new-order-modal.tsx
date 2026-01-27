@@ -48,8 +48,8 @@ interface NewOrderModalProps {
 }
 
 const generateMockEscrowAddress = (): string => {
-  const chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-  const prefix = "5";
+  const chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"; 
+  const prefix = "5"; 
   let address = prefix;
   for (let i = 0; i < 47; i++) {
     address += chars[Math.floor(Math.random() * chars.length)];
@@ -65,9 +65,9 @@ export function NewOrderModal({
 }: NewOrderModalProps) {
   const { selectedAccount, isConnected } = useWallet();
   const [formData, setFormData] = React.useState<NewOrderFormData>({
-    type: 1,
-    asset: 1,
-    gtd: "gtc",
+    type: 1, 
+    asset: 1, 
+    gtd: "gtc", 
     stp: 0,
     partial: true,
     public: true,

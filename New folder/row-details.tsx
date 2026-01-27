@@ -50,12 +50,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -68,7 +62,6 @@ interface OrderBookRowDetailsProps {
   onCancelOrder?: (uuid: string) => void;
   onFillOrder?: () => void;
   apiUrl?: string;
-  walletAddress?: string;
 }
 
 export function OrderBookRowDetails({
@@ -80,9 +73,7 @@ export function OrderBookRowDetails({
   onCancelOrder,
   onFillOrder,
   apiUrl,
-  walletAddress,
 }: OrderBookRowDetailsProps) {
-  const isOwner = walletAddress && order.origin === walletAddress;
   const [copiedWalletId, setCopiedWalletId] = React.useState(false);
   const [copiedEscrowId, setCopiedEscrowId] = React.useState(false);
   const [copiedFilledEscrowIds, setCopiedFilledEscrowIds] = React.useState<
@@ -214,25 +205,20 @@ export function OrderBookRowDetails({
           </h3>
           {order.status === 1 && ( // Status 1 = Open
             <>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <Dialog
-                        open={isEditDialogOpen}
-                        onOpenChange={setIsEditDialogOpen}
-                      >
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-9 gap-2"
-                            disabled={!isOwner}
-                          >
-                            <Edit2 className="h-3.5 w-3.5" />
-                            Modify
-                          </Button>
-                        </DialogTrigger>
+              <Dialog
+                open={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 gap-2"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                    Modify
+                  </Button>
+                </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Modify Order</DialogTitle>
@@ -398,40 +384,17 @@ export function OrderBookRowDetails({
                     </Button>
                   </DialogFooter>
                 </DialogContent>
-                      </Dialog>
-                    </div>
-                  </TooltipTrigger>
-                  {!isOwner && (
-                    <TooltipContent>
-                      <p>Only the order creator can modify this order.</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
+              </Dialog>
 
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-9 gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50"
-                        onClick={() => setIsCloseConfirmOpen(true)}
-                        disabled={!isOwner}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                        Close Order
-                      </Button>
-                    </div>
-                  </TooltipTrigger>
-                  {!isOwner && (
-                    <TooltipContent>
-                      <p>Only the order creator can close this order.</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50"
+                onClick={() => setIsCloseConfirmOpen(true)}
+              >
+                <X className="h-3.5 w-3.5" />
+                Close Order
+              </Button>
               <Dialog
                 open={isCloseConfirmOpen}
                 onOpenChange={setIsCloseConfirmOpen}
@@ -470,28 +433,14 @@ export function OrderBookRowDetails({
         </div>
 
         {order.status === 1 && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <Button
-                    size="sm"
-                    className="h-9 gap-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.4)]"
-                    onClick={() => setIsFillOrderModalOpen(true)}
-                    disabled={isOwner}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Fill Order
-                  </Button>
-                </div>
-              </TooltipTrigger>
-              {isOwner && (
-                <TooltipContent>
-                  <p>You cannot fill your own order.</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
+          <Button
+            size="sm"
+            className="h-9 gap-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.4)]"
+            onClick={() => setIsFillOrderModalOpen(true)}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Fill Order
+          </Button>
         )}
       </div>
 
@@ -553,8 +502,8 @@ export function OrderBookRowDetails({
                 {order.gtd && order.gtd.toLowerCase() === "gtc"
                   ? "2026-01-31 UTC"
                   : order.gtd
-                    ? formatDateOnly(order.gtd)
-                    : "—"}
+                  ? formatDateOnly(order.gtd)
+                  : "—"}
               </span>
             </div>
             <div className="flex flex-col gap-1.5 p-3 rounded-md bg-muted/30 border border-border/40">
@@ -584,8 +533,9 @@ export function OrderBookRowDetails({
 
                     const displayGtd = "";
 
-                    const filledOrderId = `${filledOrder.uuid}-${filledOrder.status
-                      }-${filledOrder.escrow || ""}`;
+                    const filledOrderId = `${filledOrder.uuid}-${
+                      filledOrder.status
+                    }-${filledOrder.escrow || ""}`;
                     const shouldFlash = newlyAddedOrderIds.has(filledOrderId);
                     const filledOrderType =
                       newlyAddedOrderIds.get(filledOrderId);
@@ -652,10 +602,11 @@ export function OrderBookRowDetails({
                                   ? "outline"
                                   : "secondary"
                               }
-                              className={`font-medium ${orderTypeLabel === "Buy"
+                              className={`font-medium ${
+                                orderTypeLabel === "Buy"
                                   ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
                                   : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
-                                }`}
+                              }`}
                             >
                               {orderTypeLabel}
                             </Badge>
