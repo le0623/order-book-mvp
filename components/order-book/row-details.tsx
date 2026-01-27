@@ -82,7 +82,7 @@ export function OrderBookRowDetails({
   apiUrl,
   walletAddress,
 }: OrderBookRowDetailsProps) {
-  const isOwner = walletAddress && order.origin === walletAddress;
+  const isOwner = !!(walletAddress && order.origin === walletAddress);
   const [copiedWalletId, setCopiedWalletId] = React.useState(false);
   const [copiedEscrowId, setCopiedEscrowId] = React.useState(false);
   const [copiedFilledEscrowIds, setCopiedFilledEscrowIds] = React.useState<
