@@ -90,6 +90,9 @@ export function NewOrderModal({
   React.useEffect(() => {
     if (open && selectedAccount?.address) {
       setOriginWallet(selectedAccount.address);
+    } else if (open) {
+      // Allow creating orders without wallet - set empty or use placeholder
+      setOriginWallet("");
     }
   }, [open, selectedAccount?.address]);
 
@@ -148,18 +151,15 @@ export function NewOrderModal({
       setLoading(true);
       setError("");
 
-      if (!isConnected || !selectedAccount?.address) {
-        setError("Please connect your wallet to create an order. Click the 'Wallet' button to get started.");
-        setLoading(false);
-        return;
-      }
+      // Use connected wallet address if available, otherwise use empty string or placeholder
+      const walletAddress = selectedAccount?.address || "";
 
       const orderUuid = uuidv4();
       const orderData = {
         uuid: orderUuid,
-        origin: selectedAccount.address,
+        origin: walletAddress,
         escrow: "",
-        wallet: selectedAccount.address,
+        wallet: walletAddress,
         asset: Number(formData.asset),
         type: Number(formData.type),
         ask: Number(formData.type === 1 ? formData.stp : 0.0),
@@ -246,6 +246,13 @@ export function NewOrderModal({
 
       setEscrowWallet(escrowAddress);
       setOrderUuid(finalUuid);
+      // Set originWallet if not already set (for when wallet is not connected)
+      if (!originWallet && walletAddress) {
+        setOriginWallet(walletAddress);
+      } else if (!originWallet) {
+        // Allow empty origin wallet for orders without wallet connection
+        setOriginWallet("");
+      }
       setEscrowGenerated(true);
     } catch (err: any) {
       console.error("Error creating order:", err);
@@ -273,23 +280,13 @@ export function NewOrderModal({
       setLoading(true);
       setError("");
 
-      if (!isConnected || !selectedAccount?.address) {
-        setError("Please connect your wallet to place an order. Click the 'Wallet' button to get started.");
-        setLoading(false);
-        return;
-      }
+      // Use connected wallet address if available, otherwise use originWallet or empty
+      const walletAddress = selectedAccount?.address || originWallet || "";
 
-      if (originWallet && originWallet !== selectedAccount.address) {
-        setError("Wallet address changed. Please regenerate escrow with the current wallet or reconnect the original wallet.");
-        setLoading(false);
-        return;
-      }
-
-      if (!originWallet) {
-        setError("Origin wallet not set. Please close and reopen the order modal.");
-        setLoading(false);
-        return;
-      }
+      // If wallet was connected when creating escrow but now disconnected, use the stored originWallet
+      // If wallet was never connected, use empty string
+      const finalOrigin = originWallet || walletAddress || "";
+      const finalWallet = walletAddress || originWallet || "";
 
       if (!orderUuid || !escrowWallet) {
         throw new Error("Missing order UUID or escrow wallet address");
@@ -297,9 +294,9 @@ export function NewOrderModal({
 
       const orderData = {
         uuid: orderUuid,
-        origin: originWallet,
+        origin: finalOrigin,
         escrow: escrowWallet,
-        wallet: selectedAccount.address,
+        wallet: finalWallet,
         asset: Number(formData.asset),
         type: Number(formData.type),
         ask: Number(formData.type === 1 ? formData.stp : 0.0),
