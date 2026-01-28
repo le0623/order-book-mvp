@@ -35,7 +35,7 @@ const TableHeader = React.forwardRef<
   <thead
     ref={ref}
     className={cn(
-      "[&_tr]:border-b-2 [&_tr]:border-border/60 dark:[&_tr]:border-primary/20 bg-secondary dark:bg-background [&_tr]:bg-secondary dark:[&_tr]:bg-background shadow-[0_2px_6px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]",
+      "[&_tr]:border-b [&_tr]:border-slate-200 dark:[&_tr]:border-primary/20 bg-slate-50 dark:bg-background [&_tr]:bg-slate-50 dark:[&_tr]:bg-background",
       className
     )}
     {...props}
@@ -49,7 +49,7 @@ const TableBody = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tbody
     ref={ref}
-    className={cn("[&_tr:last-child]:border-0 bg-background/50 dark:bg-transparent", className)}
+    className={cn("[&_tr:last-child]:border-0 bg-white dark:bg-transparent", className)}
     {...props}
   />
 ))
@@ -77,7 +77,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b border-border/40 transition-all data-[state=selected]:bg-accent shadow-[0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.2)] bg-card/30 dark:bg-transparent hover:bg-accent/60 dark:hover:bg-muted/50",
+      "border-b border-slate-100 dark:border-border/40 transition-colors data-[state=selected]:bg-slate-50 dark:data-[state=selected]:bg-accent bg-white dark:bg-transparent hover:bg-slate-50 dark:hover:bg-muted/50",
       className
     )}
     {...props}
@@ -92,7 +92,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-12 px-4 text-left align-middle font-bold text-foreground/90 uppercase text-[11px] tracking-[0.08em] [&:has([role=checkbox])]:pr-0 bg-secondary dark:bg-background border-b-2 border-border/60 dark:border-primary/20",
+      "h-12 px-4 text-left align-middle font-semibold text-slate-500 dark:text-foreground/90 uppercase text-[11px] tracking-[0.05em] [&:has([role=checkbox])]:pr-0 bg-slate-50 dark:bg-background border-b border-slate-200 dark:border-primary/20",
       className
     )}
     {...props}

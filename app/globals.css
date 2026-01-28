@@ -53,25 +53,25 @@
   }
 
   .light {
-    /* Refined light theme – cool slate, crisp contrast, vibrant blue accent */
-    --background: 210 22% 97%;
-    --foreground: 215 28% 14%;
+    /* CoinMarketCap-inspired light theme – clean white, sharp contrast, professional look */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 215 28% 14%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 215 28% 14%;
+    --popover-foreground: 222 47% 11%;
     --primary: 217 91% 54%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 94%;
-    --secondary-foreground: 215 28% 14%;
-    --muted: 210 18% 91%;
-    --muted-foreground: 215 14% 44%;
-    --accent: 213 35% 92%;
-    --accent-foreground: 215 28% 14%;
-    --destructive: 0 72% 51%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 210 18% 88%;
-    --input: 210 18% 89%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
     --ring: 217 91% 54%;
   }
 }
@@ -300,7 +300,7 @@ button[name="next-month"] {
   animation: flash-sell 2s ease-out;
 }
 
-/* Flash animation for entire pane when order is modified */
+/* Flash animation for entire pane when order is modified - dark mode */
 @keyframes flash-pane {
   0% {
     background-color: rgb(96 165 250 / 0.5) !important;
@@ -315,6 +315,26 @@ button[name="next-month"] {
   100% {
     background-color: rgb(47 63 74 / 0.4) !important;
     /* back to original bg-[#2F3F4A]/40 */
+  }
+}
+
+/* Light mode flash animation for pane */
+.light .animate-flash-pane {
+  animation: flash-pane-light 1.5s ease-out;
+  animation-fill-mode: both;
+}
+
+@keyframes flash-pane-light {
+  0% {
+    background-color: rgb(96 165 250 / 0.3) !important;
+  }
+
+  50% {
+    background-color: rgb(96 165 250 / 0.15) !important;
+  }
+
+  100% {
+    background-color: rgb(248 250 252 / 1) !important;
   }
 }
 

@@ -206,7 +206,7 @@ export function OrderBookRowDetails({
   };
 
   return (
-    <div className="bg-muted/30 p-6 space-y-6 shadow-inner border-t border-border/50">
+    <div className="bg-slate-50 dark:bg-muted/30 p-6 space-y-6 border-t border-slate-200 dark:border-border/50">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <h3 className="text-lg font-bold tracking-tight text-foreground">
@@ -233,171 +233,171 @@ export function OrderBookRowDetails({
                             Modify
                           </Button>
                         </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Modify Order</DialogTitle>
-                    <DialogDescription>
-                      Update order settings for Escrow{" "}
-                      {formatWalletAddress(order.escrow)}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="stp">Stop Price (TAO)</Label>
-                      <div className="relative flex items-center">
-                        <Input
-                          id="stp"
-                          type="number"
-                          min="0"
-                          step="0.001"
-                          value={editStp}
-                          onChange={(e) =>
-                            setEditStp(parseFloat(e.target.value) || 0)
-                          }
-                          className="font-mono focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                        <div className="absolute right-1 flex flex-col gap-0.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditStp(Number((editStp + 0.001).toFixed(3)));
-                            }}
-                            className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            aria-label="Increase stop price"
-                          >
-                            <ChevronUp className="h-3 w-3 text-muted-foreground" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newValue = Math.max(
-                                0,
-                                Number((editStp - 0.001).toFixed(3))
-                              );
-                              setEditStp(newValue);
-                            }}
-                            className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            aria-label="Decrease stop price"
-                          >
-                            <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Stop price for this order
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Good Till Date (GTD)</Label>
-                      <div className="flex gap-2">
-                        <Select
-                          value={editGtd === "gtc" ? "gtc" : "date"}
-                          onValueChange={(value) => {
-                            if (value === "gtc") {
-                              setEditGtd("gtc");
-                              setSelectedDate(undefined);
-                            } else {
-                              setEditGtd("");
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="w-32 focus:ring-1 focus:ring-blue-500/30 focus:ring-offset-0 focus:border-blue-500/40">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="gtc">GTC</SelectItem>
-                            <SelectItem value="date">Specific Date</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Modify Order</DialogTitle>
+                            <DialogDescription>
+                              Update order settings for Escrow{" "}
+                              {formatWalletAddress(order.escrow)}
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="stp">Stop Price (TAO)</Label>
+                              <div className="relative flex items-center">
+                                <Input
+                                  id="stp"
+                                  type="number"
+                                  min="0"
+                                  step="0.001"
+                                  value={editStp}
+                                  onChange={(e) =>
+                                    setEditStp(parseFloat(e.target.value) || 0)
+                                  }
+                                  className="font-mono focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                                <div className="absolute right-1 flex flex-col gap-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditStp(Number((editStp + 0.001).toFixed(3)));
+                                    }}
+                                    className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    aria-label="Increase stop price"
+                                  >
+                                    <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newValue = Math.max(
+                                        0,
+                                        Number((editStp - 0.001).toFixed(3))
+                                      );
+                                      setEditStp(newValue);
+                                    }}
+                                    className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    aria-label="Decrease stop price"
+                                  >
+                                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                                  </button>
+                                </div>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Stop price for this order
+                              </p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Good Till Date (GTD)</Label>
+                              <div className="flex gap-2">
+                                <Select
+                                  value={editGtd === "gtc" ? "gtc" : "date"}
+                                  onValueChange={(value) => {
+                                    if (value === "gtc") {
+                                      setEditGtd("gtc");
+                                      setSelectedDate(undefined);
+                                    } else {
+                                      setEditGtd("");
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger className="w-32 focus:ring-1 focus:ring-blue-500/30 focus:ring-offset-0 focus:border-blue-500/40">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="gtc">GTC</SelectItem>
+                                    <SelectItem value="date">Specific Date</SelectItem>
+                                  </SelectContent>
+                                </Select>
 
-                        {editGtd !== "gtc" && (
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "flex-1 justify-start text-left font-normal",
-                                  !selectedDate && "text-muted-foreground"
+                                {editGtd !== "gtc" && (
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        className={cn(
+                                          "flex-1 justify-start text-left font-normal",
+                                          !selectedDate && "text-muted-foreground"
+                                        )}
+                                      >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {selectedDate ? (
+                                          format(selectedDate, "PPP")
+                                        ) : (
+                                          <span>Pick a date</span>
+                                        )}
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                      <Calendar
+                                        mode="single"
+                                        selected={selectedDate}
+                                        onSelect={setSelectedDate}
+                                        initialFocus
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
                                 )}
-                              >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {selectedDate ? (
-                                  format(selectedDate, "PPP")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                              <Calendar
-                                mode="single"
-                                selected={selectedDate}
-                                onSelect={setSelectedDate}
-                                initialFocus
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                GTC = Good Till Cancel (order stays active until you
+                                cancel it)
+                              </p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="public"
+                                checked={editPublic}
+                                onCheckedChange={(checked: boolean) =>
+                                  setEditPublic(checked === true)
+                                }
                               />
-                            </PopoverContent>
-                          </Popover>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        GTC = Good Till Cancel (order stays active until you
-                        cancel it)
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="public"
-                        checked={editPublic}
-                        onCheckedChange={(checked: boolean) =>
-                          setEditPublic(checked === true)
-                        }
-                      />
-                      <Label
-                        htmlFor="public"
-                        className="text-sm font-normal cursor-pointer"
-                      >
-                        Public Order
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="partial"
-                        checked={editPartial}
-                        onCheckedChange={(checked: boolean) =>
-                          setEditPartial(checked === true)
-                        }
-                      />
-                      <Label
-                        htmlFor="partial"
-                        className="text-sm font-normal cursor-pointer"
-                      >
-                        Partial Order
-                      </Label>
-                    </div>
-                  </div>
-                  <DialogFooter className="gap-2 sm:gap-0">
-                    <Button
-                      variant="outline"
-                      className="h-10"
-                      onClick={() => {
-                        setEditStp(order.stp);
-                        setEditPublic(order.public);
-                        setEditGtd(order.gtd || "gtc");
-                        setEditPartial(order.partial || false);
-                        setSelectedDate(parseGtdToDate(order.gtd));
-                        setIsEditDialogOpen(false);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleSaveEdit}
-                      className="h-10 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.25)]"
-                    >
-                      Save Changes
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
+                              <Label
+                                htmlFor="public"
+                                className="text-sm font-normal cursor-pointer"
+                              >
+                                Public Order
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="partial"
+                                checked={editPartial}
+                                onCheckedChange={(checked: boolean) =>
+                                  setEditPartial(checked === true)
+                                }
+                              />
+                              <Label
+                                htmlFor="partial"
+                                className="text-sm font-normal cursor-pointer"
+                              >
+                                Partial Order
+                              </Label>
+                            </div>
+                          </div>
+                          <DialogFooter className="gap-2 sm:gap-0">
+                            <Button
+                              variant="outline"
+                              className="h-10"
+                              onClick={() => {
+                                setEditStp(order.stp);
+                                setEditPublic(order.public);
+                                setEditGtd(order.gtd || "gtc");
+                                setEditPartial(order.partial || false);
+                                setSelectedDate(parseGtdToDate(order.gtd));
+                                setIsEditDialogOpen(false);
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={handleSaveEdit}
+                              className="h-10 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.25)]"
+                            >
+                              Save Changes
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
                       </Dialog>
                     </div>
                   </TooltipTrigger>
@@ -498,7 +498,7 @@ export function OrderBookRowDetails({
       <div className="space-y-4">
         <div
           ref={paneRef}
-          className="p-4 rounded-lg border border-border/50 space-y-4"
+          className="p-4 rounded-lg bg-white dark:bg-transparent border border-slate-200 dark:border-border/50 space-y-4"
         >
           <div className="flex justify-between gap-4 grid grid-cols-2">
             {order.wallet && (
@@ -508,7 +508,7 @@ export function OrderBookRowDetails({
                 </span>
                 <div className="flex items-center gap-2">
                   <code
-                    className="font-mono text-sm px-3 py-2 bg-muted/50 rounded-md border border-border/50 text-foreground break-all"
+                    className="font-mono text-sm px-3 py-2 bg-slate-100 dark:bg-muted/50 rounded-md border border-slate-200 dark:border-border/50 text-slate-900 dark:text-foreground break-all"
                   >
                     {order.wallet}
                   </code>
@@ -529,27 +529,27 @@ export function OrderBookRowDetails({
             )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5">
-            <div className="flex flex-col gap-1.5 p-3 rounded-md bg-muted/30 border border-border/40">
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/80">
+            <div className="flex flex-col gap-1.5 p-3 rounded-md bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-border/40">
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
                 Stop Price
               </span>
-              <span className="font-mono text-base font-semibold text-foreground">
+              <span className="font-mono text-base font-semibold text-slate-900 dark:text-foreground">
                 {order.stp > 0 ? formatPrice(order.stp) : "—"}
               </span>
             </div>
-            <div className="flex flex-col gap-1.5 p-3 rounded-md bg-muted/30 border border-border/40">
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/80">
+            <div className="flex flex-col gap-1.5 p-3 rounded-md bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-border/40">
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
                 Public
               </span>
-              <span className={`text-base font-semibold ${order.public ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>
+              <span className={`text-base font-semibold ${order.public ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-muted-foreground"}`}>
                 {order.public ? "Yes" : "No"}
               </span>
             </div>
-            <div className="flex flex-col gap-1.5 p-3 rounded-md bg-muted/30 border border-border/40">
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/80">
+            <div className="flex flex-col gap-1.5 p-3 rounded-md bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-border/40">
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
                 Good Till Date
               </span>
-              <span className="font-mono text-base font-semibold text-foreground">
+              <span className="font-mono text-base font-semibold text-slate-900 dark:text-foreground">
                 {order.gtd && order.gtd.toLowerCase() === "gtc"
                   ? "2026-01-31 UTC"
                   : order.gtd
@@ -557,11 +557,11 @@ export function OrderBookRowDetails({
                     : "—"}
               </span>
             </div>
-            <div className="flex flex-col gap-1.5 p-3 rounded-md bg-muted/30 border border-border/40">
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/80">
+            <div className="flex flex-col gap-1.5 p-3 rounded-md bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-border/40">
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
                 Partial
               </span>
-              <span className={`text-base font-semibold ${order.partial ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>
+              <span className={`text-base font-semibold ${order.partial ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-muted-foreground"}`}>
                 {order.partial ? "Yes" : "No"}
               </span>
             </div>
@@ -653,8 +653,8 @@ export function OrderBookRowDetails({
                                   : "secondary"
                               }
                               className={`font-medium ${orderTypeLabel === "Buy"
-                                  ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
-                                  : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
+                                ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
+                                : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
                                 }`}
                             >
                               {orderTypeLabel}

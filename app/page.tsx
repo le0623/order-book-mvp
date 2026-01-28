@@ -437,12 +437,12 @@ export default function Home() {
   }, [orders, openOrders, showMyOrdersOnly, selectedAccount?.address]);
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-white dark:bg-background">
       <div className="container mx-auto px-4 max-w-7xl pt-4">
-        <header className="mb-6 border-b border-border/40 sticky top-0 z-50 bg-background h-[105.2px] pt-8 pb-6 flex items-center">
+        <header className="mb-6 border-b border-slate-200 dark:border-border/40 sticky top-0 z-50 bg-white dark:bg-background h-[105.2px] pt-8 pb-6 flex items-center">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-4">
-              <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 shadow-sm">
+              <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-primary/10 border border-blue-100 dark:border-primary/20 dark:shadow-sm">
                 <Activity className="h-6 w-6 text-primary" />
               </div>
               <div>
@@ -450,7 +450,7 @@ export default function Home() {
                   <h1 className="text-[28px] font-extrabold tracking-tight text-foreground">
                     HODL Exchange
                   </h1>
-                  <div className="flex items-center gap-2 px-3 mt-2 py-1.5 rounded-[6px] border border-border/60 bg-card/50 shadow-sm">
+                  <div className="flex items-center gap-2 px-3 mt-2 py-1.5 rounded-[6px] border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm">
                     {connectionState === "connected" ? (
                       <>
                         <Wifi className="h-3.5 w-3.5 text-emerald-500" />

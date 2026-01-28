@@ -13,9 +13,9 @@ const buttonVariants = cva(
         destructive:
           "bg-gradient-to-b from-destructive to-destructive/90 text-destructive-foreground shadow-[0_2px_8px_rgba(220,38,38,0.2)] hover:shadow-[0_4px_12px_rgba(220,38,38,0.3)] hover:-translate-y-[1px] active:translate-y-0",
         outline:
-          "border border-input bg-background/80 backdrop-blur-sm shadow-sm hover:shadow-md hover:bg-accent hover:text-accent-foreground hover:-translate-y-[1px] active:translate-y-0 active:shadow-sm",
+          "border border-slate-200 dark:border-input bg-white dark:bg-background/80 backdrop-blur-sm dark:shadow-sm hover:bg-slate-50 dark:hover:bg-accent dark:hover:shadow-md hover:text-slate-900 dark:hover:text-accent-foreground hover:-translate-y-[1px] active:translate-y-0",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-sm hover:shadow-md hover:bg-secondary/80 hover:-translate-y-[1px] active:translate-y-0",
+          "bg-slate-100 dark:bg-secondary text-slate-900 dark:text-secondary-foreground shadow-sm hover:shadow-md hover:bg-slate-200 dark:hover:bg-secondary/80 hover:-translate-y-[1px] active:translate-y-0",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
@@ -35,7 +35,7 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  VariantProps<typeof buttonVariants> {
   asChild?: boolean
 }
 
