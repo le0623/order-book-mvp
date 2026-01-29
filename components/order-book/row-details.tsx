@@ -497,7 +497,7 @@ export function OrderBookRowDetails({
       <div className="space-y-4">
         <div
           ref={paneRef}
-          className="p-4 rounded-lg bg-white dark:bg-transparent border border-slate-200 dark:border-border/50 space-y-4"
+          className="p-4 rounded-lg bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/50 space-y-4"
         >
           <div className="flex justify-between gap-4 grid grid-cols-2">
             {order.wallet && (

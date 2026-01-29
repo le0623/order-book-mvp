@@ -3,7 +3,8 @@
 import { OrderBook } from "../components/order-book";
 import { Order } from "../lib/types";
 import { useState, useCallback, useMemo, useEffect } from "react";
-import { Activity, Wifi, WifiOff } from "lucide-react";
+import { Wifi, WifiOff } from "lucide-react";
+import Image from "next/image";
 import { ThemeToggle } from "../components/theme-toggle";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { WebSocketMessage } from "../lib/websocket-types";
@@ -442,12 +443,18 @@ export default function Home() {
         <header className="mb-6 border-b border-slate-200 dark:border-border/40 sticky top-0 z-50 bg-white dark:bg-background h-[105.2px] pt-8 pb-6 flex items-center">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-4">
-              <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-primary/10 border border-blue-100 dark:border-primary/20 dark:shadow-sm">
-                <Activity className="h-6 w-6 text-primary" />
+              <div className="p-1.5 rounded-xl bg-blue-50 dark:bg-primary/10 border border-blue-100 dark:border-primary/20 dark:shadow-sm">
+                <Image
+                  src="/hodl-logo.png"
+                  alt="HODL Exchange Logo"
+                  width={44}
+                  height={44}
+                  className="object-contain"
+                />
               </div>
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-[28px] font-extrabold tracking-tight text-foreground">
+                  <h1 className="text-[18px] font-normal tracking-tight text-foreground font-[family-name:var(--font-pixel)]">
                     HODL Exchange
                   </h1>
                   <div className="flex items-center gap-2 px-3 mt-2 py-1.5 rounded-[6px] border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm">
