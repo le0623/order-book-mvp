@@ -360,7 +360,6 @@ button[name="next-month"] {
 .btn-enhanced {
   @apply transition-all duration-200 ease-out;
   @apply shadow-sm hover:shadow-md active:shadow-sm;
-  @apply hover:-translate-y-0.5 active:translate-y-0;
 }
 
 .btn-primary-enhanced {

@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/dialog";
 import {
   Edit2,
-  X,
   Copy,
   CheckIcon,
   Wallet2,
@@ -416,11 +415,11 @@ export function OrderBookRowDetails({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-9 gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50"
+                        className="h-9 gap-2"
                         onClick={() => setIsCloseConfirmOpen(true)}
                         disabled={!isOwner}
                       >
-                        <X className="h-3.5 w-3.5" />
+                        <span className="text-base leading-none">✗</span>
                         Close Order
                       </Button>
                     </div>

@@ -9,13 +9,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-b from-primary to-primary/90 text-primary-foreground shadow-[0_2px_8px_rgba(0,0,0,0.12)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.18)] hover:-translate-y-[1px] active:translate-y-0 active:shadow-[0_1px_4px_rgba(0,0,0,0.1)]",
+        default: "bg-gradient-to-b from-primary to-primary/90 text-primary-foreground shadow-[0_2px_8px_rgba(0,0,0,0.12)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.18)] active:shadow-[0_1px_4px_rgba(0,0,0,0.1)]",
         destructive:
-          "bg-gradient-to-b from-destructive to-destructive/90 text-destructive-foreground shadow-[0_2px_8px_rgba(220,38,38,0.2)] hover:shadow-[0_4px_12px_rgba(220,38,38,0.3)] hover:-translate-y-[1px] active:translate-y-0",
+          "bg-gradient-to-b from-destructive to-destructive/90 text-destructive-foreground shadow-[0_2px_8px_rgba(220,38,38,0.2)] hover:shadow-[0_4px_12px_rgba(220,38,38,0.3)]",
         outline:
-          "border border-slate-200 dark:border-input bg-white dark:bg-background/80 backdrop-blur-sm dark:shadow-sm hover:bg-slate-50 dark:hover:bg-accent dark:hover:shadow-md hover:text-slate-900 dark:hover:text-accent-foreground hover:-translate-y-[1px] active:translate-y-0",
+          "border border-slate-200 dark:border-input bg-white dark:bg-background/80 backdrop-blur-sm dark:shadow-sm hover:bg-slate-50 dark:hover:bg-accent dark:hover:shadow-md hover:text-slate-900 dark:hover:text-accent-foreground",
         secondary:
-          "bg-slate-100 dark:bg-secondary text-slate-900 dark:text-secondary-foreground shadow-sm hover:shadow-md hover:bg-slate-200 dark:hover:bg-secondary/80 hover:-translate-y-[1px] active:translate-y-0",
+          "bg-slate-100 dark:bg-secondary text-slate-900 dark:text-secondary-foreground shadow-sm hover:shadow-md hover:bg-slate-200 dark:hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },

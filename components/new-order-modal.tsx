@@ -702,9 +702,9 @@ export function NewOrderModal({
                 Cancel
               </Button>
               <Button
+                variant="outline"
                 onClick={handleNext}
                 disabled={loading}
-                className="bg-secondary/50 hover:bg-secondary text-foreground font-semibold dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white"
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Escrow
