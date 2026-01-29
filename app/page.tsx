@@ -63,6 +63,11 @@ export default function Home() {
     setShowMyOrdersOnly(!showMyOrdersOnly);
   };
 
+  const handleLogoClick = () => {
+    // Reset to main page - clear filters
+    setShowMyOrdersOnly(false);
+  };
+
   const isTerminalStatus = (status: number) => {
     return [3, 4, 6].includes(status);
   };
@@ -443,7 +448,11 @@ export default function Home() {
         <header className="mb-6 border-b border-slate-200 dark:border-border/40 sticky top-0 z-50 bg-white dark:bg-background h-[105.2px] pt-8 pb-6 flex items-center">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-4">
-              <div className="p-1.5 rounded-xl bg-blue-50 dark:bg-primary/10 border border-blue-100 dark:border-primary/20 dark:shadow-sm">
+              <button
+                onClick={handleLogoClick}
+                className="p-1.5 rounded-xl bg-blue-50 dark:bg-primary/10 border border-blue-100 dark:border-primary/20 dark:shadow-sm hover:bg-blue-100 dark:hover:bg-primary/20 transition-colors cursor-pointer"
+                aria-label="Return to main page"
+              >
                 <Image
                   src="/hodl-logo.png"
                   alt="HODL Exchange Logo"
@@ -451,7 +460,7 @@ export default function Home() {
                   height={44}
                   className="object-contain"
                 />
-              </div>
+              </button>
               <div>
                 <div className="flex items-center gap-3">
                   <h1 className="text-[18px] font-normal tracking-tight text-foreground font-[family-name:var(--font-pixel)]">
