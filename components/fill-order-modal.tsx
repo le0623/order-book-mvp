@@ -119,12 +119,8 @@ export function FillOrderModal({
       setLoading(true);
       setError("");
 
-      // Check if wallet is connected
-      if (!isConnected || !selectedAccount?.address) {
-        setError("Please connect your wallet to fill an order. Click the 'Wallet' button to get started.");
-        setLoading(false);
-        return;
-      }
+      // Use connected wallet address if available, otherwise use empty string
+      const walletAddress = selectedAccount?.address || "";
 
       const fillOrderUuid = uuidv4();
 
@@ -132,7 +128,7 @@ export function FillOrderModal({
         uuid: fillOrderUuid,
         origin: "",
         escrow: "",
-        wallet: selectedAccount.address,
+        wallet: walletAddress,
         asset: fixedValues.asset,
         type: fixedValues.type,
         ask: fixedValues.alpha,
@@ -236,12 +232,8 @@ export function FillOrderModal({
       setLoading(true);
       setError("");
 
-      // Check if wallet is connected
-      if (!isConnected || !selectedAccount?.address) {
-        setError("Please connect your wallet to fill an order. Click the 'Wallet' button to get started.");
-        setLoading(false);
-        return;
-      }
+      // Use connected wallet address if available, otherwise use empty string
+      const walletAddress = selectedAccount?.address || "";
 
       if (!orderUuid || !escrowWallet) {
         throw new Error("Missing order UUID or escrow wallet address");
@@ -250,7 +242,7 @@ export function FillOrderModal({
         uuid: orderUuid,
         origin: order.uuid,
         escrow: escrowWallet,
-        wallet: selectedAccount.address,
+        wallet: walletAddress,
         asset: fixedValues.asset,
         type: fixedValues.type,
         ask: fixedValues.alpha,
