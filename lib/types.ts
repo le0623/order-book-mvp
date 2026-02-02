@@ -16,6 +16,9 @@ export interface Order {
   gtd: string // good till datetime UTC
   partial: boolean // allow partial fills
   public: boolean // public order
+  tao: number // TAO balance 
+  alpha: number // Alpha balance 
+  price: number // Price 
   status: number // -1: init, 1: open, 2: filled, 3: closed, 4: error, 5: stopped, 6: expired
 }
 
@@ -39,7 +42,7 @@ export const getOrderType = (type: number): OrderType => {
 
 export const getOrderStatus = (status: number): OrderStatus => {
   switch (status) {
-    case -1: 
+    case -1:
     case 0: return "Init"
     case 1: return "Open"
     case 2: return "Filled"

@@ -138,6 +138,9 @@ export function FillOrderModal({
         gtd: "gtc", // No GTD for filled orders
         partial: false, // No partial for filled orders
         public: false, // No public flag for filled orders
+        tao: 0.0, // auto fill
+        alpha: 0.0, // auto fill
+        price: 0.0, // auto fill
         status: -1, // -1 = Init status (triggers escrow generation in backend)
       };
 
@@ -252,6 +255,9 @@ export function FillOrderModal({
         gtd: "gtc",
         partial: "False",
         public: "False",
+        tao: 0.0, // auto fill
+        alpha: 0.0, // auto fill
+        price: 0.0, // auto fill
         status: 2,
       };
 

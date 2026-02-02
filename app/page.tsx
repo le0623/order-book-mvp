@@ -124,10 +124,13 @@ export default function Home() {
       status: Number(order.status),
       type: Number(order.type),
       asset: Number(order.asset),
-      ask: Number(order.ask),
-      bid: Number(order.bid),
-      stp: Number(order.stp),
-      lmt: Number(order.lmt),
+      ask: Number(order.ask || 0),
+      bid: Number(order.bid || 0),
+      stp: Number(order.stp || 0),
+      lmt: Number(order.lmt || 0),
+      tao: Number(order.tao || 0),
+      alpha: Number(order.alpha || 0),
+      price: Number(order.price || 0),
     };
   }, []);
 
@@ -229,6 +232,28 @@ export default function Home() {
         }
       }
 
+      // new format: { escrow, asset, tao, alpha, price }
+      if (priceData && typeof priceData === "object" && "escrow" in priceData) {
+        const { escrow, tao, alpha, price } = priceData;
+        if (escrow && price) {
+          setOrders((prev) =>
+            prev.map((order) => {
+              if (order.escrow === escrow && order.status === 1) {
+                return {
+                  ...order,
+                  tao: Number(tao || 0),
+                  alpha: Number(alpha || 0),
+                  price: Number(price || 0),
+                };
+              }
+              return order;
+            })
+          );
+        }
+        return;
+      }
+
+      // Handle old format: { netuid: price } or { netuid: { price: ... } }
       if (priceData && typeof priceData === "object") {
         const priceMap: Record<number, number> = {};
         for (const [key, value] of Object.entries(priceData)) {
@@ -317,6 +342,9 @@ export default function Home() {
             : order.public
               ? "True"
               : "False",
+        tao: Number(order.tao || 0),
+        alpha: Number(order.alpha || 0),
+        price: Number(order.price || 0),
         status: 1,
       };
 
@@ -365,6 +393,9 @@ export default function Home() {
         gtd: order.gtd || "gtc",
         partial: order.partial ? "True" : "False",
         public: order.public ? "True" : "False",
+        tao: Number(order.tao || 0),
+        alpha: Number(order.alpha || 0),
+        price: Number(order.price || 0),
         status: 3,
       };
 

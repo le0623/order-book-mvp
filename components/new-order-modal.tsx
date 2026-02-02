@@ -170,6 +170,9 @@ export function NewOrderModal({
           formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
         partial: formData.partial ? "True" : "False",
         public: formData.public ? "True" : "False",
+        tao: 0.0, // auto fill
+        alpha: 0.0, // auto fill
+        price: 0.0, // auto fill
         status: -1,
       };
 
@@ -307,6 +310,9 @@ export function NewOrderModal({
           formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
         partial: formData.partial ? "True" : "False",
         public: formData.public ? "True" : "False",
+        tao: 0.0, // Backend will automatically fill
+        alpha: 0.0, // Backend will automatically fill
+        price: 0.0, // Backend will automatically fill
         status: 1,
       };
       const backendUrl =
