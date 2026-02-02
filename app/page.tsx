@@ -463,11 +463,11 @@ export default function Home() {
               <div>
                 <div className="flex items-center gap-3">
                   <h1 className="text-[18px] font-normal tracking-tight text-foreground font-[family-name:var(--font-pixel)]">
-                    HODL Exchange
+                    HODL<span className="ml-2">Exchange</span>
                   </h1>
                 </div>
                 <div className="flex items-center gap-3">
-                  <p className="text-muted-foreground text-sm font-medium tracking-tight">
+                  <p className="text-muted-foreground text-[15px] font-medium tracking-tight">
                     Powered by Subnet 118
                   </p>
                 </div>

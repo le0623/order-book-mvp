@@ -305,7 +305,7 @@ export function DataTable<TData, TValue>({
       <Card className="w-full border-slate-200 dark:border-border/60 shadow-sm bg-white dark:bg-card/50 backdrop-blur-sm mb-3">
         <CardHeader
           ref={cardHeaderRef as any}
-          className="sticky top-[105.2px] z-30 rounded-t-md bg-white dark:bg-background h-[93.07px] pt-[0.4rem] !px-3 sm:pt-6 px-6 pb-4 border-b border-slate-200 dark:border-border/40"
+          className="sticky top-[105.2px] z-30 rounded-t-md bg-white dark:bg-background h-[93.07px] pt-[0.4rem]  sm:pt-6 sm:px-6 px-3 pb-4 border-b border-slate-200 dark:border-border/40"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
