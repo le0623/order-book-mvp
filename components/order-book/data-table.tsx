@@ -13,6 +13,7 @@ import {
   useReactTable,
   Row,
 } from "@tanstack/react-table";
+import { ConnectionState } from "@/lib/websocket-types";
 
 import {
   Table,
@@ -62,7 +63,7 @@ interface DataTableProps<TData, TValue> {
   allOrdersForSearch?: TData[];
   walletAddress?: string;
   showMyOrdersOnly?: boolean;
-  connectionState?: "connected" | "connecting" | "disconnected";
+  connectionState?: "connected" | "connecting" | "disconnected" | "error";
 }
 
 export function DataTable<TData, TValue>({

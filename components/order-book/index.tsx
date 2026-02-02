@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Order } from "@/lib/types";
+import { ConnectionState } from "@/lib/websocket-types";
 import { DataTable } from "./data-table";
 import { columns } from "./columns";
 import { OrderBookRowDetails } from "./row-details";
@@ -19,7 +20,7 @@ interface OrderBookProps {
   allOrdersForSearch?: Order[];
   showMyOrdersOnly?: boolean;
   walletAddress?: string;
-  connectionState?: "connected" | "connecting" | "disconnected";
+  connectionState?: ConnectionState;
 }
 
 export function OrderBook({
@@ -51,18 +52,18 @@ export function OrderBook({
         const order = row.original;
         const filledOrders = filledOrdersMap[order.uuid] || [];
         return (
-        <OrderBookRowDetails
+          <OrderBookRowDetails
             key={`${order.uuid}-${order.status}-${order.stp}-${order.public}`}
             order={order}
             filledOrders={filledOrders}
             prices={prices}
             newlyAddedOrderIds={newlyAddedOrderIds}
-          onUpdateOrder={onUpdateOrder} 
-          onCancelOrder={onCancelOrder}
+            onUpdateOrder={onUpdateOrder}
+            onCancelOrder={onCancelOrder}
             onFillOrder={onFillOrder}
             apiUrl={apiUrl}
             walletAddress={walletAddress}
-        />
+          />
         );
       }}
     />

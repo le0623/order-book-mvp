@@ -168,8 +168,8 @@ export function NewOrderModal({
         lmt: Number(formData.stp),
         gtd:
           formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
-        partial: Boolean(formData.partial),
-        public: Boolean(formData.public),
+        partial: formData.partial ? "True" : "False",
+        public: formData.public ? "True" : "False",
         status: -1,
       };
 
