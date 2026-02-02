@@ -3,7 +3,6 @@
 import { OrderBook } from "../components/order-book";
 import { Order } from "../lib/types";
 import { useState, useCallback, useMemo, useEffect } from "react";
-import { Wifi, WifiOff } from "lucide-react";
 import Image from "next/image";
 import { ThemeToggle } from "../components/theme-toggle";
 import { useWebSocket } from "../hooks/useWebSocket";
@@ -466,30 +465,6 @@ export default function Home() {
                   <h1 className="text-[18px] font-normal tracking-tight text-foreground font-[family-name:var(--font-pixel)]">
                     HODL Exchange
                   </h1>
-                  <div className="flex items-center gap-2 px-3 mt-2 py-1.5 rounded-[6px] border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm">
-                    {connectionState === "connected" ? (
-                      <>
-                        <Wifi className="h-3.5 w-3.5 text-emerald-500" />
-                        <span className="text-[11px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400 hidden md:inline">
-                          Live
-                        </span>
-                      </>
-                    ) : connectionState === "connecting" ? (
-                      <>
-                        <Wifi className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
-                        <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 hidden md:inline">
-                          Connecting...
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <WifiOff className="h-3.5 w-3.5 text-red-500" />
-                        <span className="text-[11px] font-semibold uppercase tracking-wide text-red-600 dark:text-red-400 hidden md:inline">
-                          Offline
-                        </span>
-                      </>
-                    )}
-                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <p className="text-muted-foreground text-sm font-medium tracking-tight">
@@ -531,6 +506,7 @@ export default function Home() {
           apiUrl={API_URL}
           showMyOrdersOnly={showMyOrdersOnly}
           walletAddress={selectedAccount?.address}
+          connectionState={connectionState}
         />
 
         <NewOrderModal

@@ -720,9 +720,10 @@ export function NewOrderModal({
                 {isInReviewMode ? "Cancel" : "Back"}
               </Button>
               <Button
+                variant={isInReviewMode ? "outline" : undefined}
                 onClick={isInReviewMode ? handleReviewOrder : handlePlaceOrder}
                 disabled={loading}
-                className="bg-secondary/50 hover:bg-secondary text-foreground font-semibold dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white"
+                className={isInReviewMode ? "" : "bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.4)]"}
               >
                 {isInReviewMode ? "Review Order" : "Place Order"}
               </Button>
@@ -753,7 +754,7 @@ export function NewOrderModal({
             </Button>
             <Button
               onClick={handlePlaceOrder}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+              className="bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.4)]"
             >
               Place Order
             </Button>

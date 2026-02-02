@@ -34,6 +34,8 @@ import {
   ArrowLeft,
   X,
   ArrowUp,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,6 +62,7 @@ interface DataTableProps<TData, TValue> {
   allOrdersForSearch?: TData[];
   walletAddress?: string;
   showMyOrdersOnly?: boolean;
+  connectionState?: "connected" | "connecting" | "disconnected";
 }
 
 export function DataTable<TData, TValue>({
@@ -72,6 +75,7 @@ export function DataTable<TData, TValue>({
   allOrdersForSearch = [],
   walletAddress,
   showMyOrdersOnly = false,
+  connectionState = "disconnected",
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -303,9 +307,35 @@ export function DataTable<TData, TValue>({
           className="sticky top-[105.2px] z-30 rounded-t-md bg-white dark:bg-background h-[93.07px] pt-6 px-6 pb-4 border-b border-slate-200 dark:border-border/40"
         >
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold tracking-tight text-foreground">
-              {isSearchActive ? "Order History" : showMyOrdersOnly ? "My Orders" : "Order Book"}
-            </CardTitle>
+            <div className="flex items-center gap-3">
+              <CardTitle className="text-xl font-bold tracking-tight text-foreground">
+                {isSearchActive ? "Order History" : showMyOrdersOnly ? "My Orders" : "Order Book"}
+              </CardTitle>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-[6px] border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm">
+                {connectionState === "connected" ? (
+                  <>
+                    <Wifi className="h-3.5 w-3.5 text-emerald-500" />
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400 hidden md:inline">
+                      Live
+                    </span>
+                  </>
+                ) : connectionState === "connecting" ? (
+                  <>
+                    <Wifi className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 hidden md:inline">
+                      Connecting...
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-3.5 w-3.5 text-red-500" />
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-red-600 dark:text-red-400 hidden md:inline">
+                      Offline
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
 
             <div className="flex flex-col min-[550px]:flex-row items-end min-[550px]:items-center gap-2">
               <Popover

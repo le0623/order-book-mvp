@@ -19,6 +19,7 @@ interface OrderBookProps {
   allOrdersForSearch?: Order[];
   showMyOrdersOnly?: boolean;
   walletAddress?: string;
+  connectionState?: "connected" | "connecting" | "disconnected";
 }
 
 export function OrderBook({
@@ -34,6 +35,7 @@ export function OrderBook({
   allOrdersForSearch = [],
   showMyOrdersOnly = false,
   walletAddress,
+  connectionState = "disconnected",
 }: OrderBookProps) {
   return (
     <DataTable
@@ -44,6 +46,7 @@ export function OrderBook({
       filledOrdersMap={filledOrdersMap}
       allOrdersForSearch={allOrdersForSearch}
       showMyOrdersOnly={showMyOrdersOnly}
+      connectionState={connectionState}
       renderSubComponent={({ row }) => {
         const order = row.original;
         const filledOrders = filledOrdersMap[order.uuid] || [];
