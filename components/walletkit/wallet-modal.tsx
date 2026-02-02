@@ -139,12 +139,13 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                                 <Button
                                     onClick={() => handleConnect('polkadot-js')}
                                     disabled={isConnecting || isConnected}
+                                    variant="outline"
                                     size="sm"
-                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                    className="h-9 gap-2 bg-white hover:bg-slate-50 border-slate-200 text-slate-600 dark:bg-background/80 dark:hover:bg-muted dark:border-border/60 dark:text-foreground"
                                 >
                                     {connectingTo === 'polkadot-js' ? (
                                         <>
-                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            <Loader2 className="h-4 w-4 animate-spin" />
                                             Connecting...
                                         </>
                                     ) : (
@@ -196,12 +197,13 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                                 <Button
                                     onClick={() => handleConnect('bittensor-wallet')}
                                     disabled={isConnecting || isConnected}
+                                    variant="outline"
                                     size="sm"
-                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                    className="h-9 gap-2 bg-white hover:bg-slate-50 border-slate-200 text-slate-600 dark:bg-background/80 dark:hover:bg-muted dark:border-border/60 dark:text-foreground"
                                 >
                                     {connectingTo === 'bittensor-wallet' ? (
                                         <>
-                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            <Loader2 className="h-4 w-4 animate-spin" />
                                             Connecting...
                                         </>
                                     ) : (

@@ -479,8 +479,8 @@ export function DataTable<TData, TValue>({
                         Cancel
                       </Button>
                       <Button
+                        variant="outline"
                         size="sm"
-                        className="h-9 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.25)] hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.35)]"
                         onClick={() => {
                           setIsSearchActive(true);
                           setSearchPopoverOpen(false);
