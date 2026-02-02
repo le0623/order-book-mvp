@@ -22,25 +22,21 @@ const WALLET_INFO = {
     'polkadot-js': {
         name: 'Polkadot.js',
         description: 'Official Polkadot browser extension',
-        icon: '🔵',
         installUrl: 'https://polkadot.js.org/extension/'
     },
     'bittensor-wallet': {
         name: 'Bittensor Wallet',
         description: 'Bittensor wallet extension',
-        icon: '🧠',
         installUrl: 'https://chromewebstore.google.com/detail/bittensor-wallet/bdgmdoedahdcjmpmifafdhnffjinddgc'
     },
     'nova': {
         name: 'Nova Wallet',
         description: 'Nova wallet extension',
-        icon: '⭐',
         installUrl: 'https://novawallet.io/'
     },
     'talisman': {
         name: 'Talisman',
         description: 'Talisman wallet extension',
-        icon: '🔮',
         installUrl: 'https://talisman.xyz/'
     }
 } as const

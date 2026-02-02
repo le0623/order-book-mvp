@@ -449,7 +449,7 @@ export default function Home() {
             <div className="flex items-center gap-4">
               <button
                 onClick={handleLogoClick}
-                className="p-1.5 rounded-xl bg-blue-50 dark:bg-primary/10 border border-blue-100 dark:border-primary/20 dark:shadow-sm hover:bg-blue-100 dark:hover:bg-primary/20 transition-colors cursor-pointer"
+                className="p-1.5 dark:shadow-sm hover:bg-white dark:hover:bg-background transition-colors cursor-pointer"
                 aria-label="Return to main page"
               >
                 <Image
