@@ -8,7 +8,7 @@ interface WalletAccount {
     source?: string
 }
 
-export type WalletType = 'polkadot-js' | 'bittensor-wallet' | null
+export type WalletType = 'polkadot-js' | 'bittensor-wallet' | 'nova' | 'talisman' | null
 
 interface WalletContextType {
     accounts: WalletAccount[]
@@ -17,7 +17,7 @@ interface WalletContextType {
     isConnecting: boolean
     walletType: WalletType
     availableWallets: { name: string; installed: boolean; extensionName: string }[]
-    connect: (walletType: 'polkadot-js' | 'bittensor-wallet') => Promise<void>
+    connect: (walletType: 'polkadot-js' | 'bittensor-wallet' | 'nova' | 'talisman') => Promise<void>
     disconnect: () => void
     selectAccount: (address: string) => void
     cancelConnection: () => void
@@ -37,6 +37,18 @@ const WALLET_EXTENSIONS = {
         extensionName: 'bittensor-wallet',
         possibleKeys: ['@opentensor/bittensor-extension'],
         installUrl: 'https://chromewebstore.google.com/detail/bittensor-wallet/bdgmdoedahdcjmpmifafdhnffjinddgc'
+    },
+    'nova': {
+        name: 'Nova Wallet',
+        extensionName: 'nova',
+        possibleKeys: ['nova', 'novawallet'],
+        installUrl: 'https://novawallet.io/'
+    },
+    'talisman': {
+        name: 'Talisman',
+        extensionName: 'talisman',
+        possibleKeys: ['talisman'],
+        installUrl: 'https://talisman.xyz/'
     }
 } as const
 
@@ -111,7 +123,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         setIsConnecting(false)
     }, [])
 
-    const connect = async (type: 'polkadot-js' | 'bittensor-wallet') => {
+    const connect = async (type: 'polkadot-js' | 'bittensor-wallet' | 'nova' | 'talisman') => {
         if (typeof window === 'undefined') {
             throw new Error('Window is not available')
         }

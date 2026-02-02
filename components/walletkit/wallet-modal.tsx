@@ -30,6 +30,18 @@ const WALLET_INFO = {
         description: 'Bittensor wallet extension',
         icon: '🧠',
         installUrl: 'https://chromewebstore.google.com/detail/bittensor-wallet/bdgmdoedahdcjmpmifafdhnffjinddgc'
+    },
+    'nova': {
+        name: 'Nova Wallet',
+        description: 'Nova wallet extension',
+        icon: '⭐',
+        installUrl: 'https://novawallet.io/'
+    },
+    'talisman': {
+        name: 'Talisman',
+        description: 'Talisman wallet extension',
+        icon: '🔮',
+        installUrl: 'https://talisman.xyz/'
     }
 } as const
 
@@ -47,7 +59,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
         }
     }, [open, isConnecting, cancelConnection]);
 
-    const handleConnect = async (walletType: 'polkadot-js' | 'bittensor-wallet') => {
+    const handleConnect = async (walletType: 'polkadot-js' | 'bittensor-wallet' | 'nova' | 'talisman') => {
         setError("");
         setConnectingTo(walletType);
 
@@ -70,7 +82,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
         setError("");
     };
 
-    const handleInstall = (walletType: 'polkadot-js' | 'bittensor-wallet') => {
+    const handleInstall = (walletType: 'polkadot-js' | 'bittensor-wallet' | 'nova' | 'talisman') => {
         window.open(WALLET_INFO[walletType].installUrl, '_blank');
     };
 
@@ -213,6 +225,122 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                             ) : (
                                 <Button
                                     onClick={() => handleInstall('bittensor-wallet')}
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2"
+                                >
+                                    <ExternalLink className="h-4 w-4" />
+                                    Install
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Nova Wallet */}
+                    <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                            <div className="relative w-10 h-10 flex-shrink-0 rounded-full overflow-hidden">
+                                <Image
+                                    src="/nova.png"
+                                    alt="Nova Wallet"
+                                    fill
+                                    sizes="40px"
+                                    className="object-contain"
+                                />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    {isWalletInstalled('nova') ? (
+                                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                    ) : (
+                                        <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                    )}
+                                    <div className="font-medium">{WALLET_INFO['nova'].name}</div>
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                    {WALLET_INFO['nova'].description}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {isWalletInstalled('nova') ? (
+                                <Button
+                                    onClick={() => handleConnect('nova')}
+                                    disabled={isConnecting || isConnected}
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-9 gap-2 bg-white hover:bg-slate-50 border-slate-200 text-slate-600 dark:bg-background/80 dark:hover:bg-muted dark:border-border/60 dark:text-foreground"
+                                >
+                                    {connectingTo === 'nova' ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Connecting...
+                                        </>
+                                    ) : (
+                                        'Connect'
+                                    )}
+                                </Button>
+                            ) : (
+                                <Button
+                                    onClick={() => handleInstall('nova')}
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2"
+                                >
+                                    <ExternalLink className="h-4 w-4" />
+                                    Install
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Talisman Wallet */}
+                    <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                            <div className="relative w-10 h-10 flex-shrink-0 rounded-full overflow-hidden">
+                                <Image
+                                    src="/talisman.png"
+                                    alt="Talisman Wallet"
+                                    fill
+                                    sizes="40px"
+                                    className="object-contain"
+                                />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    {isWalletInstalled('talisman') ? (
+                                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                    ) : (
+                                        <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                    )}
+                                    <div className="font-medium">{WALLET_INFO['talisman'].name}</div>
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                    {WALLET_INFO['talisman'].description}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {isWalletInstalled('talisman') ? (
+                                <Button
+                                    onClick={() => handleConnect('talisman')}
+                                    disabled={isConnecting || isConnected}
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-9 gap-2 bg-white hover:bg-slate-50 border-slate-200 text-slate-600 dark:bg-background/80 dark:hover:bg-muted dark:border-border/60 dark:text-foreground"
+                                >
+                                    {connectingTo === 'talisman' ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Connecting...
+                                        </>
+                                    ) : (
+                                        'Connect'
+                                    )}
+                                </Button>
+                            ) : (
+                                <Button
+                                    onClick={() => handleInstall('talisman')}
                                     variant="outline"
                                     size="sm"
                                     className="gap-2"
