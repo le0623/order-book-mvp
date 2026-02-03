@@ -20,21 +20,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
+import { getWebSocketBookUrl, getWebSocketPriceUrl, API_URL } from "../lib/config";
 
-const getWebSocketUrl = (): string => {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_WS_URL || "wss://api.subnet118.com/ws";
-  const normalized = baseUrl.replace(/\/book\/?$/, "");
-  return `${normalized}/book`;
-};
-
-const WS_URL = getWebSocketUrl();
-const WS_PRICE_URL =
-  (process.env.NEXT_PUBLIC_WS_URL || "wss://api.subnet118.com/ws").replace(
-    /\/book\/?$/,
-    ""
-  ) + "/price";
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.subnet118.com";
+const WS_URL = getWebSocketBookUrl();
+const WS_PRICE_URL = getWebSocketPriceUrl();
 
 export default function Home() {
   const { selectedAccount } = useWallet();
@@ -486,8 +475,8 @@ export default function Home() {
                 <Image
                   src="/hodl-logo.png"
                   alt="HODL Exchange Logo"
-                  width={54}
-                  height={54}
+                  width={56}
+                  height={56}
                   className="object-contain"
                 />
               </button>
@@ -498,7 +487,7 @@ export default function Home() {
                   </h1>
                 </div>
                 <div className="flex items-center gap-3">
-                  <p className="text-muted-foreground text-[15px] font-medium tracking-tight">
+                  <p className="text-muted-foreground text-[15px] font-medium tracking-tight leading-none">
                     Powered by Subnet 118
                   </p>
                 </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { API_URL } from '@/lib/config';
 
-const EXTERNAL_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.subnet118.com';
+const EXTERNAL_API_URL = API_URL;
 
 /**
  * Next.js API Route Handler - Proxies POST requests to external API

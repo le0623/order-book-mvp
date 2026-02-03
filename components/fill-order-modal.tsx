@@ -16,6 +16,7 @@ import { Order } from "@/lib/types";
 import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
 import { useWallet } from "@/context/wallet-context";
+import { API_URL } from "@/lib/config";
 
 interface FillOrderModalProps {
   open: boolean;
@@ -144,10 +145,7 @@ export function FillOrderModal({
         status: -1, // -1 = Init status (triggers escrow generation in backend)
       };
 
-      const backendUrl =
-        apiUrl ||
-        process.env.NEXT_PUBLIC_API_URL ||
-        "https://api.subnet118.com";
+        const backendUrl = apiUrl || API_URL;
       const response = await fetch(`${backendUrl}/rec`, {
         method: "POST",
         headers: {
@@ -261,10 +259,7 @@ export function FillOrderModal({
         status: 2,
       };
 
-      const backendUrl =
-        apiUrl ||
-        process.env.NEXT_PUBLIC_API_URL ||
-        "https://api.subnet118.com";
+        const backendUrl = apiUrl || API_URL;
       const response = await fetch(`${backendUrl}/rec`, {
         method: "POST",
         headers: {

@@ -40,6 +40,7 @@ import { NewOrderFormData, Order } from "@/lib/types";
 import { useWallet } from "@/context/wallet-context";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WebSocketMessage } from "@/lib/websocket-types";
+import { getWebSocketBookUrl, API_URL } from "@/lib/config";
 
 interface NewOrderModalProps {
   open: boolean;
@@ -82,9 +83,7 @@ export function NewOrderModal({
   const pendingEscrowRef = React.useRef<string>("");
 
   const WS_URL = React.useMemo(() => {
-    const baseUrl = process.env.NEXT_PUBLIC_WS_URL || "wss://api.subnet118.com/ws";
-    const normalized = baseUrl.replace(/\/book\/?$/, "");
-    return `${normalized}/book`;
+    return getWebSocketBookUrl();
   }, []);
 
   const handleWebSocketMessage = React.useCallback((message: WebSocketMessage | any) => {
@@ -111,7 +110,6 @@ export function NewOrderModal({
             if (uuid && escrow) {
               console.log("Received UUID and escrow from WebSocket:", { uuid, escrow });
               setOrderUuid(uuid);
-              // Ensure escrow matches (should already be set from HTTP response)
               setEscrowWallet((prevEscrow) => {
                 if (escrow && escrow !== prevEscrow) {
                   console.log("Updating escrow from WebSocket:", escrow);
@@ -132,7 +130,6 @@ export function NewOrderModal({
           if (uuid && escrow) {
             console.log("Received UUID and escrow from WebSocket:", { uuid, escrow });
             setOrderUuid(uuid);
-            // Ensure escrow matches (should already be set from HTTP response)
             setEscrowWallet((prevEscrow) => {
               if (escrow && escrow !== prevEscrow) {
                 console.log("Updating escrow from WebSocket:", escrow);
@@ -155,12 +152,11 @@ export function NewOrderModal({
     setWsUuid(uuid);
   }, []);
 
-  // Connect to WebSocket immediately when modal opens to receive UUID
   const { connectionState: wsConnectionState } = useWebSocket({
     url: WS_URL,
     onMessage: handleWebSocketMessage,
     onUuidReceived: handleUuidReceived,
-    enabled: open, // Listen as soon as modal opens, not just after escrow is generated
+    enabled: open, 
   });
 
   React.useEffect(() => {
@@ -234,7 +230,6 @@ export function NewOrderModal({
       if (!wsUuid) {
         throw new Error("WebSocket connection UUID not available. Please wait for connection.");
       }
-      console.log("wsUuid in next", wsUuid);
       const orderData = {
         uuid: wsUuid,
         origin: "",
@@ -256,10 +251,7 @@ export function NewOrderModal({
         status: -1,
       };
 
-      const backendUrl =
-        apiUrl ||
-        process.env.NEXT_PUBLIC_API_URL ||
-        "https://api.subnet118.com";
+      const backendUrl = apiUrl || API_URL;
       const response = await fetch(`${backendUrl}/rec`, {
         method: "POST",
         headers: {
@@ -382,7 +374,7 @@ export function NewOrderModal({
       // If wallet was never connected, use empty string
       const finalWallet = walletAddress || originWallet || "";
 
-      const finalUuid = orderUuid || wsUuid;
+      const finalUuid = wsUuid;
 
       if (!finalUuid) {
         throw new Error("Order UUID not available. Please wait for WebSocket connection.");
@@ -416,11 +408,7 @@ export function NewOrderModal({
         price: 0.0, // auto fill
         status: 1,
       };
-
-      const backendUrl =
-        apiUrl ||
-        process.env.NEXT_PUBLIC_API_URL ||
-        "https://api.subnet118.com";
+      const backendUrl = apiUrl || API_URL;
       const response = await fetch(`${backendUrl}/rec`, {
         method: "POST",
         headers: {
