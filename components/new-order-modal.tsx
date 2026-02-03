@@ -47,16 +47,6 @@ interface NewOrderModalProps {
   apiUrl?: string;
 }
 
-const generateMockEscrowAddress = (): string => {
-  const chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-  const prefix = "5";
-  let address = prefix;
-  for (let i = 0; i < 47; i++) {
-    address += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return address;
-};
-
 export function NewOrderModal({
   open,
   onOpenChange,
@@ -157,7 +147,7 @@ export function NewOrderModal({
       const orderUuid = uuidv4();
       const orderData = {
         uuid: orderUuid,
-        origin: walletAddress,
+        origin: "",
         escrow: "",
         wallet: walletAddress,
         asset: Number(formData.asset),
@@ -222,27 +212,33 @@ export function NewOrderModal({
       if (contentType && contentType.includes("application/json")) {
         try {
           data = await response.json();
+          console.log("data in next", data);
         } catch {
           const text = await response.text();
-          data = { message: text };
+          data = text;
         }
       } else {
         const text = await response.text();
-        data = { message: text };
+        data = text;
       }
+      console.log("data in next", data);
 
       let responseUuid = "";
-      let escrowAddress = "";
-      if (Array.isArray(data) && data.length > 0) {
-        responseUuid = data[0].uuid || "";
-        escrowAddress = data[0].escrow || "";
-      } else if (data && typeof data === "object") {
-        responseUuid = data.uuid || "";
-        escrowAddress = data.escrow || "";
-      }
+      let escrowAddress = data;
 
+      // if (typeof data === "string" && data.trim().length > 0) {
+      //   escrowAddress = data.trim();
+      // } else if (Array.isArray(data) && data.length > 0) {
+      //   responseUuid = data[0].uuid || "";
+      //   escrowAddress = data[0].escrow || "";
+      // } else if (data && typeof data === "object") {
+      //   responseUuid = data.uuid || "";
+      //   escrowAddress = data.escrow || "";
+      // }
+
+      // Validate that backend returned escrow address
       if (!escrowAddress) {
-        escrowAddress = generateMockEscrowAddress();
+        throw new Error("Failed to create escrow wallet. Please try again.");
       }
 
       const finalUuid = responseUuid || orderUuid;
@@ -288,17 +284,19 @@ export function NewOrderModal({
 
       // If wallet was connected when creating escrow but now disconnected, use the stored originWallet
       // If wallet was never connected, use empty string
-      const finalOrigin = originWallet || walletAddress || "";
       const finalWallet = walletAddress || originWallet || "";
 
       if (!orderUuid || !escrowWallet) {
         throw new Error("Missing order UUID or escrow wallet address");
       }
 
+      const finalOrigin = escrowWallet.trim();
+      const finalEscrow = escrowWallet.trim();
+
       const orderData = {
         uuid: orderUuid,
         origin: finalOrigin,
-        escrow: escrowWallet,
+        escrow: finalEscrow,
         wallet: finalWallet,
         asset: Number(formData.asset),
         type: Number(formData.type),
@@ -310,11 +308,16 @@ export function NewOrderModal({
           formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
         partial: formData.partial ? "True" : "False",
         public: formData.public ? "True" : "False",
-        tao: 0.0, // Backend will automatically fill
-        alpha: 0.0, // Backend will automatically fill
-        price: 0.0, // Backend will automatically fill
+        tao: 0.0, // auto fill
+        alpha: 0.0, // auto fill
+        price: 0.0, // auto fill
         status: 1,
       };
+
+      console.log("Order data being sent:", JSON.stringify(orderData, null, 2));
+      console.log("Origin === Escrow?", finalOrigin === finalEscrow);
+      console.log("Origin length:", finalOrigin.length, "Escrow length:", finalEscrow.length);
+
       const backendUrl =
         apiUrl ||
         process.env.NEXT_PUBLIC_API_URL ||
@@ -333,7 +336,7 @@ export function NewOrderModal({
         }
         throw error;
       });
-
+      console.log("response in place order", response);
       if (!response.ok) {
         let errorText: string;
         const contentType = response.headers.get("content-type");
@@ -405,7 +408,7 @@ export function NewOrderModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-w-[calc(100vw-2rem)] w-[calc(100vw-2rem)] sm:w-auto bg-card dark:bg-background border-border/60">
+      <DialogContent className="sm:max-w-[600px] max-w-[calc(100vw-2rem)] w-[calc(100vw-2rem)] sm:w-[600px] bg-card dark:bg-background border-border/60">
         <DialogHeader>
           <DialogTitle>New Order</DialogTitle>
         </DialogHeader>

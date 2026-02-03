@@ -557,7 +557,7 @@ export default function Home() {
             <DialogFooter>
               <Button
                 onClick={() => setShowWalletConnectDialog(false)}
-                className="bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.25)]"
+                variant="outline"
               >
                 Close
               </Button>
