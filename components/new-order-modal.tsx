@@ -37,8 +37,10 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
-import { NewOrderFormData } from "@/lib/types";
+import { NewOrderFormData, Order } from "@/lib/types";
 import { useWallet } from "@/context/wallet-context";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { WebSocketMessage } from "@/lib/websocket-types";
 
 interface NewOrderModalProps {
   open: boolean;
@@ -76,6 +78,64 @@ export function NewOrderModal({
   const [showReviewButtons, setShowReviewButtons] = React.useState(false);
   const [showPaymentButtons, setShowPaymentButtons] = React.useState(false);
   const [isInReviewMode, setIsInReviewMode] = React.useState(false);
+
+  const pendingEscrowRef = React.useRef<string>("");
+
+  const WS_URL = React.useMemo(() => {
+    const baseUrl = process.env.NEXT_PUBLIC_WS_URL || "wss://api.subnet118.com/ws";
+    const normalized = baseUrl.replace(/\/book\/?$/, "");
+    return `${normalized}/book`;
+  }, []);
+
+  const handleWebSocketMessage = React.useCallback((message: WebSocketMessage | any) => {
+    try {
+      let orderData: any = message;
+      if (typeof message === "string") {
+        try {
+          orderData = JSON.parse(message);
+          if (typeof orderData === "string") {
+            orderData = JSON.parse(orderData);
+          }
+        } catch {
+          return; 
+        }
+      }
+
+      if (orderData && typeof orderData === "object" && "data" in orderData) {
+        const wsMessage = orderData as WebSocketMessage;
+        if (wsMessage.data) {
+          const order = Array.isArray(wsMessage.data) ? wsMessage.data[0] : wsMessage.data;
+          if (order && order.escrow === pendingEscrowRef.current && order.status === -1) {
+            const uuid = order.uuid || wsMessage.uuid || "";
+            if (uuid) {
+              console.log("Received UUID from WebSocket:", uuid, "for escrow:", order.escrow);
+              setOrderUuid(uuid);
+              pendingEscrowRef.current = ""; // Clear pending
+            }
+          }
+        }
+      }
+      else if (orderData && typeof orderData === "object" && "escrow" in orderData && "uuid" in orderData) {
+        const order = orderData as Order;
+        if (order.escrow === pendingEscrowRef.current && order.status === -1) {
+          const uuid = order.uuid || "";
+          if (uuid) {
+            console.log("Received UUID from WebSocket:", uuid, "for escrow:", order.escrow);
+            setOrderUuid(uuid);
+            pendingEscrowRef.current = ""; 
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error processing WebSocket message in new order modal:", error);
+    }
+  }, []);
+
+  const { connectionState: wsConnectionState } = useWebSocket({
+    url: WS_URL,
+    onMessage: handleWebSocketMessage,
+    enabled: open && escrowGenerated, 
+  });
 
   React.useEffect(() => {
     if (open && selectedAccount?.address) {
@@ -123,6 +183,7 @@ export function NewOrderModal({
     setShowPaymentButtons(false);
     setIsInReviewMode(false);
     setCopiedEscrow(false);
+    pendingEscrowRef.current = ""; // Clear pending escrow
   };
 
   const copyEscrowToClipboard = async () => {
@@ -184,7 +245,7 @@ export function NewOrderModal({
         }
         throw error;
       });
-
+      console.log("response in next", response);
       if (!response.ok) {
         let errorText: string;
         const contentType = response.headers.get("content-type");
@@ -241,10 +302,18 @@ export function NewOrderModal({
         throw new Error("Failed to create escrow wallet. Please try again.");
       }
 
-      const finalUuid = responseUuid || orderUuid;
+      // Trim escrow address
+      const trimmedEscrow = escrowAddress.trim();
 
-      setEscrowWallet(escrowAddress);
-      setOrderUuid(finalUuid);
+      // Set escrow wallet
+      setEscrowWallet(trimmedEscrow);
+
+      // Track this escrow to get UUID from WebSocket
+      pendingEscrowRef.current = trimmedEscrow;
+
+      // Use generated UUID as fallback, will be updated when WebSocket message arrives
+      setOrderUuid(orderUuid);
+
       // Set originWallet if not already set (for when wallet is not connected)
       if (!originWallet && walletAddress) {
         setOriginWallet(walletAddress);
@@ -313,10 +382,6 @@ export function NewOrderModal({
         price: 0.0, // auto fill
         status: 1,
       };
-
-      console.log("Order data being sent:", JSON.stringify(orderData, null, 2));
-      console.log("Origin === Escrow?", finalOrigin === finalEscrow);
-      console.log("Origin length:", finalOrigin.length, "Escrow length:", finalEscrow.length);
 
       const backendUrl =
         apiUrl ||
@@ -408,7 +473,7 @@ export function NewOrderModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-w-[calc(100vw-2rem)] w-[calc(100vw-2rem)] sm:w-[600px] bg-card dark:bg-background border-border/60">
+      <DialogContent className="sm:max-w-[516px] max-w-[calc(100vw-2rem)] w-[calc(100vw-2rem)] sm:w-[516px] bg-card dark:bg-background border-border/60">
         <DialogHeader>
           <DialogTitle>New Order</DialogTitle>
         </DialogHeader>
