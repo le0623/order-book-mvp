@@ -8,6 +8,7 @@ interface UseWebSocketOptions {
   enabled?: boolean;
   onMessage?: (message: WebSocketMessage | any) => void;
   onError?: (error: Event) => void;
+  onUuidReceived?: (uuid: string) => void; 
 }
 
 export function useWebSocket({
@@ -15,6 +16,7 @@ export function useWebSocket({
   enabled = true,
   onMessage,
   onError,
+  onUuidReceived,
 }: UseWebSocketOptions) {
   const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
   const wsRef = useRef<WebSocket | null>(null);
@@ -22,12 +24,14 @@ export function useWebSocket({
   const reconnectAttemptsRef = useRef(0);
   const onMessageRef = useRef(onMessage);
   const onErrorRef = useRef(onError);
+  const onUuidReceivedRef = useRef(onUuidReceived);
   const isFirstMessageRef = useRef(true); // Track first message (UUID)
 
   useEffect(() => {
     onMessageRef.current = onMessage;
     onErrorRef.current = onError;
-  }, [onMessage, onError]);
+    onUuidReceivedRef.current = onUuidReceived;
+  }, [onMessage, onError, onUuidReceived]);
 
   const connect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -102,6 +106,10 @@ export function useWebSocket({
 
           if (isFirstMessageRef.current) {
             isFirstMessageRef.current = false;
+            const uuid = rawData.trim();
+            if (uuid && onUuidReceivedRef.current) {
+              onUuidReceivedRef.current(uuid);
+            }
             return;
           }
 
