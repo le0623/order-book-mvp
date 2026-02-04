@@ -82,7 +82,6 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
-  console.log("🔥 newlyAddedOrderIds", newlyAddedOrderIds);
   const [expanded, setExpanded] = React.useState({});
   const [searchPopoverOpen, setSearchPopoverOpen] = React.useState(false);
   const [searchAddress, setSearchAddress] = React.useState<string>("");

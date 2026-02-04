@@ -525,7 +525,7 @@ export default function Home() {
                   </h1>
                 </div>
                 <div className="flex items-center gap-3">
-                  <p className="text-muted-foreground text-[15px] font-medium tracking-tight leading-[6px]">
+                  <p className="text-muted-foreground text-[15px] font-medium tracking-tight leading-[0.75rem]">
                     Powered by Subnet 118
                   </p>
                 </div>
