@@ -99,7 +99,6 @@ export function OrderBookRowDetails({
   );
   const [isFlashing, setIsFlashing] = React.useState(false);
   const paneRef = React.useRef<HTMLDivElement>(null);
-
   const parseGtdToDate = React.useCallback(
     (gtd: string | undefined): Date | undefined => {
       if (!gtd || gtd.toLowerCase() === "gtc") {
@@ -527,20 +526,20 @@ export function OrderBookRowDetails({
               </div>
             )}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 !mt-0">
             <div className="flex flex-col gap-1.5 p-3 rounded-md bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-border/40">
               <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
                 Stop Price
               </span>
-              <span className="font-mono text-base font-semibold text-slate-900 dark:text-foreground">
-                {formatPrice(order.stp || 0)}
+              <span className="pt-5 font-mono text-base  text-slate-900 dark:text-foreground">
+                {order.stp > 0 ? formatPrice(order.stp) : "None"}
               </span>
             </div>
             <div className="flex flex-col gap-1.5 p-3 rounded-md bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-border/40">
               <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
                 Public
               </span>
-              <span className={`text-base font-semibold ${order.public ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-muted-foreground"}`}>
+              <span className="pt-5 text-base text-slate-900 dark:text-foreground">
                 {order.public ? "Yes" : "No"}
               </span>
             </div>
@@ -548,7 +547,7 @@ export function OrderBookRowDetails({
               <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
                 Good Till Date
               </span>
-              <span className="font-mono text-base font-semibold text-slate-900 dark:text-foreground">
+              <span className="pt-5 font-mono text-base  text-slate-900 dark:text-foreground">
                 {order.gtd && order.gtd.toLowerCase() === "gtc"
                   ? "2026-01-31 UTC"
                   : order.gtd
@@ -560,7 +559,7 @@ export function OrderBookRowDetails({
               <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
                 Partial
               </span>
-              <span className={`text-base font-semibold ${order.partial ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-muted-foreground"}`}>
+              <span className="pt-5 text-base text-slate-900 dark:text-foreground">
                 {order.partial ? "Yes" : "No"}
               </span>
             </div>

@@ -117,11 +117,9 @@ export function NewOrderModal({
             const uuid = order.uuid || wsMessage.uuid || "";
             const escrow = order.escrow || "";
             if (uuid && escrow) {
-              console.log("Received UUID and escrow from WebSocket:", { uuid, escrow });
               setOrderUuid(uuid);
               setEscrowWallet((prevEscrow) => {
                 if (escrow && escrow !== prevEscrow) {
-                  console.log("Updating escrow from WebSocket:", escrow);
                   return escrow;
                 }
                 return prevEscrow;
@@ -302,8 +300,8 @@ export function NewOrderModal({
         lmt: Number(formData.stp),
         gtd:
           formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
-        partial: formData.partial ? "True" : "False",
-        public: formData.public ? "True" : "False",
+        partial: formData.partial ? true : false,
+        public: formData.public ? true : false,
         tao: 0.0, // auto fill
         alpha: 0.0, // auto fill
         price: 0.0, // auto fill
@@ -431,14 +429,6 @@ export function NewOrderModal({
       const alphaValue = priceData?.alpha ?? 0.0;
       const priceValue = priceData?.price && priceData.price > 0 ? priceData.price : 0.0;
 
-      console.log("📤 Placing order with price data:", {
-        hasPriceData: !!priceData,
-        tao: taoValue,
-        alpha: alphaValue,
-        price: priceValue,
-        note: priceValue === 0 ? "Backend will calculate and return in response/WebSocket" : "Using pre-fetched price"
-      });
-
       const orderData = {
         uuid: finalUuid,
         origin: finalOrigin,
@@ -452,8 +442,8 @@ export function NewOrderModal({
         lmt: Number(formData.stp),
         gtd:
           formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
-        partial: formData.partial ? "True" : "False",
-        public: formData.public ? "True" : "False",
+        partial: formData.partial ? true : false,
+        public: formData.public ? true : false,
         tao: taoValue,
         alpha: alphaValue,
         price: priceValue,

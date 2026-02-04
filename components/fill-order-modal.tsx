@@ -13,10 +13,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Loader2, Copy, CheckIcon } from "lucide-react";
 import { Order } from "@/lib/types";
-import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
 import { useWallet } from "@/context/wallet-context";
-import { API_URL } from "@/lib/config";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { WebSocketMessage } from "@/lib/websocket-types";
+import { getWebSocketBookUrl, API_URL } from "@/lib/config";
 
 interface FillOrderModalProps {
   open: boolean;
@@ -25,15 +26,6 @@ interface FillOrderModalProps {
   prices?: Record<number, number>; // netuid -> price mapping for live prices
   apiUrl?: string;
   onOrderFilled?: () => void;
-}
-
-function generateMockEscrowAddress(): string {
-  const chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-  let address = "5";
-  for (let i = 0; i < 47; i++) {
-    address += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return address;
 }
 
 export function FillOrderModal({
@@ -48,19 +40,92 @@ export function FillOrderModal({
   const [escrowWallet, setEscrowWallet] = React.useState<string>("");
   const [originWallet, setOriginWallet] = React.useState<string>("");
   const [orderUuid, setOrderUuid] = React.useState<string>("");
+  const [wsUuid, setWsUuid] = React.useState<string>(""); // WebSocket connection UUID from backend
   const [escrowGenerated, setEscrowGenerated] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string>("");
   const [errorVisible, setErrorVisible] = React.useState(false);
   const [copiedEscrow, setCopiedEscrow] = React.useState(false);
 
-  // Auto-dismiss error after 6 seconds with animation
+  const pendingEscrowRef = React.useRef<string>("");
+
+  const WS_URL = React.useMemo(() => {
+    return getWebSocketBookUrl();
+  }, []);
+
+  const handleWebSocketMessage = React.useCallback((message: WebSocketMessage | any) => {
+    try {
+      let orderData: any = message;
+      if (typeof message === "string") {
+        try {
+          orderData = JSON.parse(message);
+          if (typeof orderData === "string") {
+            orderData = JSON.parse(orderData);
+          }
+        } catch {
+          return;
+        }
+      }
+
+      if (orderData && typeof orderData === "object" && "data" in orderData) {
+        const wsMessage = orderData as WebSocketMessage;
+        if (wsMessage.data) {
+          const orderItem = Array.isArray(wsMessage.data) ? wsMessage.data[0] : wsMessage.data;
+          if (orderItem && orderItem.escrow === pendingEscrowRef.current && orderItem.status === -1) {
+            const uuid = orderItem.uuid || wsMessage.uuid || "";
+            const escrow = orderItem.escrow || "";
+            if (uuid && escrow) {
+              console.log("Fill Order: Received UUID and escrow from WebSocket:", { uuid, escrow });
+              setOrderUuid(uuid);
+              setEscrowWallet((prevEscrow) => {
+                if (escrow && escrow !== prevEscrow) {
+                  return escrow;
+                }
+                return prevEscrow;
+              });
+              pendingEscrowRef.current = "";
+            }
+          }
+        }
+      }
+      else if (orderData && typeof orderData === "object" && "escrow" in orderData && "uuid" in orderData) {
+        const orderItem = orderData as Order;
+        if (orderItem.escrow === pendingEscrowRef.current && orderItem.status === -1) {
+          const uuid = orderItem.uuid || "";
+          const escrow = orderItem.escrow || "";
+          if (uuid && escrow) {
+            setOrderUuid(uuid);
+            setEscrowWallet((prevEscrow) => {
+              if (escrow && escrow !== prevEscrow) {
+                return escrow;
+              }
+              return prevEscrow;
+            });
+            pendingEscrowRef.current = "";
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error processing WebSocket message in fill order modal:", error);
+    }
+  }, []);
+
+  const handleUuidReceived = React.useCallback((uuid: string) => {
+    setWsUuid(uuid);
+  }, []);
+
+  const { connectionState: wsConnectionState } = useWebSocket({
+    url: WS_URL,
+    onMessage: handleWebSocketMessage,
+    onUuidReceived: handleUuidReceived,
+    enabled: open,
+  });
+
   React.useEffect(() => {
     if (error) {
       setErrorVisible(true);
       const fadeOutTimer = setTimeout(() => {
         setErrorVisible(false);
-        // Clear error after fade-out animation completes (300ms)
         setTimeout(() => {
           setError("");
         }, 300);
@@ -98,9 +163,11 @@ export function FillOrderModal({
       setEscrowWallet("");
       setOriginWallet("");
       setOrderUuid("");
+      setWsUuid("");
       setEscrowGenerated(false);
       setError("");
       setCopiedEscrow(false);
+      pendingEscrowRef.current = "";
     }
   }, [open]);
 
@@ -123,10 +190,12 @@ export function FillOrderModal({
       // Use connected wallet address if available, otherwise use empty string
       const walletAddress = selectedAccount?.address || "";
 
-      const fillOrderUuid = uuidv4();
+      if (!wsUuid) {
+        throw new Error("WebSocket connection UUID not available. Please wait for connection.");
+      }
 
       const orderData = {
-        uuid: fillOrderUuid,
+        uuid: wsUuid,
         origin: "",
         escrow: "",
         wallet: walletAddress,
@@ -145,7 +214,9 @@ export function FillOrderModal({
         status: -1, // -1 = Init status (triggers escrow generation in backend)
       };
 
-        const backendUrl = apiUrl || API_URL;
+      console.log("Fill Order: Creating escrow with UUID:", wsUuid);
+
+      const backendUrl = apiUrl || API_URL;
       const response = await fetch(`${backendUrl}/rec`, {
         method: "POST",
         headers: {
@@ -190,16 +261,21 @@ export function FillOrderModal({
           data = await response.json();
         } catch {
           const text = await response.text();
-          data = { message: text };
+          data = text;
         }
       } else {
         const text = await response.text();
-        data = { message: text };
+        data = text;
       }
 
       let escrowAddress = "";
       let originAddress = "";
-      if (Array.isArray(data) && data.length > 0) {
+
+      // Backend returns escrow address as plain string for status=-1
+      if (typeof data === "string" && data.trim().length > 0) {
+        escrowAddress = data.trim();
+        console.log("Fill Order: Received escrow address from response:", escrowAddress);
+      } else if (Array.isArray(data) && data.length > 0) {
         escrowAddress = data[0].escrow || "";
         originAddress = data[0].origin || "";
       } else if (data && typeof data === "object") {
@@ -208,12 +284,15 @@ export function FillOrderModal({
       }
 
       if (!escrowAddress) {
-        escrowAddress = generateMockEscrowAddress();
+        throw new Error("Failed to create escrow wallet. Please try again.");
       }
+
+      // Store the pending escrow to match against WebSocket messages
+      pendingEscrowRef.current = escrowAddress;
 
       setEscrowWallet(escrowAddress);
       setOriginWallet(originAddress || escrowAddress);
-      setOrderUuid(fillOrderUuid);
+      setOrderUuid(wsUuid); // Use the WebSocket UUID
       setEscrowGenerated(true);
     } catch (err: any) {
       console.error("Error creating escrow:", err);
@@ -236,12 +315,14 @@ export function FillOrderModal({
       // Use connected wallet address if available, otherwise use empty string
       const walletAddress = selectedAccount?.address || "";
 
-      if (!orderUuid || !escrowWallet) {
+      const finalUuid = orderUuid || wsUuid;
+      if (!finalUuid || !escrowWallet) {
         throw new Error("Missing order UUID or escrow wallet address");
       }
+
       const fillOrderData = {
-        uuid: orderUuid,
-        origin: order.uuid,
+        uuid: finalUuid,
+        origin: order.escrow,
         escrow: escrowWallet,
         wallet: walletAddress,
         asset: fixedValues.asset,
@@ -251,15 +332,15 @@ export function FillOrderModal({
         stp: fixedValues.price,
         lmt: fixedValues.price,
         gtd: "gtc",
-        partial: "False",
-        public: "False",
+        partial: false,
+        public: false,
         tao: 0.0, // auto fill
         alpha: 0.0, // auto fill
         price: 0.0, // auto fill
         status: 2,
       };
 
-        const backendUrl = apiUrl || API_URL;
+      const backendUrl = apiUrl || API_URL;
       const response = await fetch(`${backendUrl}/rec`, {
         method: "POST",
         headers: {
@@ -302,8 +383,10 @@ export function FillOrderModal({
       setEscrowWallet("");
       setOriginWallet("");
       setOrderUuid("");
+      setWsUuid("");
       setEscrowGenerated(false);
       setError("");
+      pendingEscrowRef.current = "";
     } catch (err: any) {
       console.error("Error filling order:", err);
       setError(err.message || "Failed to fill order. Please try again.");
@@ -318,8 +401,10 @@ export function FillOrderModal({
       setEscrowWallet("");
       setOriginWallet("");
       setOrderUuid("");
+      setWsUuid("");
       setEscrowGenerated(false);
       setError("");
+      pendingEscrowRef.current = "";
     }
   };
 
@@ -385,7 +470,7 @@ export function FillOrderModal({
                 Price
               </span>
               <p className="font-mono text-sm mt-1">
-                {fixedValues.price > 0 ? fixedValues.price.toFixed(6) : "—"}
+                {fixedValues.price > 0 ? fixedValues.price.toFixed(6) : "0.00"}
               </p>
             </div>
             <div>
@@ -393,7 +478,7 @@ export function FillOrderModal({
                 Tao (Bid)
               </span>
               <p className="font-mono text-sm mt-1">
-                {fixedValues.tao > 0 ? fixedValues.tao.toFixed(6) : "—"}
+                {fixedValues.tao > 0 ? fixedValues.tao.toFixed(6) : "0.00"}
               </p>
             </div>
             <div>
@@ -401,7 +486,7 @@ export function FillOrderModal({
                 Alpha (Ask)
               </span>
               <p className="font-mono text-sm mt-1">
-                {fixedValues.alpha > 0 ? fixedValues.alpha.toFixed(6) : "—"}
+                {fixedValues.alpha > 0 ? fixedValues.alpha.toFixed(6) : "0.00"}
               </p>
             </div>
           </div>
