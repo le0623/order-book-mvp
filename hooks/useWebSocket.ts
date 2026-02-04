@@ -8,7 +8,7 @@ interface UseWebSocketOptions {
   enabled?: boolean;
   onMessage?: (message: WebSocketMessage | any) => void;
   onError?: (error: Event) => void;
-  onUuidReceived?: (uuid: string) => void; 
+  onUuidReceived?: (uuid: string) => void;
 }
 
 export function useWebSocket({
@@ -54,7 +54,7 @@ export function useWebSocket({
       ws.onopen = () => {
         setConnectionState("connected");
         reconnectAttemptsRef.current = 0;
-        isFirstMessageRef.current = true; // Reset for new connection
+        isFirstMessageRef.current = true;
       };
 
       ws.onclose = (event: CloseEvent) => {
@@ -100,16 +100,19 @@ export function useWebSocket({
 
           rawData = rawData.trim();
 
-          if (!rawData) {
-            return;
-          }
-
           if (isFirstMessageRef.current) {
             isFirstMessageRef.current = false;
+            if (!rawData) {
+              return;
+            }
             const uuid = rawData.trim();
             if (uuid && onUuidReceivedRef.current) {
               onUuidReceivedRef.current(uuid);
             }
+            return; // Don't process UUID as a regular message
+          }
+
+          if (!rawData) {
             return;
           }
 

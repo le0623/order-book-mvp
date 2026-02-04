@@ -276,9 +276,13 @@ export const columns = (
       </div>
     ),
     cell: ({ row }) => {
+      const taoValue = row.original.tao && row.original.tao > 0 
+        ? row.original.tao 
+        : row.original.bid;
+      
       return (
         <div className="text-right font-mono text-sm">
-          {formatNumber(row.original.bid || 0)}
+          {formatNumber(taoValue || 0)}
         </div>
       );
     },
@@ -294,9 +298,13 @@ export const columns = (
       </div>
     ),
     cell: ({ row }) => {
+      const alphaValue = row.original.alpha && row.original.alpha > 0 
+        ? row.original.alpha 
+        : row.original.ask;
+      
       return (
         <div className="text-right font-mono text-sm">
-          {formatNumber(row.original.ask || 0)}
+          {formatNumber(alphaValue || 0)}
         </div>
       );
     },
@@ -313,8 +321,11 @@ export const columns = (
     cell: ({ row }) => {
       const asset = row.original.asset;
       const livePrice = prices[asset];
-      const displayPrice =
-        livePrice !== undefined && livePrice > 0 ? livePrice : row.original.stp;
+      const orderPrice = row.original.price;
+      
+      const displayPrice = orderPrice && orderPrice > 0 
+        ? orderPrice 
+        : (livePrice !== undefined && livePrice > 0 ? livePrice : row.original.stp);
 
       return (
           <div className="flex justify-end pr-4">

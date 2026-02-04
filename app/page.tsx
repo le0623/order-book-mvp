@@ -67,8 +67,17 @@ export default function Home() {
       );
 
       if (sameStatusIndex !== -1) {
+        const existingOrder = prevOrders[sameStatusIndex];
+        const mergedOrder = {
+          ...existingOrder,
+          ...updatedOrder,
+          tao: updatedOrder.tao > 0 ? updatedOrder.tao : existingOrder.tao,
+          alpha: updatedOrder.alpha > 0 ? updatedOrder.alpha : existingOrder.alpha,
+          price: updatedOrder.price > 0 ? updatedOrder.price : existingOrder.price,
+        };
+
         const newOrders = [...prevOrders];
-        newOrders[sameStatusIndex] = updatedOrder;
+        newOrders[sameStatusIndex] = mergedOrder;
         return newOrders;
       }
 
@@ -77,8 +86,17 @@ export default function Home() {
       );
 
       if (sameUuidIndex !== -1) {
+        const existingOrder = prevOrders[sameUuidIndex];
+        const mergedOrder = {
+          ...existingOrder,
+          ...updatedOrder,
+          tao: updatedOrder.tao > 0 ? updatedOrder.tao : existingOrder.tao,
+          alpha: updatedOrder.alpha > 0 ? updatedOrder.alpha : existingOrder.alpha,
+          price: updatedOrder.price > 0 ? updatedOrder.price : existingOrder.price,
+        };
+
         const newOrders = [...prevOrders];
-        newOrders[sameUuidIndex] = updatedOrder;
+        newOrders[sameUuidIndex] = mergedOrder;
         return newOrders;
       }
 

@@ -40,7 +40,7 @@ import { NewOrderFormData, Order } from "@/lib/types";
 import { useWallet } from "@/context/wallet-context";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WebSocketMessage } from "@/lib/websocket-types";
-import { getWebSocketBookUrl, API_URL } from "@/lib/config";
+import { getWebSocketBookUrl, getWebSocketPriceUrl, API_URL } from "@/lib/config";
 
 interface NewOrderModalProps {
   open: boolean;
@@ -79,11 +79,20 @@ export function NewOrderModal({
   const [showReviewButtons, setShowReviewButtons] = React.useState(false);
   const [showPaymentButtons, setShowPaymentButtons] = React.useState(false);
   const [isInReviewMode, setIsInReviewMode] = React.useState(false);
+  const [priceData, setPriceData] = React.useState<{
+    tao: number;
+    alpha: number;
+    price: number;
+  } | null>(null);
 
   const pendingEscrowRef = React.useRef<string>("");
 
   const WS_URL = React.useMemo(() => {
     return getWebSocketBookUrl();
+  }, []);
+
+  const WS_PRICE_URL = React.useMemo(() => {
+    return getWebSocketPriceUrl();
   }, []);
 
   const handleWebSocketMessage = React.useCallback((message: WebSocketMessage | any) => {
@@ -124,15 +133,14 @@ export function NewOrderModal({
       }
       else if (orderData && typeof orderData === "object" && "escrow" in orderData && "uuid" in orderData) {
         const order = orderData as Order;
+
         if (order.escrow === pendingEscrowRef.current && order.status === -1) {
           const uuid = order.uuid || "";
           const escrow = order.escrow || "";
           if (uuid && escrow) {
-            console.log("Received UUID and escrow from WebSocket:", { uuid, escrow });
             setOrderUuid(uuid);
             setEscrowWallet((prevEscrow) => {
               if (escrow && escrow !== prevEscrow) {
-                console.log("Updating escrow from WebSocket:", escrow);
                 return escrow;
               }
               return prevEscrow;
@@ -140,15 +148,23 @@ export function NewOrderModal({
             pendingEscrowRef.current = "";
           }
         }
+
+        if (order.escrow && order.status === 1) {
+          const tao = Number(order.tao) || 0;
+          const alpha = Number(order.alpha) || 0;
+          const price = Number(order.price) || 0;
+
+          if (order.escrow === escrowWallet && escrowWallet && price > 0) {
+            setPriceData({ tao, alpha, price });
+          }
+        }
       }
     } catch (error) {
       console.error("Error processing WebSocket message in new order modal:", error);
     }
-  }, []);
+  }, [escrowWallet]);
 
-  // Handle initial UUID from WebSocket connection
   const handleUuidReceived = React.useCallback((uuid: string) => {
-    console.log("Received WebSocket connection UUID from backend:", uuid);
     setWsUuid(uuid);
   }, []);
 
@@ -156,7 +172,49 @@ export function NewOrderModal({
     url: WS_URL,
     onMessage: handleWebSocketMessage,
     onUuidReceived: handleUuidReceived,
-    enabled: open, 
+    enabled: open,
+  });
+
+  const handlePriceMessage = React.useCallback((message: any) => {
+    try {
+      let priceDataMsg: any = message;
+      if (typeof message === "string") {
+        try {
+          priceDataMsg = JSON.parse(message);
+          if (typeof priceDataMsg === "string") {
+            priceDataMsg = JSON.parse(priceDataMsg);
+          }
+        } catch {
+          return;
+        }
+      }
+
+      if (
+        priceDataMsg &&
+        typeof priceDataMsg === "object" &&
+        "escrow" in priceDataMsg &&
+        "tao" in priceDataMsg &&
+        "alpha" in priceDataMsg &&
+        "price" in priceDataMsg
+      ) {
+        const escrow = priceDataMsg.escrow;
+        const tao = Number(priceDataMsg.tao) || 0;
+        const alpha = Number(priceDataMsg.alpha) || 0;
+        const price = Number(priceDataMsg.price) || 0;
+
+        if (escrow === escrowWallet && escrowWallet && price > 0) {
+          setPriceData({ tao, alpha, price });
+        }
+      }
+    } catch (error) {
+      console.error("Error processing price WebSocket message:", error);
+    }
+  }, [escrowWallet]);
+
+  const { connectionState: priceConnectionState } = useWebSocket({
+    url: WS_PRICE_URL,
+    onMessage: handlePriceMessage,
+    enabled: open,
   });
 
   React.useEffect(() => {
@@ -205,6 +263,7 @@ export function NewOrderModal({
     setShowPaymentButtons(false);
     setIsInReviewMode(false);
     setCopiedEscrow(false);
+    setPriceData(null);
     pendingEscrowRef.current = ""; // Clear pending escrow
   };
 
@@ -266,7 +325,7 @@ export function NewOrderModal({
         }
         throw error;
       });
-      console.log("response in next", response);
+
       if (!response.ok) {
         let errorText: string;
         const contentType = response.headers.get("content-type");
@@ -294,7 +353,6 @@ export function NewOrderModal({
       if (contentType && contentType.includes("application/json")) {
         try {
           data = await response.json();
-          console.log("data in next", data);
         } catch {
           const text = await response.text();
           data = text;
@@ -303,37 +361,21 @@ export function NewOrderModal({
         const text = await response.text();
         data = text;
       }
-      console.log("data in next", data);
 
-      let responseUuid = "";
       let escrowAddress = data;
 
-      // if (typeof data === "string" && data.trim().length > 0) {
-      //   escrowAddress = data.trim();
-      // } else if (Array.isArray(data) && data.length > 0) {
-      //   responseUuid = data[0].uuid || "";
-      //   escrowAddress = data[0].escrow || "";
-      // } else if (data && typeof data === "object") {
-      //   responseUuid = data.uuid || "";
-      //   escrowAddress = data.escrow || "";
-      // }
-
-      // Validate that backend returned escrow address
       if (!escrowAddress) {
         throw new Error("Failed to create escrow wallet. Please try again.");
       }
 
-      // Trim escrow address
       const trimmedEscrow = escrowAddress.trim();
-
-      // Set escrow wallet
       setEscrowWallet(trimmedEscrow);
 
       pendingEscrowRef.current = trimmedEscrow;
 
       setOrderUuid("");
 
-      // Set originWallet if not already set (for when wallet is not connected)
+      // Set originWallet if not already set
       if (!originWallet && walletAddress) {
         setOriginWallet(walletAddress);
       } else if (!originWallet) {
@@ -367,11 +409,8 @@ export function NewOrderModal({
       setLoading(true);
       setError("");
 
-      // Use connected wallet address if available, otherwise use originWallet or empty
       const walletAddress = selectedAccount?.address || originWallet || "";
 
-      // If wallet was connected when creating escrow but now disconnected, use the stored originWallet
-      // If wallet was never connected, use empty string
       const finalWallet = walletAddress || originWallet || "";
 
       const finalUuid = wsUuid;
@@ -383,10 +422,22 @@ export function NewOrderModal({
         throw new Error("Missing escrow wallet address");
       }
 
-      console.log("Placing order with UUID:", finalUuid, "and escrow:", escrowWallet);
-
       const finalOrigin = escrowWallet.trim();
       const finalEscrow = escrowWallet.trim();
+
+      // Use price data from WebSocket if available, otherwise backend will calculate
+      // Note: Backend calculates price when order is placed, so we send 0.0 and extract from response
+      const taoValue = priceData?.tao ?? 0.0;
+      const alphaValue = priceData?.alpha ?? 0.0;
+      const priceValue = priceData?.price && priceData.price > 0 ? priceData.price : 0.0;
+
+      console.log("📤 Placing order with price data:", {
+        hasPriceData: !!priceData,
+        tao: taoValue,
+        alpha: alphaValue,
+        price: priceValue,
+        note: priceValue === 0 ? "Backend will calculate and return in response/WebSocket" : "Using pre-fetched price"
+      });
 
       const orderData = {
         uuid: finalUuid,
@@ -403,9 +454,9 @@ export function NewOrderModal({
           formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
         partial: formData.partial ? "True" : "False",
         public: formData.public ? "True" : "False",
-        tao: 0.0, // auto fill
-        alpha: 0.0, // auto fill
-        price: 0.0, // auto fill
+        tao: taoValue,
+        alpha: alphaValue,
+        price: priceValue,
         status: 1,
       };
       const backendUrl = apiUrl || API_URL;
@@ -423,7 +474,9 @@ export function NewOrderModal({
         }
         throw error;
       });
-      console.log("response in place order", response);
+
+      const responseClone = response.clone();
+
       if (!response.ok) {
         let errorText: string;
         const contentType = response.headers.get("content-type");
@@ -444,6 +497,38 @@ export function NewOrderModal({
           `Server error (${response.status}): ${errorText || response.statusText
           }`
         );
+      }
+
+      try {
+        const contentType = responseClone.headers.get("content-type");
+        let responseText: string;
+
+        if (contentType && contentType.includes("application/json")) {
+          const responseData = await responseClone.json();
+          responseText = typeof responseData === "string" ? responseData : JSON.stringify(responseData);
+        } else {
+          responseText = await responseClone.text();
+        }
+
+        if (responseText && responseText.trim().startsWith("[")) {
+          try {
+            const parsed = JSON.parse(responseText);
+            if (Array.isArray(parsed) && parsed.length >= 3) {
+              const [tao, alpha, price] = parsed;
+              const taoNum = Number(tao) || 0;
+              const alphaNum = Number(alpha) || 0;
+              const priceNum = Number(price) || 0;
+
+              if (priceNum > 0) {
+                setPriceData({ tao: taoNum, alpha: alphaNum, price: priceNum });
+              }
+            }
+          } catch (e) {
+            console.warn("Could not parse response as array:", e);
+          }
+        }
+      } catch (e) {
+        console.warn("Could not extract price data from response:", e);
       }
 
       onOrderPlaced?.();
