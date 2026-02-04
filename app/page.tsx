@@ -11,7 +11,6 @@ import { ConnectButton } from "../components/walletkit/connect";
 import { NewOrderModal } from "../components/new-order-modal";
 import { useWallet } from "../context/wallet-context";
 import { Button } from "../components/ui/button";
-import { List } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -543,7 +542,10 @@ export default function Home() {
                   : ""
                   }`}
               >
-                <List className="h-4 w-4" />
+                <>
+                  <img src="/light-list.png" alt="My Orders" className="h-4 w-4 dark:hidden" />
+                  <img src="/black-list.png" alt="My Orders" className="h-4 w-4 hidden dark:block" />
+                </>
                 <span className="hidden sm:inline">My Orders</span>
               </Button>
               <ConnectButton />
