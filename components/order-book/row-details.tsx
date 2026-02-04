@@ -533,7 +533,7 @@ export function OrderBookRowDetails({
                 Stop Price
               </span>
               <span className="font-mono text-base font-semibold text-slate-900 dark:text-foreground">
-                {order.stp > 0 ? formatPrice(order.stp) : "—"}
+                {formatPrice(order.stp || 0)}
               </span>
             </div>
             <div className="flex flex-col gap-1.5 p-3 rounded-md bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-border/40">

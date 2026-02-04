@@ -293,11 +293,11 @@ button[name="next-month"] {
 }
 
 .animate-flash-buy {
-  animation: flash-buy 2s ease-out;
+  animation: flash-buy 5s ease-out;
 }
 
 .animate-flash-sell {
-  animation: flash-sell 2s ease-out;
+  animation: flash-sell 5s ease-out;
 }
 
 /* Flash animation for entire pane when order is modified - dark mode */

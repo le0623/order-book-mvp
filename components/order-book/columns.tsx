@@ -90,7 +90,6 @@ export const formatDateOnly = (date: string | Date) => {
 };
 
 export const formatNumber = (num: number) => {
-  if (num === 0) return "—";
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -98,7 +97,6 @@ export const formatNumber = (num: number) => {
 };
 
 export const formatPrice = (num: number) => {
-  if (num === 0) return "—";
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 6,
     maximumFractionDigits: 6,

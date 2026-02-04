@@ -100,20 +100,22 @@ export default function Home() {
         return newOrders;
       }
 
-      const orderId = `${updatedOrder.uuid}-${updatedOrder.status}-${updatedOrder.escrow || ""}`;
-      setNewlyAddedOrderIds((prev) => {
-        const next = new Map(prev);
-        next.set(orderId, updatedOrder.type);
-        return next;
-      });
-
-      setTimeout(() => {
+      if (updatedOrder.status === 1) {
+        const orderId = `${updatedOrder.uuid}-${updatedOrder.status}-${updatedOrder.escrow || ""}`;
         setNewlyAddedOrderIds((prev) => {
           const next = new Map(prev);
-          next.delete(orderId);
+          next.set(orderId, updatedOrder.type);
           return next;
         });
-      }, 2000);
+
+        setTimeout(() => {
+          setNewlyAddedOrderIds((prev) => {
+            const next = new Map(prev);
+            next.delete(orderId);
+            return next;
+          });
+        }, 3500);
+      }
 
       return [updatedOrder, ...prevOrders];
     });
