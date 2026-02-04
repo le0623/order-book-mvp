@@ -486,7 +486,7 @@ export default function Home() {
       <div className="container mx-auto px-4 max-w-7xl pt-4">
         <header className="mb-6 border-b border-slate-200 dark:border-border/40 sticky top-0 z-50 bg-white dark:bg-background h-[105.2px] pt-8 pb-6 flex items-center">
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-[2px]">
               <button
                 onClick={handleLogoClick}
                 className="px-1.5 pt-2 dark:shadow-sm hover:bg-white dark:hover:bg-background transition-colors cursor-pointer"
