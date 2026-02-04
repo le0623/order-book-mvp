@@ -87,6 +87,24 @@ export default function Home() {
 
       if (sameUuidIndex !== -1) {
         const existingOrder = prevOrders[sameUuidIndex];
+
+        if (updatedOrder.status === 1 && existingOrder.status !== 1) {
+          const orderId = `${updatedOrder.uuid}-${updatedOrder.status}-${updatedOrder.escrow || ""}`;
+          setNewlyAddedOrderIds((prev) => {
+            const next = new Map(prev);
+            next.set(orderId, updatedOrder.type);
+            return next;
+          });
+
+          setTimeout(() => {
+            setNewlyAddedOrderIds((prev) => {
+              const next = new Map(prev);
+              next.delete(orderId);
+              return next;
+            });
+          }, 3500);
+        }
+
         const mergedOrder = {
           ...existingOrder,
           ...updatedOrder,
@@ -507,7 +525,7 @@ export default function Home() {
                   </h1>
                 </div>
                 <div className="flex items-center gap-3">
-                  <p className="text-muted-foreground text-[15px] font-medium tracking-tight leading-none">
+                  <p className="text-muted-foreground text-[15px] font-medium tracking-tight leading-[6px]">
                     Powered by Subnet 118
                   </p>
                 </div>

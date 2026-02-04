@@ -240,64 +240,56 @@ button[name="next-month"] {
 
 /* Flash animation for newly added orders - Buy (green) */
 @keyframes flash-buy {
-  0% {
-    background-color: rgb(16 185 129 / 0.8);
-    /* emerald-500/80 - very bright green start */
+  from {
+    background: rgb(16 185 129 / 0.8);
     box-shadow: 0 0 20px rgb(16 185 129 / 0.5);
-    /* Add glow effect */
   }
 
   30% {
-    background-color: rgb(16 185 129 / 0.6);
-    /* emerald-500/60 */
+    background: rgb(16 185 129 / 0.6);
     box-shadow: 0 0 15px rgb(16 185 129 / 0.3);
   }
 
   60% {
-    background-color: rgb(16 185 129 / 0.3);
-    /* emerald-500/30 */
+    background: rgb(16 185 129 / 0.3);
     box-shadow: 0 0 10px rgb(16 185 129 / 0.2);
   }
 
-  100% {
-    background-color: transparent;
+  to {
+    background: inherit;
     box-shadow: none;
   }
 }
 
 /* Flash animation for newly added orders - Sell (red) */
 @keyframes flash-sell {
-  0% {
-    background-color: rgb(244 63 94 / 0.8);
-    /* rose-500/80 - very bright red start */
+  from {
+    background: rgb(244 63 94 / 0.8);
     box-shadow: 0 0 20px rgb(244 63 94 / 0.5);
-    /* Add glow effect */
   }
 
   30% {
-    background-color: rgb(244 63 94 / 0.6);
-    /* rose-500/60 */
+    background: rgb(244 63 94 / 0.6);
     box-shadow: 0 0 15px rgb(244 63 94 / 0.3);
   }
 
   60% {
-    background-color: rgb(244 63 94 / 0.3);
-    /* rose-500/30 */
+    background: rgb(244 63 94 / 0.3);
     box-shadow: 0 0 10px rgb(244 63 94 / 0.2);
   }
 
-  100% {
-    background-color: transparent;
+  to {
+    background: inherit;
     box-shadow: none;
   }
 }
 
 .animate-flash-buy {
-  animation: flash-buy 5s ease-out;
+  animation: flash-buy 3.5s ease-out forwards;
 }
 
 .animate-flash-sell {
-  animation: flash-sell 5s ease-out;
+  animation: flash-sell 3.5s ease-out forwards;
 }
 
 /* Flash animation for entire pane when order is modified - dark mode */

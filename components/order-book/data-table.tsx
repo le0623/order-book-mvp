@@ -82,6 +82,7 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
+  console.log("🔥 newlyAddedOrderIds", newlyAddedOrderIds);
   const [expanded, setExpanded] = React.useState({});
   const [searchPopoverOpen, setSearchPopoverOpen] = React.useState(false);
   const [searchAddress, setSearchAddress] = React.useState<string>("");
@@ -566,7 +567,7 @@ export function DataTable<TData, TValue>({
                             <TableRow
                               data-state={row.getIsSelected() && "selected"}
                               data-expanded={row.getIsExpanded()}
-                              className={`cursor-pointer transition-colors data-[expanded=true]:bg-slate-50 dark:data-[expanded=true]:bg-muted/30 ${newlyAddedOrderIds.has(row.id)
+                              className={`cursor-pointer ${newlyAddedOrderIds.has(row.id) ? "" : "transition-colors bg-white dark:bg-transparent"} data-[expanded=true]:bg-slate-50 dark:data-[expanded=true]:bg-muted/30 ${newlyAddedOrderIds.has(row.id)
                                 ? newlyAddedOrderIds.get(row.id) === 2
                                   ? "animate-flash-buy"
                                   : "animate-flash-sell"
@@ -666,7 +667,7 @@ export function DataTable<TData, TValue>({
                       <TableRow
                         data-state={row.getIsSelected() && "selected"}
                         data-expanded={row.getIsExpanded()}
-                        className={`cursor-pointer transition-colors data-[expanded=true]:bg-slate-50 dark:data-[expanded=true]:bg-muted/30 ${newlyAddedOrderIds.has(row.id)
+                        className={`cursor-pointer ${newlyAddedOrderIds.has(row.id) ? "" : "transition-colors bg-white dark:bg-transparent"} data-[expanded=true]:bg-slate-50 dark:data-[expanded=true]:bg-muted/30 ${newlyAddedOrderIds.has(row.id)
                           ? newlyAddedOrderIds.get(row.id) === 2
                             ? "animate-flash-buy"
                             : "animate-flash-sell"
