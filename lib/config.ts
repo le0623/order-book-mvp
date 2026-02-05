@@ -4,7 +4,6 @@ const isDevMode =
 const LOCAL_API_URL = "http://127.0.0.1:8000";
 const LOCAL_WS_URL = "ws://127.0.0.1:8000/ws";
 
-// Production URLs
 const PROD_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.subnet118.com";
 const PROD_WS_URL = process.env.NEXT_PUBLIC_WS_URL || "wss://api.subnet118.com/ws";
 

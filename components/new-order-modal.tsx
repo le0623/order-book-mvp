@@ -124,7 +124,7 @@ export function NewOrderModal({
                 }
                 return prevEscrow;
               });
-              pendingEscrowRef.current = ""; // Clear pending
+              pendingEscrowRef.current = "";
             }
           }
         }
@@ -262,7 +262,7 @@ export function NewOrderModal({
     setIsInReviewMode(false);
     setCopiedEscrow(false);
     setPriceData(null);
-    pendingEscrowRef.current = ""; // Clear pending escrow
+    pendingEscrowRef.current = "";
   };
 
   const copyEscrowToClipboard = async () => {
@@ -281,7 +281,6 @@ export function NewOrderModal({
       setLoading(true);
       setError("");
 
-      // Use connected wallet address if available, otherwise use empty string or placeholder
       const walletAddress = selectedAccount?.address || "";
 
       if (!wsUuid) {
@@ -586,9 +585,7 @@ export function NewOrderModal({
           </div>
         )}
 
-        {/* Order Details Form */}
         <div className="grid gap-4 py-4">
-          {/* Escrow Wallet Address (always visible) */}
           <div className="grid gap-2">
             <Label htmlFor="escrow">Escrow Wallet Address</Label>
             <div className="flex items-center gap-2">
@@ -618,7 +615,6 @@ export function NewOrderModal({
             </div>
           </div>
 
-          {/* Order Type Select */}
           <div className="grid gap-2">
             <Label htmlFor="type">Order Type</Label>
             <Select
@@ -641,7 +637,6 @@ export function NewOrderModal({
             </Select>
           </div>
 
-          {/* Asset (NETUID) */}
           <div className="grid gap-2">
             <Label htmlFor="asset">Asset (NETUID)</Label>
             <div className="relative flex items-center">
@@ -696,7 +691,6 @@ export function NewOrderModal({
             </div>
           </div>
 
-          {/* Good Till Date */}
           <div className="grid gap-2">
             <Label>Good Till Date (GTD)</Label>
             <div className="flex gap-2">
@@ -757,7 +751,6 @@ export function NewOrderModal({
             </p>
           </div>
 
-          {/* Stop Price */}
           <div className="grid gap-2">
             <Label htmlFor="stp">Stop Price (TAO)</Label>
             <div className="relative flex items-center">
@@ -902,7 +895,6 @@ export function NewOrderModal({
           )}
         </DialogFooter>
 
-        {/* Review Order Buttons (shown below footer) */}
         {showReviewButtons && (
           <div className="flex gap-2 justify-end mt-4 pt-4 border-t">
             <Button variant="outline" onClick={handleBack}>
@@ -917,7 +909,6 @@ export function NewOrderModal({
           </div>
         )}
 
-        {/* Payment Buttons (shown below footer) */}
         {showPaymentButtons && (
           <div className="flex gap-2 justify-end mt-4 pt-4 border-t">
             <Button variant="outline" onClick={handleBack}>

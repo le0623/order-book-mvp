@@ -187,7 +187,6 @@ export function FillOrderModal({
       setLoading(true);
       setError("");
 
-      // Use connected wallet address if available, otherwise use empty string
       const walletAddress = selectedAccount?.address || "";
 
       if (!wsUuid) {
@@ -292,7 +291,7 @@ export function FillOrderModal({
 
       setEscrowWallet(escrowAddress);
       setOriginWallet(originAddress || escrowAddress);
-      setOrderUuid(wsUuid); // Use the WebSocket UUID
+      setOrderUuid(wsUuid);
       setEscrowGenerated(true);
     } catch (err: any) {
       console.error("Error creating escrow:", err);
@@ -312,7 +311,6 @@ export function FillOrderModal({
       setLoading(true);
       setError("");
 
-      // Use connected wallet address if available, otherwise use empty string
       const walletAddress = selectedAccount?.address || "";
 
       const finalUuid = orderUuid || wsUuid;

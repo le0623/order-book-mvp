@@ -96,7 +96,6 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                     </DialogDescription>
                 </DialogHeader>
 
-                {/* Show cancel button when connecting */}
                 {isConnecting && connectingTo && (
                     <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
                         <div className="flex items-center gap-2 text-sm text-yellow-800 dark:text-yellow-200">
@@ -116,7 +115,6 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                 )}
 
                 <div className="space-y-3 py-4">
-                    {/* Polkadot.js Wallet */}
                     <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                         <div className="flex items-center gap-3">
                             <div className="relative w-10 h-10 flex-shrink-0 rounded-full overflow-hidden">
@@ -174,7 +172,6 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                         </div>
                     </div>
 
-                    {/* Bittensor Wallet */}
                     <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                         <div className="flex items-center gap-3">
                             <div className="relative w-10 h-10 flex-shrink-0 rounded-full overflow-hidden">
@@ -232,7 +229,6 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                         </div>
                     </div>
 
-                    {/* Nova Wallet */}
                     <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                         <div className="flex items-center gap-3">
                             <div className="relative w-10 h-10 flex-shrink-0 rounded-full overflow-hidden">
@@ -290,7 +286,6 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                         </div>
                     </div>
 
-                    {/* Talisman Wallet */}
                     <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                         <div className="flex items-center gap-3">
                             <div className="relative w-10 h-10 flex-shrink-0 rounded-full overflow-hidden">
