@@ -496,7 +496,7 @@ export function OrderBookRowDetails({
       <div className="space-y-4">
         <div
           ref={paneRef}
-          className="p-4 rounded-lg bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/50 space-y-4"
+          className="px-4 pb-5 pt-2 rounded-lg bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/50 space-y-4"
         >
           <div className="flex justify-between gap-4 grid grid-cols-2">
             {order.wallet && (
@@ -527,42 +527,42 @@ export function OrderBookRowDetails({
             )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 !mt-0">
-            <div className="flex flex-col gap-1.5 p-3 rounded-md bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-border/40">
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
+            <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
+              <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
                 Stop Price
-              </span>
-              <span className="pt-5 font-mono text-base  text-slate-900 dark:text-foreground">
+              </legend>
+              <span className="font-mono text-sm text-slate-900 dark:text-foreground pl-1">
                 {order.stp > 0 ? formatPrice(order.stp) : "None"}
               </span>
-            </div>
-            <div className="flex flex-col gap-1.5 p-3 rounded-md bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-border/40">
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
+            </fieldset>
+            <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
+              <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
                 Public
-              </span>
-              <span className="pt-5 text-base text-slate-900 dark:text-foreground">
+              </legend>
+              <span className="text-sm text-slate-900 dark:text-foreground pl-1">
                 {order.public ? "Yes" : "No"}
               </span>
-            </div>
-            <div className="flex flex-col gap-1.5 p-3 rounded-md bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-border/40">
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
+            </fieldset>
+            <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
+              <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
                 Good Till Date
-              </span>
-              <span className="pt-5 font-mono text-base  text-slate-900 dark:text-foreground">
+              </legend>
+              <span className="font-mono text-sm text-slate-900 dark:text-foreground pl-1">
                 {order.gtd && order.gtd.toLowerCase() === "gtc"
                   ? "2026-01-31 UTC"
                   : order.gtd
                     ? formatDateOnly(order.gtd)
                     : "—"}
               </span>
-            </div>
-            <div className="flex flex-col gap-1.5 p-3 rounded-md bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-border/40">
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
+            </fieldset>
+            <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
+              <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
                 Partial
-              </span>
-              <span className="pt-5 text-base text-slate-900 dark:text-foreground">
+              </legend>
+              <span className="text-sm text-slate-900 dark:text-foreground pl-1">
                 {order.partial ? "Yes" : "No"}
               </span>
-            </div>
+            </fieldset>
           </div>
         </div>
       </div>

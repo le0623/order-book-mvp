@@ -74,9 +74,9 @@ export const ConnectButton = () => {
         onClick={() => setModalOpen(true)}
         className="gap-2 shadow-none"
       >
-        <div className="w-2 h-2 rounded-full bg-red-500"></div>
         <Wallet className="h-4 w-4" />
         <span className="hidden sm:inline">Wallet</span>
+        <div className="w-2 h-2 rounded-full bg-red-500"></div>
       </Button>
       <WalletModal open={modalOpen} onOpenChange={setModalOpen} />
     </>

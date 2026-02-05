@@ -410,7 +410,7 @@ export function FillOrderModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent className="sm:max-w-[516px]">
         <DialogHeader>
           <DialogTitle>Fill Order</DialogTitle>
         </DialogHeader>
@@ -499,7 +499,7 @@ export function FillOrderModal({
           <Button
             onClick={handleFillOrder}
             disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+            variant="outline"
           >
             {loading ? (
               <>

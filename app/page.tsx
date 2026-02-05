@@ -134,7 +134,7 @@ export default function Home() {
         }, 3500);
       }
 
-      return [updatedOrder, ...prevOrders];
+        return [updatedOrder, ...prevOrders];
     });
   }, []);
 
@@ -366,8 +366,8 @@ export default function Home() {
               ? "True"
               : "False"
             : order.public
-              ? "True"
-              : "False",
+            ? "True"
+            : "False",
         tao: Number(order.tao || 0),
         alpha: Number(order.alpha || 0),
         price: Number(order.price || 0),
