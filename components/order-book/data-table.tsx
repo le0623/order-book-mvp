@@ -101,7 +101,7 @@ export function DataTable<TData, TValue>({
   const bodyScrollRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
-      setColumnFilters([{ id: "status", value: [0, 1] }]);
+    setColumnFilters([{ id: "status", value: [0, 1] }]);
   }, []);
 
   React.useEffect(() => {
@@ -311,7 +311,7 @@ export function DataTable<TData, TValue>({
             <div className="flex items-center gap-3">
               <CardTitle className="text-xl font-bold tracking-tight text-foreground">
                 {isSearchActive ? "Order History" : showMyOrdersOnly ? "My Orders" : "Order Book"}
-            </CardTitle>
+              </CardTitle>
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-[6px] border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm">
                 {connectionState === "connected" ? (
                   <>
@@ -557,7 +557,7 @@ export function DataTable<TData, TValue>({
               </div>
 
               <div ref={bodyScrollRef} className="overflow-x-auto scrollbar-hide">
-          <div className="min-w-[1200px]">
+                <div className="min-w-[1200px]">
                   <Table noWrapper className="w-full table-fixed">
                     <TableBody>
                       {table.getRowModel().rows?.length ? (
@@ -607,7 +607,7 @@ export function DataTable<TData, TValue>({
                             </TableRow>
 
                             {row.getIsExpanded() && renderSubComponent && (
-                              <TableRow>
+                              <TableRow className="hover:bg-transparent dark:hover:bg-transparent">
                                 <TableCell
                                   colSpan={columns.length}
                                   className="p-0 border-t-0"
@@ -650,9 +650,9 @@ export function DataTable<TData, TValue>({
                         {header.isPlaceholder
                           ? null
                           : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                       </TableHeadCell>
                     ))}
                   </TableRow>
@@ -667,11 +667,11 @@ export function DataTable<TData, TValue>({
                         data-state={row.getIsSelected() && "selected"}
                         data-expanded={row.getIsExpanded()}
                         className={`cursor-pointer ${newlyAddedOrderIds.has(row.id) ? "" : "transition-colors bg-white dark:bg-transparent"} data-[expanded=true]:bg-slate-50 dark:data-[expanded=true]:bg-muted/30 ${newlyAddedOrderIds.has(row.id)
-                            ? newlyAddedOrderIds.get(row.id) === 2
-                              ? "animate-flash-buy"
-                              : "animate-flash-sell"
-                            : ""
-                        }`}
+                          ? newlyAddedOrderIds.get(row.id) === 2
+                            ? "animate-flash-buy"
+                            : "animate-flash-sell"
+                          : ""
+                          }`}
                         onClick={() => {
                           const currentExpanded = expanded as Record<
                             string,
@@ -707,7 +707,7 @@ export function DataTable<TData, TValue>({
                       </TableRow>
 
                       {row.getIsExpanded() && renderSubComponent && (
-                        <TableRow>
+                        <TableRow className="hover:bg-transparent dark:hover:bg-transparent">
                           <TableCell
                             colSpan={columns.length}
                             className="p-0 border-t-0"
@@ -735,10 +735,10 @@ export function DataTable<TData, TValue>({
       </Card>
 
       <div className="flex items-center justify-end space-x-2 rounded-b-md bg-background dark:bg-background mb-12">
-            <div className="text-xs text-muted-foreground">
-              Showing {table.getRowModel().rows.length} rows
-            </div>
-          </div>
+        <div className="text-xs text-muted-foreground">
+          Showing {table.getRowModel().rows.length} rows
+        </div>
+      </div>
 
       {showScrollToTop && (
         <Button

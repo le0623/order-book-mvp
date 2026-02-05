@@ -207,7 +207,7 @@ export function OrderBookRowDetails({
     <div className="bg-slate-50 dark:bg-muted/30 p-6 space-y-6 border-t border-slate-200 dark:border-border/50">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-base font-bold tracking-tight text-foreground">
+          <h3 className="text-base font-semibold tracking-tight text-foreground">
             Order Details
           </h3>
           {order.status === 1 && ( // Status 1 = Open
