@@ -41,6 +41,8 @@ import { useWallet } from "@/context/wallet-context";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WebSocketMessage } from "@/lib/websocket-types";
 import { getWebSocketBookUrl, getWebSocketPriceUrl, API_URL } from "@/lib/config";
+import { ConnectButton } from "@/components/walletkit/connect";
+
 
 interface NewOrderModalProps {
   open: boolean;
@@ -570,8 +572,9 @@ export function NewOrderModal({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[516px] max-w-[calc(100vw-2rem)] w-[calc(100vw-2rem)] sm:w-[516px] bg-card dark:bg-background border-border/60">
-        <DialogHeader>
+        <DialogHeader className="flex flex-row justify-start gap-2 items-center mt-[-10px]">
           <DialogTitle>New Order</DialogTitle>
+          <ConnectButton />
         </DialogHeader>
 
         {error && (

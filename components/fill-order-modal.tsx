@@ -18,6 +18,7 @@ import { useWallet } from "@/context/wallet-context";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WebSocketMessage } from "@/lib/websocket-types";
 import { getWebSocketBookUrl, API_URL } from "@/lib/config";
+import { ConnectButton } from "@/components/walletkit/connect";
 
 interface FillOrderModalProps {
   open: boolean;
@@ -409,8 +410,9 @@ export function FillOrderModal({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[516px]">
-        <DialogHeader>
+        <DialogHeader className="flex flex-row justify-start gap-2 items-center mt-[-10px]">
           <DialogTitle>Fill Order</DialogTitle>
+          <ConnectButton />
         </DialogHeader>
 
         {error && (
