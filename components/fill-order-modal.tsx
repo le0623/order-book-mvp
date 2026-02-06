@@ -248,7 +248,7 @@ export function FillOrderModal({
           errorText = await response.text();
         }
         throw new Error(
-          `Server error (${response.status}): ${errorText || response.statusText
+          `Error (${response.status}): ${errorText || response.statusText
           }`
         );
       }
@@ -371,7 +371,7 @@ export function FillOrderModal({
           errorText = await response.text();
         }
         throw new Error(
-          `Server error (${response.status}): ${errorText || response.statusText
+          `Error (${response.status}): ${errorText || response.statusText
           }`
         );
       }

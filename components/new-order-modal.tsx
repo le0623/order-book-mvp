@@ -342,7 +342,7 @@ export function NewOrderModal({
           errorText = await response.text();
         }
         throw new Error(
-          `Server error (${response.status}): ${errorText || response.statusText
+          `Error (${response.status}): ${errorText || response.statusText
           }`
         );
       }
@@ -485,7 +485,7 @@ export function NewOrderModal({
           errorText = await response.text();
         }
         throw new Error(
-          `Server error (${response.status}): ${errorText || response.statusText
+          `Error (${response.status}): ${errorText || response.statusText
           }`
         );
       }
@@ -615,7 +615,7 @@ export function NewOrderModal({
           } else {
             errorText = await response.text();
           }
-          throw new Error(`Server error (${response.status}): ${errorText || response.statusText}`);
+          throw new Error(`Error (${response.status}): ${errorText || response.statusText}`);
         }
 
         setIsInReviewMode(false);
