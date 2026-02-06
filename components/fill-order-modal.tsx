@@ -47,6 +47,11 @@ export function FillOrderModal({
   const [error, setError] = React.useState<string>("");
   const [errorVisible, setErrorVisible] = React.useState(false);
   const [copiedEscrow, setCopiedEscrow] = React.useState(false);
+  const [liveParentPrice, setLiveParentPrice] = React.useState<{
+    tao: number;
+    alpha: number;
+    price: number;
+  } | null>(null);
 
   const pendingEscrowRef = React.useRef<string>("");
 
@@ -68,48 +73,42 @@ export function FillOrderModal({
         }
       }
 
-      if (orderData && typeof orderData === "object" && "data" in orderData) {
-        const wsMessage = orderData as WebSocketMessage;
-        if (wsMessage.data) {
-          const orderItem = Array.isArray(wsMessage.data) ? wsMessage.data[0] : wsMessage.data;
-          if (orderItem && orderItem.escrow === pendingEscrowRef.current && orderItem.status === -1) {
-            const uuid = orderItem.uuid || wsMessage.uuid || "";
-            const escrow = orderItem.escrow || "";
-            if (uuid && escrow) {
-              console.log("Fill Order: Received UUID and escrow from WebSocket:", { uuid, escrow });
-              setOrderUuid(uuid);
-              setEscrowWallet((prevEscrow) => {
-                if (escrow && escrow !== prevEscrow) {
-                  return escrow;
-                }
-                return prevEscrow;
-              });
-              pendingEscrowRef.current = "";
-            }
-          }
-        }
-      }
-      else if (orderData && typeof orderData === "object" && "escrow" in orderData && "uuid" in orderData) {
-        const orderItem = orderData as Order;
-        if (orderItem.escrow === pendingEscrowRef.current && orderItem.status === -1) {
-          const uuid = orderItem.uuid || "";
-          const escrow = orderItem.escrow || "";
+      const processOrderItem = (item: any) => {
+        if (!item || typeof item !== "object") return;
+
+        if (item.escrow === pendingEscrowRef.current && item.status === -1) {
+          const uuid = item.uuid || "";
+          const escrow = item.escrow || "";
           if (uuid && escrow) {
             setOrderUuid(uuid);
-            setEscrowWallet((prevEscrow) => {
-              if (escrow && escrow !== prevEscrow) {
-                return escrow;
-              }
-              return prevEscrow;
-            });
+            setEscrowWallet((prev) => (escrow && escrow !== prev ? escrow : prev));
             pendingEscrowRef.current = "";
           }
         }
+
+        if (item.escrow === order.escrow && item.status === 1) {
+          const tao = Number(item.tao || 0);
+          const alpha = Number(item.alpha || 0);
+          const price = Number(item.price || 0);
+          if (price > 0) {
+            setLiveParentPrice({ tao, alpha, price });
+          }
+        }
+      };
+
+      if (orderData && typeof orderData === "object" && "data" in orderData) {
+        const wsMessage = orderData as WebSocketMessage;
+        if (wsMessage.data) {
+          const item = Array.isArray(wsMessage.data) ? wsMessage.data[0] : wsMessage.data;
+          processOrderItem(item);
+        }
+      } else if (orderData && typeof orderData === "object" && "escrow" in orderData) {
+        processOrderItem(orderData);
       }
     } catch (error) {
       console.error("Error processing WebSocket message in fill order modal:", error);
     }
-  }, []);
+  }, [order.escrow]);
 
   const handleUuidReceived = React.useCallback((uuid: string) => {
     setWsUuid(uuid);
@@ -142,22 +141,21 @@ export function FillOrderModal({
 
   const fixedValues = React.useMemo(() => {
     const asset = Number(order.asset);
-    const livePrice = prices[asset];
-    const currentPrice =
-      livePrice !== undefined && livePrice > 0 ? livePrice : order.stp;
-
     const fillOrderType = order.type === 1 ? 2 : 1;
 
-    const tao = fillOrderType === 2 ? order.ask : 0;
-    const alpha = fillOrderType === 1 ? order.bid : 0;
+    const parentTao = liveParentPrice?.tao ?? Number(order.tao || 0);
+    const parentAlpha = liveParentPrice?.alpha ?? Number(order.alpha || 0);
+    const parentPrice = liveParentPrice?.price ??
+      (order.price > 0 ? order.price : (prices[asset] > 0 ? prices[asset] : order.stp));
+
     return {
-      asset: Number(order.asset),
+      asset,
       type: fillOrderType,
-      tao: Number(tao),
-      alpha: Number(alpha),
-      price: Number(currentPrice),
+      tao: parentTao,
+      alpha: parentAlpha,
+      price: Number(parentPrice),
     };
-  }, [order, prices]);
+  }, [order, prices, liveParentPrice]);
 
   React.useEffect(() => {
     if (!open) {
@@ -168,6 +166,7 @@ export function FillOrderModal({
       setEscrowGenerated(false);
       setError("");
       setCopiedEscrow(false);
+      setLiveParentPrice(null);
       pendingEscrowRef.current = "";
     }
   }, [open]);
@@ -403,6 +402,7 @@ export function FillOrderModal({
       setWsUuid("");
       setEscrowGenerated(false);
       setError("");
+      setLiveParentPrice(null);
       pendingEscrowRef.current = "";
     }
   };
@@ -411,7 +411,9 @@ export function FillOrderModal({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[516px]">
         <DialogHeader className="flex flex-row justify-start gap-2 items-center mt-[-10px]">
-          <DialogTitle>Fill Order</DialogTitle>
+          <div className="mt-[3px]">
+            <DialogTitle>Fill Order</DialogTitle>
+          </div>
           <ConnectButton />
         </DialogHeader>
 
@@ -473,22 +475,7 @@ export function FillOrderModal({
                 {fixedValues.price > 0 ? fixedValues.price.toFixed(6) : "0.00"}
               </p>
             </div>
-            <div>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Tao (Bid)
-              </span>
-              <p className="font-mono text-sm mt-1">
-                {fixedValues.tao > 0 ? fixedValues.tao.toFixed(6) : "0.00"}
-              </p>
-            </div>
-            <div>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Alpha (Ask)
-              </span>
-              <p className="font-mono text-sm mt-1">
-                {fixedValues.alpha > 0 ? fixedValues.alpha.toFixed(6) : "0.00"}
-              </p>
-            </div>
+
           </div>
         </div>
 

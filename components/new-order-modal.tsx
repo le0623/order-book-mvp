@@ -553,9 +553,78 @@ export function NewOrderModal({
     resetForm();
   };
 
-  const handleReviewOrder = () => {
+  const handleReviewOrder = async () => {
     if (isInReviewMode) {
-      setIsInReviewMode(false);
+      try {
+        setLoading(true);
+        setError("");
+
+        const walletAddress = selectedAccount?.address || originWallet || "";
+
+        if (!wsUuid) {
+          throw new Error("WebSocket connection UUID not available. Please wait for connection.");
+        }
+        if (!escrowWallet) {
+          throw new Error("Missing escrow wallet address");
+        }
+
+        const orderData = {
+          uuid: wsUuid,
+          origin: escrowWallet.trim(),
+          escrow: escrowWallet.trim(),
+          wallet: walletAddress,
+          asset: Number(formData.asset),
+          type: Number(formData.type),
+          ask: Number(formData.type === 1 ? formData.stp : 0.0),
+          bid: Number(formData.type === 2 ? formData.stp : 0.0),
+          stp: Number(formData.stp),
+          lmt: Number(formData.stp),
+          gtd: formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
+          partial: formData.partial ? true : false,
+          public: formData.public ? true : false,
+          tao: 0.0,
+          alpha: 0.0,
+          price: 0.0,
+          status: -1,
+        };
+
+        const backendUrl = apiUrl || API_URL;
+        const response = await fetch(`${backendUrl}/rec`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(orderData),
+        }).catch((fetchError) => {
+          if (fetchError.message === "Failed to fetch") {
+            throw new Error("Cannot connect to server. This may be due to network issues or the server being unavailable.");
+          }
+          throw fetchError;
+        });
+
+        if (!response.ok) {
+          let errorText: string;
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            try {
+              const errorData = await response.json();
+              errorText = typeof errorData === "string" ? errorData : JSON.stringify(errorData);
+            } catch {
+              errorText = await response.text();
+            }
+          } else {
+            errorText = await response.text();
+          }
+          throw new Error(`Server error (${response.status}): ${errorText || response.statusText}`);
+        }
+
+        setIsInReviewMode(false);
+      } catch (err: any) {
+        console.error("Error updating order:", err);
+        setError(err.message || "Failed to update order");
+      } finally {
+        setLoading(false);
+      }
     } else {
       setShowReviewButtons(false);
       setShowPaymentButtons(true);
@@ -573,7 +642,9 @@ export function NewOrderModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[516px] max-w-[calc(100vw-2rem)] w-[calc(100vw-2rem)] sm:w-[516px] bg-card dark:bg-background border-border/60">
         <DialogHeader className="flex flex-row justify-start gap-2 items-center mt-[-10px]">
-          <DialogTitle>New Order</DialogTitle>
+          <div className="mt-[3px]">
+            <DialogTitle>New Order</DialogTitle>
+          </div>
           <ConnectButton />
         </DialogHeader>
 

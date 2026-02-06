@@ -98,7 +98,7 @@ export function OrderBookRowDetails({
     undefined
   );
   const [isFlashing, setIsFlashing] = React.useState(false);
-  const paneRef = React.useRef<HTMLDivElement>(null);
+  const paneRef = React.useRef<HTMLElement>(null);
   const parseGtdToDate = React.useCallback(
     (gtd: string | undefined): Date | undefined => {
       if (!gtd || gtd.toLowerCase() === "gtc") {
@@ -494,77 +494,124 @@ export function OrderBookRowDetails({
       </div>
 
       <div className="space-y-4">
-        <div
-          ref={paneRef}
-          className="px-4 pb-5 pt-2 rounded-lg bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/50 space-y-4"
-        >
-          <div className="flex justify-between gap-4 grid grid-cols-2">
-            {order.wallet && (
-              <div className="grid gap-2 col-span-2">
-                <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/80">
-                  Wallet Address
+        {order.wallet ? (
+          <fieldset
+            ref={paneRef as React.RefObject<HTMLFieldSetElement>}
+            className="px-4 pb-5 pt-1 rounded-lg bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/50 space-y-4"
+          >
+            <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
+              Wallet
+            </legend>
+            <div className="flex items-center !mt-0.5">
+              <code className="font-mono text-sm text-slate-900 dark:text-foreground break-all">
+                {order.wallet.length > 8 ? `${order.wallet.slice(0, 4)}...${order.wallet.slice(-4)}` : order.wallet}
+              </code>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0 hover:bg-muted/80 transition-colors opacity-60 hover:opacity-90"
+                onClick={() => copyToClipboard(order.wallet, "wallet")}
+              >
+                {copiedWalletId ? (
+                  <CheckIcon className="h-4 w-4 text-emerald-500" />
+                ) : (
+                  <Copy className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
+              <a
+                href={`https://taostats.io/account/${order.wallet}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground transition-all flex-shrink-0 opacity-60 hover:opacity-90"
+                title={`View on Taostats: ${order.wallet}`}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 !mt-1">
+              <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
+                <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
+                  Stop Price
+                </legend>
+                <span className="font-mono text-sm text-slate-900 dark:text-foreground pl-1">
+                  {order.stp > 0 ? formatPrice(order.stp) : "None"}
                 </span>
-                <div className="flex items-center gap-2">
-                  <code
-                    className="font-mono text-sm px-3 py-2 bg-slate-100 dark:bg-muted/50 rounded-md border border-slate-200 dark:border-border/50 text-slate-900 dark:text-foreground break-all"
-                  >
-                    {order.wallet}
-                  </code>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0 hover:bg-muted/80 transition-colors"
-                    onClick={() => copyToClipboard(order.wallet, "wallet")}
-                  >
-                    {copiedWalletId ? (
-                      <CheckIcon className="h-4 w-4 text-emerald-500" />
-                    ) : (
-                      <Copy className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
+              </fieldset>
+              <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
+                <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
+                  Good Till Date
+                </legend>
+                <span className="font-mono text-sm text-slate-900 dark:text-foreground pl-1">
+                  {order.gtd && order.gtd.toLowerCase() === "gtc"
+                    ? "2026-01-31 UTC"
+                    : order.gtd
+                      ? formatDateOnly(order.gtd)
+                      : "—"}
+                </span>
+              </fieldset>
+              <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
+                <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
+                  Partial
+                </legend>
+                <span className="text-sm text-slate-900 dark:text-foreground pl-1">
+                  {order.partial ? "Yes" : "No"}
+                </span>
+              </fieldset>
+              <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
+                <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
+                  Public
+                </legend>
+                <span className="text-sm text-slate-900 dark:text-foreground pl-1">
+                  {order.public ? "Yes" : "No"}
+                </span>
+              </fieldset>
+            </div>
+          </fieldset>
+        ) : (
+          <div
+            ref={paneRef as React.RefObject<HTMLDivElement>}
+            className="px-4 pb-5 pt-2 rounded-lg bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/50 space-y-4"
+          >
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 !mt-0">
+              <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
+                <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
+                  Stop Price
+                </legend>
+                <span className="font-mono text-sm text-slate-900 dark:text-foreground pl-1">
+                  {order.stp > 0 ? formatPrice(order.stp) : "None"}
+                </span>
+              </fieldset>
+              <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
+                <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
+                  Good Till Date
+                </legend>
+                <span className="font-mono text-sm text-slate-900 dark:text-foreground pl-1">
+                  {order.gtd && order.gtd.toLowerCase() === "gtc"
+                    ? "2026-01-31 UTC"
+                    : order.gtd
+                      ? formatDateOnly(order.gtd)
+                      : "—"}
+                </span>
+              </fieldset>
+              <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
+                <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
+                  Partial
+                </legend>
+                <span className="text-sm text-slate-900 dark:text-foreground pl-1">
+                  {order.partial ? "Yes" : "No"}
+                </span>
+              </fieldset>
+              <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
+                <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
+                  Public
+                </legend>
+                <span className="text-sm text-slate-900 dark:text-foreground pl-1">
+                  {order.public ? "Yes" : "No"}
+                </span>
+              </fieldset>
+            </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 !mt-0">
-            <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
-              <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
-                Stop Price
-              </legend>
-              <span className="font-mono text-sm text-slate-900 dark:text-foreground pl-1">
-                {order.stp > 0 ? formatPrice(order.stp) : "None"}
-              </span>
-            </fieldset>
-            <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
-              <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
-                Public
-              </legend>
-              <span className="text-sm text-slate-900 dark:text-foreground pl-1">
-                {order.public ? "Yes" : "No"}
-              </span>
-            </fieldset>
-            <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
-              <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
-                Good Till Date
-              </legend>
-              <span className="font-mono text-sm text-slate-900 dark:text-foreground pl-1">
-                {order.gtd && order.gtd.toLowerCase() === "gtc"
-                  ? "2026-01-31 UTC"
-                  : order.gtd
-                    ? formatDateOnly(order.gtd)
-                    : "—"}
-              </span>
-            </fieldset>
-            <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
-              <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
-                Partial
-              </legend>
-              <span className="text-sm text-slate-900 dark:text-foreground pl-1">
-                {order.partial ? "Yes" : "No"}
-              </span>
-            </fieldset>
-          </div>
-        </div>
+        )}
       </div>
 
       {filledOrders.length > 0 && (
