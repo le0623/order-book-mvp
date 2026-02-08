@@ -30,7 +30,7 @@ function Calendar({
           buttonVariants({ variant: "outline" }),
           "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
         ),
-        nav_button_previous: "order-1",
+        nav_button_previous: "order-1 !top-1 !absolute !left-3",
         nav_button_next: "order-3",
         table: "w-full border-collapse space-y-1",
         head_row: "flex w-full",
