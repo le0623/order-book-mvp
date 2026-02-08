@@ -59,10 +59,10 @@ export function NewOrderModal({
 }: NewOrderModalProps) {
   const { selectedAccount, isConnected } = useWallet();
   const [formData, setFormData] = React.useState<NewOrderFormData>({
-    type: 1,
-    asset: 1,
+    type: undefined,
+    asset: undefined,
     gtd: "gtc",
-    stp: 0,
+    stp: undefined,
     partial: true,
     public: true,
   });
@@ -246,10 +246,10 @@ export function NewOrderModal({
 
   const resetForm = () => {
     setFormData({
-      type: 1,
-      asset: 1,
+      type: undefined,
+      asset: undefined,
       gtd: "gtc",
-      stp: 0,
+      stp: undefined,
       partial: true,
       public: true,
     });
@@ -283,6 +283,13 @@ export function NewOrderModal({
       setLoading(true);
       setError("");
 
+      if (formData.type === undefined) {
+        throw new Error("Please select an order type");
+      }
+      if (formData.asset === undefined) {
+        throw new Error("Please enter an asset ID");
+      }
+
       const walletAddress = selectedAccount?.address || "";
 
       if (!wsUuid) {
@@ -295,10 +302,10 @@ export function NewOrderModal({
         wallet: walletAddress,
         asset: Number(formData.asset),
         type: Number(formData.type),
-        ask: Number(formData.type === 1 ? formData.stp : 0.0),
-        bid: Number(formData.type === 2 ? formData.stp : 0.0),
-        stp: Number(formData.stp),
-        lmt: Number(formData.stp),
+        ask: Number(formData.type === 1 ? (formData.stp ?? 0) : 0.0),
+        bid: Number(formData.type === 2 ? (formData.stp ?? 0) : 0.0),
+        stp: Number(formData.stp ?? 0),
+        lmt: Number(formData.stp ?? 0),
         gtd:
           formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
         partial: formData.partial ? true : false,
@@ -408,6 +415,13 @@ export function NewOrderModal({
       setLoading(true);
       setError("");
 
+      if (formData.type === undefined) {
+        throw new Error("Please select an order type");
+      }
+      if (formData.asset === undefined) {
+        throw new Error("Please enter an asset ID");
+      }
+
       const walletAddress = selectedAccount?.address || originWallet || "";
 
       const finalWallet = walletAddress || originWallet || "";
@@ -437,10 +451,10 @@ export function NewOrderModal({
         wallet: finalWallet,
         asset: Number(formData.asset),
         type: Number(formData.type),
-        ask: Number(formData.type === 1 ? formData.stp : 0.0),
-        bid: Number(formData.type === 2 ? formData.stp : 0.0),
-        stp: Number(formData.stp),
-        lmt: Number(formData.stp),
+        ask: Number(formData.type === 1 ? (formData.stp ?? 0) : 0.0),
+        bid: Number(formData.type === 2 ? (formData.stp ?? 0) : 0.0),
+        stp: Number(formData.stp ?? 0),
+        lmt: Number(formData.stp ?? 0),
         gtd:
           formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
         partial: formData.partial ? true : false,
@@ -465,7 +479,6 @@ export function NewOrderModal({
         }
         throw error;
       });
-
       const responseClone = response.clone();
 
       if (!response.ok) {
@@ -558,6 +571,13 @@ export function NewOrderModal({
       try {
         setLoading(true);
         setError("");
+
+        if (formData.type === undefined) {
+          throw new Error("Please select an order type");
+        }
+        if (formData.asset === undefined) {
+          throw new Error("Please enter an asset ID");
+        }
 
         const walletAddress = selectedAccount?.address || originWallet || "";
 
@@ -692,7 +712,7 @@ export function NewOrderModal({
           <div className="grid gap-2">
             <Label htmlFor="type">Order Type</Label>
             <Select
-              value={String(formData.type)}
+              value={formData.type === undefined ? undefined : String(formData.type)}
               onValueChange={(value) =>
                 setFormData({ ...formData, type: parseInt(value) })
               }
@@ -700,9 +720,9 @@ export function NewOrderModal({
             >
               <SelectTrigger
                 id="type"
-                className="focus:ring-1 focus:ring-blue-500/50 focus:ring-offset-0 focus:border-blue-500/70"
+                className="focus:ring-1 focus:ring-blue-500/50 focus:ring-offset-0 focus:border-blue-500/70 [&[data-placeholder]>span]:opacity-60 [&[data-placeholder]>span]:text-muted-foreground"
               >
-                <SelectValue />
+                <SelectValue placeholder="Select order type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="1" className="opacity-60">Sell</SelectItem>
@@ -718,14 +738,15 @@ export function NewOrderModal({
                 id="asset"
                 type="number"
                 min="1"
-                value={formData.asset}
+                value={formData.asset === undefined ? "" : formData.asset}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    asset: parseInt(e.target.value) || 1,
+                    asset: e.target.value === "" ? undefined : parseInt(e.target.value) || undefined,
                   })
                 }
                 disabled={escrowGenerated && !isInReviewMode}
+                placeholder="Enter asset ID"
                 className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <div className="absolute right-1 flex flex-col gap-0.5">
@@ -735,7 +756,7 @@ export function NewOrderModal({
                     if (!escrowGenerated || isInReviewMode) {
                       setFormData({
                         ...formData,
-                        asset: Math.max(1, formData.asset + 1),
+                        asset: Math.max(1, (formData.asset ?? 0) + 1),
                       });
                     }
                   }}
@@ -749,15 +770,94 @@ export function NewOrderModal({
                   type="button"
                   onClick={() => {
                     if (!escrowGenerated || isInReviewMode) {
+                      const currentAsset = formData.asset ?? 1;
                       setFormData({
                         ...formData,
-                        asset: Math.max(1, formData.asset - 1),
+                        asset: currentAsset > 1 ? currentAsset - 1 : undefined,
                       });
                     }
                   }}
                   disabled={escrowGenerated && !isInReviewMode}
                   className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   aria-label="Decrease asset"
+                >
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="stp">Stop Price (TAO)</Label>
+            <div className="relative flex items-center">
+              <Input
+                id="stp"
+                type="number"
+                min="0"
+                step="0.001"
+                value={formData.stp === undefined ? "" : formData.stp}
+                onChange={(e) => {
+                  const value = e.target.value.trim();
+                  if (value === "" || value === null || value === undefined) {
+                    setFormData({
+                      ...formData,
+                      stp: undefined,
+                    });
+                  } else {
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue)) {
+                      setFormData({
+                        ...formData,
+                        stp: numValue,
+                      });
+                    } else {
+                      // Allow partial input like "0.", ".5", etc. by keeping undefined
+                      setFormData({
+                        ...formData,
+                        stp: undefined,
+                      });
+                    }
+                  }
+                }}
+                disabled={escrowGenerated && !isInReviewMode}
+                placeholder="Enter stop price"
+                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <div className="absolute right-1 flex flex-col gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!escrowGenerated || isInReviewMode) {
+                      const currentStp = formData.stp ?? 0;
+                      setFormData({
+                        ...formData,
+                        stp: Number((currentStp + 0.001).toFixed(3)),
+                      });
+                    }
+                  }}
+                  disabled={escrowGenerated && !isInReviewMode}
+                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Increase stop price"
+                >
+                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!escrowGenerated || isInReviewMode) {
+                      const currentStp = formData.stp ?? 0;
+                      const newValue = Math.max(
+                        0,
+                        Number((currentStp - 0.001).toFixed(3))
+                      );
+                      setFormData({
+                        ...formData,
+                        stp: newValue > 0 ? newValue : undefined,
+                      });
+                    }
+                  }}
+                  disabled={escrowGenerated && !isInReviewMode}
+                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Decrease stop price"
                 >
                   <ChevronDown className="h-3 w-3 text-muted-foreground" />
                 </button>
@@ -825,64 +925,6 @@ export function NewOrderModal({
             </p>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="stp">Stop Price (TAO)</Label>
-            <div className="relative flex items-center">
-              <Input
-                id="stp"
-                type="number"
-                min="0"
-                step="0.001"
-                value={formData.stp}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    stp: parseFloat(e.target.value) || 0,
-                  })
-                }
-                disabled={escrowGenerated && !isInReviewMode}
-                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-              <div className="absolute right-1 flex flex-col gap-0.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!escrowGenerated || isInReviewMode) {
-                      setFormData({
-                        ...formData,
-                        stp: Number((formData.stp + 0.001).toFixed(3)),
-                      });
-                    }
-                  }}
-                  disabled={escrowGenerated && !isInReviewMode}
-                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Increase stop price"
-                >
-                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!escrowGenerated || isInReviewMode) {
-                      const newValue = Math.max(
-                        0,
-                        Number((formData.stp - 0.001).toFixed(3))
-                      );
-                      setFormData({
-                        ...formData,
-                        stp: newValue,
-                      });
-                    }
-                  }}
-                  disabled={escrowGenerated && !isInReviewMode}
-                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Decrease stop price"
-                >
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                </button>
-              </div>
-            </div>
-          </div>
 
           <div
             className={cn(

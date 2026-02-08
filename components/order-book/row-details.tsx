@@ -543,7 +543,7 @@ export function OrderBookRowDetails({
                 </legend>
                 <span className="font-mono text-sm text-slate-900 dark:text-foreground pl-1">
                   {order.gtd && order.gtd.toLowerCase() === "gtc"
-                    ? "2026-01-31 UTC"
+                    ? "GTC"
                     : order.gtd
                       ? formatDateOnly(order.gtd)
                       : "—"}
@@ -587,7 +587,7 @@ export function OrderBookRowDetails({
                 </legend>
                 <span className="font-mono text-sm text-slate-900 dark:text-foreground pl-1">
                   {order.gtd && order.gtd.toLowerCase() === "gtc"
-                    ? "2026-01-31 UTC"
+                    ? "GTC"
                     : order.gtd
                       ? formatDateOnly(order.gtd)
                       : "—"}

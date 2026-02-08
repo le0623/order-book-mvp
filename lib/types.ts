@@ -23,10 +23,10 @@ export interface Order {
 }
 
 export interface NewOrderFormData {
-  type: number // 1: sell, 2: buy
-  asset: number // subnet ID
+  type?: number // 1: sell, 2: buy
+  asset?: number // subnet ID
   gtd: string // good till date (ISO string or "gtc")
-  stp: number // stop price
+  stp?: number // stop price
   partial: boolean // allow partial fills
   public: boolean // public order visibility
 }

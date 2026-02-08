@@ -4,6 +4,7 @@ import { OrderBook } from "../components/order-book";
 import { Order } from "../lib/types";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import Image from "next/image";
+import { MdViewList } from "react-icons/md";
 import { ThemeToggle } from "../components/theme-toggle";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { WebSocketMessage } from "../lib/websocket-types";
@@ -541,10 +542,7 @@ export default function Home() {
                   : ""
                   }`}
               >
-                <>
-                  <img src="/light-list.png" alt="My Orders" className="h-4 w-4 dark:hidden" />
-                  <img src="/black-list.png" alt="My Orders" className="h-4 w-4 hidden dark:block" />
-                </>
+                <MdViewList className="h-4 w-4 text-current" />
                 <span className="hidden sm:inline">My Orders</span>
               </Button>
               <ConnectButton />
