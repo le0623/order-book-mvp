@@ -460,7 +460,7 @@ export function FillOrderModal({
 
           <div className="grid grid-cols-2 gap-4 pt-2">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
                 Asset
               </span>
               <p className="font-mono text-sm mt-1">
@@ -468,7 +468,7 @@ export function FillOrderModal({
               </p>
             </div>
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
                 Price
               </span>
               <p className="font-mono text-sm mt-1">
