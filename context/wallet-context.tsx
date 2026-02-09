@@ -21,6 +21,9 @@ interface WalletContextType {
     disconnect: () => void
     selectAccount: (address: string) => void
     cancelConnection: () => void
+    walletModalOpen: boolean
+    openWalletModal: () => void
+    closeWalletModal: () => void
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
@@ -72,6 +75,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const [isConnecting, setIsConnecting] = useState(false)
     const [walletType, setWalletType] = useState<WalletType>(null)
     const [availableWallets, setAvailableWallets] = useState<{ name: string; installed: boolean; extensionName: string }[]>([])
+    const [walletModalOpen, setWalletModalOpen] = useState(false)
+
+    const openWalletModal = useCallback(() => setWalletModalOpen(true), [])
+    const closeWalletModal = useCallback(() => setWalletModalOpen(false), [])
 
     // Track connection state for cancellation
     const connectionAbortController = useRef<AbortController | null>(null)
@@ -360,6 +367,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
                 disconnect,
                 selectAccount,
                 cancelConnection,
+                walletModalOpen,
+                openWalletModal,
+                closeWalletModal,
             }}
         >
             {children}

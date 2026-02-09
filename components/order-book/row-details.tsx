@@ -216,187 +216,187 @@ export function OrderBookRowDetails({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div>
-                      <Dialog
-                        open={isEditDialogOpen}
-                        onOpenChange={setIsEditDialogOpen}
-                      >
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
+              <Dialog
+                open={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
                             className="h-9 gap-2"
                             disabled={!isOwner}
-                          >
+                  >
                             <Edit2 className="h-3.5 w-3.5" />
-                            Modify
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Modify Order</DialogTitle>
-                            <DialogDescription>
-                              Update order settings for Escrow{" "}
-                              {formatWalletAddress(order.escrow)}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="grid gap-4 py-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="stp">Stop Price (TAO)</Label>
-                              <div className="relative flex items-center">
-                                <Input
-                                  id="stp"
-                                  type="number"
-                                  min="0"
-                                  step="0.001"
-                                  value={editStp}
-                                  onChange={(e) =>
-                                    setEditStp(parseFloat(e.target.value) || 0)
-                                  }
-                                  className="font-mono focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                />
-                                <div className="absolute right-1 flex flex-col gap-0.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setEditStp(Number((editStp + 0.001).toFixed(3)));
-                                    }}
-                                    className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                    aria-label="Increase stop price"
-                                  >
-                                    <ChevronUp className="h-3 w-3 text-muted-foreground" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newValue = Math.max(
-                                        0,
-                                        Number((editStp - 0.001).toFixed(3))
-                                      );
-                                      setEditStp(newValue);
-                                    }}
-                                    className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                    aria-label="Decrease stop price"
-                                  >
-                                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                                  </button>
-                                </div>
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                Stop price for this order
-                              </p>
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Good Till Date (GTD)</Label>
-                              <div className="flex gap-2">
-                                <Select
-                                  value={editGtd === "gtc" ? "gtc" : "date"}
-                                  onValueChange={(value) => {
-                                    if (value === "gtc") {
-                                      setEditGtd("gtc");
-                                      setSelectedDate(undefined);
-                                    } else {
-                                      setEditGtd("");
-                                    }
-                                  }}
-                                >
-                                  <SelectTrigger className="w-32 focus:ring-1 focus:ring-blue-500/30 focus:ring-offset-0 focus:border-blue-500/40">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="gtc">GTC</SelectItem>
-                                    <SelectItem value="date">Specific Date</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                    Modify
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Modify Order</DialogTitle>
+                    <DialogDescription>
+                      Update order settings for Escrow{" "}
+                      {formatWalletAddress(order.escrow)}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="stp">Stop Price (TAO)</Label>
+                      <div className="relative flex items-center">
+                        <Input
+                          id="stp"
+                          type="number"
+                          min="0"
+                          step="0.001"
+                          value={editStp}
+                          onChange={(e) =>
+                            setEditStp(parseFloat(e.target.value) || 0)
+                          }
+                          className="font-mono focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <div className="absolute right-1 flex flex-col gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditStp(Number((editStp + 0.001).toFixed(3)));
+                            }}
+                            className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Increase stop price"
+                          >
+                            <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newValue = Math.max(
+                                0,
+                                Number((editStp - 0.001).toFixed(3))
+                              );
+                              setEditStp(newValue);
+                            }}
+                            className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Decrease stop price"
+                          >
+                            <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Stop price for this order
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Good Till Date (GTD)</Label>
+                      <div className="flex gap-2">
+                        <Select
+                          value={editGtd === "gtc" ? "gtc" : "date"}
+                          onValueChange={(value) => {
+                            if (value === "gtc") {
+                              setEditGtd("gtc");
+                              setSelectedDate(undefined);
+                            } else {
+                              setEditGtd("");
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-32 focus:ring-1 focus:ring-blue-500/30 focus:ring-offset-0 focus:border-blue-500/40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="gtc">GTC</SelectItem>
+                            <SelectItem value="date">Specific Date</SelectItem>
+                          </SelectContent>
+                        </Select>
 
-                                {editGtd !== "gtc" && (
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <Button
-                                        variant="outline"
-                                        className={cn(
-                                          "flex-1 justify-start text-left font-normal",
-                                          !selectedDate && "text-muted-foreground"
-                                        )}
-                                      >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {selectedDate ? (
-                                          format(selectedDate, "PPP")
-                                        ) : (
-                                          <span>Pick a date</span>
-                                        )}
-                                      </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0">
-                                      <Calendar
-                                        mode="single"
-                                        selected={selectedDate}
-                                        onSelect={setSelectedDate}
-                                        initialFocus
-                                      />
-                                    </PopoverContent>
-                                  </Popover>
+                        {editGtd !== "gtc" && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "flex-1 justify-start text-left font-normal",
+                                  !selectedDate && "text-muted-foreground"
                                 )}
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                GTC = Good Till Cancel (order stays active until you
-                                cancel it)
-                              </p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id="public"
-                                checked={editPublic}
-                                onCheckedChange={(checked: boolean) =>
-                                  setEditPublic(checked === true)
-                                }
-                              />
-                              <Label
-                                htmlFor="public"
-                                className="text-sm font-normal cursor-pointer"
                               >
-                                Public Order
-                              </Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id="partial"
-                                checked={editPartial}
-                                onCheckedChange={(checked: boolean) =>
-                                  setEditPartial(checked === true)
-                                }
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {selectedDate ? (
+                                  format(selectedDate, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={setSelectedDate}
+                                initialFocus
                               />
-                              <Label
-                                htmlFor="partial"
-                                className="text-sm font-normal cursor-pointer"
-                              >
-                                Partial Order
-                              </Label>
-                            </div>
-                          </div>
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        GTC = Good Till Cancel (order stays active until you
+                        cancel it)
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="public"
+                        checked={editPublic}
+                        onCheckedChange={(checked: boolean) =>
+                          setEditPublic(checked === true)
+                        }
+                      />
+                      <Label
+                        htmlFor="public"
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        Public Order
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="partial"
+                        checked={editPartial}
+                        onCheckedChange={(checked: boolean) =>
+                          setEditPartial(checked === true)
+                        }
+                      />
+                      <Label
+                        htmlFor="partial"
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        Partial Order
+                      </Label>
+                    </div>
+                  </div>
                           <DialogFooter className="gap-2 sm:gap-0">
-                            <Button
-                              variant="outline"
+                    <Button
+                      variant="outline"
                               className="h-10"
-                              onClick={() => {
-                                setEditStp(order.stp);
-                                setEditPublic(order.public);
-                                setEditGtd(order.gtd || "gtc");
-                                setEditPartial(order.partial || false);
-                                setSelectedDate(parseGtdToDate(order.gtd));
-                                setIsEditDialogOpen(false);
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                            <Button
-                              onClick={handleSaveEdit}
+                      onClick={() => {
+                        setEditStp(order.stp);
+                        setEditPublic(order.public);
+                        setEditGtd(order.gtd || "gtc");
+                        setEditPartial(order.partial || false);
+                        setSelectedDate(parseGtdToDate(order.gtd));
+                        setIsEditDialogOpen(false);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSaveEdit}
                               className="h-10 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.25)]"
-                            >
-                              Save Changes
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
+                    >
+                      Save Changes
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
                     </div>
                   </TooltipTrigger>
                   {!isOwner && (
@@ -411,16 +411,16 @@ export function OrderBookRowDetails({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div>
-                      <Button
-                        variant="outline"
-                        size="sm"
+              <Button
+                variant="outline"
+                size="sm"
                         className="h-9 gap-2"
-                        onClick={() => setIsCloseConfirmOpen(true)}
+                onClick={() => setIsCloseConfirmOpen(true)}
                         disabled={!isOwner}
-                      >
+              >
                         <span className="text-base leading-none">✗</span>
-                        Close Order
-                      </Button>
+                Close Order
+              </Button>
                     </div>
                   </TooltipTrigger>
                   {!isOwner && (
@@ -472,15 +472,15 @@ export function OrderBookRowDetails({
             <Tooltip>
               <TooltipTrigger asChild>
                 <div>
-                  <Button
-                    size="sm"
+          <Button
+            size="sm"
                     className="h-9 gap-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.4)]"
-                    onClick={() => setIsFillOrderModalOpen(true)}
+            onClick={() => setIsFillOrderModalOpen(true)}
                     disabled={isOwner}
-                  >
+          >
                     <Plus className="h-3.5 w-3.5" />
-                    Fill Order
-                  </Button>
+            Fill Order
+          </Button>
                 </div>
               </TooltipTrigger>
               {isOwner && (
@@ -498,26 +498,26 @@ export function OrderBookRowDetails({
           <fieldset
             ref={paneRef as React.RefObject<HTMLFieldSetElement>}
             className="px-4 pb-5 pt-1 rounded-lg bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/50 space-y-4"
-          >
+        >
             <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
               Wallet
             </legend>
             <div className="flex items-center !mt-0.5">
               <code className="font-mono text-sm text-slate-900 dark:text-foreground break-all">
                 {order.wallet.length > 8 ? `${order.wallet.slice(0, 4)}...${order.wallet.slice(-4)}` : order.wallet}
-              </code>
-              <Button
+                  </code>
+                  <Button
                 variant="ghost"
-                size="icon"
+                    size="icon"
                 className="h-8 w-8 shrink-0 hover:bg-muted/80 transition-colors opacity-60 hover:opacity-90"
-                onClick={() => copyToClipboard(order.wallet, "wallet")}
-              >
-                {copiedWalletId ? (
-                  <CheckIcon className="h-4 w-4 text-emerald-500" />
-                ) : (
-                  <Copy className="h-4 w-4 text-muted-foreground" />
-                )}
-              </Button>
+                    onClick={() => copyToClipboard(order.wallet, "wallet")}
+                  >
+                    {copiedWalletId ? (
+                      <CheckIcon className="h-4 w-4 text-emerald-500" />
+                    ) : (
+                      <Copy className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
               <a
                 href={`https://taostats.io/account/${order.wallet}`}
                 target="_blank"
@@ -555,15 +555,15 @@ export function OrderBookRowDetails({
                 </legend>
                 <span className="text-sm text-slate-900 dark:text-foreground pl-1">
                   {order.partial ? "Yes" : "No"}
-                </span>
+              </span>
               </fieldset>
               <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
                 <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
                   Public
                 </legend>
                 <span className="text-sm text-slate-900 dark:text-foreground pl-1">
-                  {order.public ? "Yes" : "No"}
-                </span>
+                {order.public ? "Yes" : "No"}
+              </span>
               </fieldset>
             </div>
           </fieldset>
@@ -579,27 +579,27 @@ export function OrderBookRowDetails({
                 </legend>
                 <span className="font-mono text-sm text-slate-900 dark:text-foreground pl-1">
                   {order.stp > 0 ? formatPrice(order.stp) : "None"}
-                </span>
+              </span>
               </fieldset>
               <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
                 <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
                   Good Till Date
                 </legend>
                 <span className="font-mono text-sm text-slate-900 dark:text-foreground pl-1">
-                  {order.gtd && order.gtd.toLowerCase() === "gtc"
+                {order.gtd && order.gtd.toLowerCase() === "gtc"
                     ? "GTC"
-                    : order.gtd
-                      ? formatDateOnly(order.gtd)
-                      : "—"}
-                </span>
+                  : order.gtd
+                  ? formatDateOnly(order.gtd)
+                  : "—"}
+              </span>
               </fieldset>
               <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
                 <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
                   Partial
                 </legend>
                 <span className="text-sm text-slate-900 dark:text-foreground pl-1">
-                  {order.partial ? "Yes" : "No"}
-                </span>
+                {order.partial ? "Yes" : "No"}
+              </span>
               </fieldset>
               <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
                 <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
@@ -630,7 +630,7 @@ export function OrderBookRowDetails({
                     const displayGtd = "";
 
                     const filledOrderId = `${filledOrder.uuid}-${filledOrder.status
-                      }-${filledOrder.escrow || ""}`;
+                    }-${filledOrder.escrow || ""}`;
                     const shouldFlash = newlyAddedOrderIds.has(filledOrderId);
                     const filledOrderType =
                       newlyAddedOrderIds.get(filledOrderId);
@@ -698,9 +698,9 @@ export function OrderBookRowDetails({
                                   : "secondary"
                               }
                               className={`font-medium ${orderTypeLabel === "Buy"
-                                ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
-                                : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
-                                }`}
+                                  ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
+                                  : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
+                              }`}
                             >
                               {orderTypeLabel}
                             </Badge>

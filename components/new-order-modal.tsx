@@ -283,13 +283,6 @@ export function NewOrderModal({
       setLoading(true);
       setError("");
 
-      if (formData.type === undefined) {
-        throw new Error("Please select an order type");
-      }
-      if (formData.asset === undefined) {
-        throw new Error("Please enter an asset ID");
-      }
-
       const walletAddress = selectedAccount?.address || "";
 
       if (!wsUuid) {
@@ -414,13 +407,6 @@ export function NewOrderModal({
     try {
       setLoading(true);
       setError("");
-
-      if (formData.type === undefined) {
-        throw new Error("Please select an order type");
-      }
-      if (formData.asset === undefined) {
-        throw new Error("Please enter an asset ID");
-      }
 
       const walletAddress = selectedAccount?.address || originWallet || "";
 
@@ -572,13 +558,6 @@ export function NewOrderModal({
         setLoading(true);
         setError("");
 
-        if (formData.type === undefined) {
-          throw new Error("Please select an order type");
-        }
-        if (formData.asset === undefined) {
-          throw new Error("Please enter an asset ID");
-        }
-
         const walletAddress = selectedAccount?.address || originWallet || "";
 
         if (!wsUuid) {
@@ -686,7 +665,7 @@ export function NewOrderModal({
               <code
                 className={cn(
                   "flex-1 font-mono p-2 rounded-md border bg-background break-all",
-                  !escrowWallet && "text-muted-foreground italic"
+                  !escrowWallet && "opacity-60 text-muted-foreground italic"
                 )}
                 style={{ fontSize: "0.875rem" }}
               >

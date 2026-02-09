@@ -435,7 +435,7 @@ export function FillOrderModal({
               <code
                 className={cn(
                   "flex-1 font-mono p-2 rounded-md border bg-background whitespace-nowrap overflow-x-auto",
-                  !escrowWallet && "text-muted-foreground italic"
+                  !escrowWallet && "opacity-60 text-muted-foreground italic"
                 )}
                 style={{ fontSize: "0.875rem" }}
               >
@@ -460,7 +460,7 @@ export function FillOrderModal({
 
           <div className="grid grid-cols-2 gap-4 pt-2">
             <div>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
                 Asset
               </span>
               <p className="font-mono text-sm mt-1">
@@ -468,7 +468,7 @@ export function FillOrderModal({
               </p>
             </div>
             <div>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
                 Price
               </span>
               <p className="font-mono text-sm mt-1">

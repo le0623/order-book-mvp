@@ -65,7 +65,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
         } catch (err: any) {
             // Don't show error if it was cancelled
             if (err.message !== 'Connection cancelled') {
-                setError(err.message || `Failed to connect to ${WALLET_INFO[walletType].name}`);
+            setError(err.message || `Failed to connect to ${WALLET_INFO[walletType].name}`);
             }
         } finally {
             setConnectingTo(null);
@@ -133,7 +133,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                                     ) : (
                                         <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
                                     )}
-                                    <div className="font-medium">{WALLET_INFO['polkadot-js'].name}</div>
+                                <div className="font-medium">{WALLET_INFO['polkadot-js'].name}</div>
                                 </div>
                                 <div className="text-sm text-muted-foreground">
                                     {WALLET_INFO['polkadot-js'].description}
@@ -142,32 +142,32 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                         </div>
                         <div className="flex items-center gap-2">
                             {isWalletInstalled('polkadot-js') ? (
-                                <Button
-                                    onClick={() => handleConnect('polkadot-js')}
-                                    disabled={isConnecting || isConnected}
+                                    <Button
+                                        onClick={() => handleConnect('polkadot-js')}
+                                        disabled={isConnecting || isConnected}
                                     variant="outline"
-                                    size="sm"
+                                        size="sm"
                                     className="h-9 gap-2 bg-white hover:bg-slate-50 border-slate-200 text-slate-600 dark:bg-background/80 dark:hover:bg-muted dark:border-border/60 dark:text-foreground"
-                                >
-                                    {connectingTo === 'polkadot-js' ? (
-                                        <>
+                                    >
+                                        {connectingTo === 'polkadot-js' ? (
+                                            <>
                                             <Loader2 className="h-4 w-4 animate-spin" />
-                                            Connecting...
-                                        </>
-                                    ) : (
-                                        'Connect'
-                                    )}
-                                </Button>
+                                                Connecting...
+                                            </>
+                                        ) : (
+                                            'Connect'
+                                        )}
+                                    </Button>
                             ) : (
-                                <Button
-                                    onClick={() => handleInstall('polkadot-js')}
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-2"
-                                >
-                                    <ExternalLink className="h-4 w-4" />
-                                    Install
-                                </Button>
+                                    <Button
+                                        onClick={() => handleInstall('polkadot-js')}
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-2"
+                                    >
+                                        <ExternalLink className="h-4 w-4" />
+                                        Install
+                                    </Button>
                             )}
                         </div>
                     </div>
@@ -190,7 +190,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                                     ) : (
                                         <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
                                     )}
-                                    <div className="font-medium">{WALLET_INFO['bittensor-wallet'].name}</div>
+                                <div className="font-medium">{WALLET_INFO['bittensor-wallet'].name}</div>
                                 </div>
                                 <div className="text-sm text-muted-foreground">
                                     {WALLET_INFO['bittensor-wallet'].description}
@@ -199,32 +199,32 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                         </div>
                         <div className="flex items-center gap-2">
                             {isWalletInstalled('bittensor-wallet') ? (
-                                <Button
-                                    onClick={() => handleConnect('bittensor-wallet')}
-                                    disabled={isConnecting || isConnected}
+                                    <Button
+                                        onClick={() => handleConnect('bittensor-wallet')}
+                                        disabled={isConnecting || isConnected}
                                     variant="outline"
-                                    size="sm"
+                                        size="sm"
                                     className="h-9 gap-2 bg-white hover:bg-slate-50 border-slate-200 text-slate-600 dark:bg-background/80 dark:hover:bg-muted dark:border-border/60 dark:text-foreground"
-                                >
-                                    {connectingTo === 'bittensor-wallet' ? (
-                                        <>
+                                    >
+                                        {connectingTo === 'bittensor-wallet' ? (
+                                            <>
                                             <Loader2 className="h-4 w-4 animate-spin" />
-                                            Connecting...
-                                        </>
-                                    ) : (
-                                        'Connect'
-                                    )}
-                                </Button>
+                                                Connecting...
+                                            </>
+                                        ) : (
+                                            'Connect'
+                                        )}
+                                    </Button>
                             ) : (
-                                <Button
-                                    onClick={() => handleInstall('bittensor-wallet')}
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-2"
-                                >
-                                    <ExternalLink className="h-4 w-4" />
-                                    Install
-                                </Button>
+                                    <Button
+                                        onClick={() => handleInstall('bittensor-wallet')}
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-2"
+                                    >
+                                        <ExternalLink className="h-4 w-4" />
+                                        Install
+                                    </Button>
                             )}
                         </div>
                     </div>

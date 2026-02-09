@@ -4,11 +4,12 @@ import { OrderBook } from "../components/order-book";
 import { Order } from "../lib/types";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import Image from "next/image";
-import { MdViewList } from "react-icons/md";
 import { ThemeToggle } from "../components/theme-toggle";
+import { useTheme } from "../components/theme-provider";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { WebSocketMessage } from "../lib/websocket-types";
 import { ConnectButton } from "../components/walletkit/connect";
+import { WalletModal } from "../components/walletkit/wallet-modal";
 import { NewOrderModal } from "../components/new-order-modal";
 import { useWallet } from "../context/wallet-context";
 import { Button } from "../components/ui/button";
@@ -26,7 +27,8 @@ const WS_URL = getWebSocketBookUrl();
 const WS_PRICE_URL = getWebSocketPriceUrl();
 
 export default function Home() {
-  const { selectedAccount } = useWallet();
+  const { selectedAccount, walletModalOpen, closeWalletModal } = useWallet();
+  const { theme } = useTheme();
   const [orders, setOrders] = useState<Order[]>([]);
   const [newOrderModalOpen, setNewOrderModalOpen] = useState(false);
   const [prices, setPrices] = useState<Record<number, number>>({});
@@ -542,7 +544,13 @@ export default function Home() {
                   : ""
                   }`}
               >
-                <MdViewList className="h-4 w-4 text-current" />
+                <Image
+                  src={theme === "light" ? "/myorders-light.png" : "/myorders-black.png"}
+                  alt="My Orders"
+                  width={28}
+                  height={28}
+                  className="w-5 h-5"
+                />
                 <span className="hidden sm:inline">My Orders</span>
               </Button>
               <ConnectButton />
@@ -590,6 +598,8 @@ export default function Home() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <WalletModal open={walletModalOpen} onOpenChange={closeWalletModal} />
       </div>
     </main>
   );

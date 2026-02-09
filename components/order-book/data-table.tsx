@@ -357,7 +357,7 @@ export function DataTable<TData, TValue>({
                   <div className="grid gap-4">
                     <div className="flex items-start justify-between pt-1">
                       <h4 className="font-medium leading-none">
-                        Search Orders
+                        Search Order
                       </h4>
                       <Button
                         variant="ghost"
@@ -409,13 +409,13 @@ export function DataTable<TData, TValue>({
                       </div>
 
                       <div className="grid gap-2">
-                        <Label htmlFor="search-asset-id">Asset ID</Label>
+                        <Label htmlFor="search-asset-id">Asset (NETUID)</Label>
                         <div className="relative flex items-center">
                           <Input
                             id="search-asset-id"
                             type="number"
                             min="1"
-                            placeholder="Asset ID (NETUID)"
+                            placeholder="Specify Asset"
                             value={searchAssetId === undefined ? "" : searchAssetId}
                             onChange={(e) => {
                               const value = e.target.value;
