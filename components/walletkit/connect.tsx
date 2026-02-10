@@ -28,12 +28,12 @@ export const ConnectButton = () => {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="gap-2 shadow-none">
-            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+            <ChevronDown className="h-4 w-4" />
             <Wallet className="h-4 w-4" />
             <span className="hidden sm:inline">
               {formatWalletAddress(selectedAccount.address)}
             </span>
-            <ChevronDown className="h-4 w-4" />
+            <div className="w-2 h-2 rounded-full bg-green-500"></div>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
@@ -71,7 +71,7 @@ export const ConnectButton = () => {
     >
       <Wallet className="h-4 w-4" />
       <span className="hidden sm:inline">Wallet</span>
-      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+      <div className="w-2 h-2 rounded-full bg-red-500"></div>
     </Button>
   );
 };

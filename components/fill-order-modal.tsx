@@ -10,8 +10,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Copy, CheckIcon } from "lucide-react";
+import { Loader2, Copy, CheckIcon, ChevronUp, ChevronDown } from "lucide-react";
 import { Order } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useWallet } from "@/context/wallet-context";
@@ -47,6 +48,8 @@ export function FillOrderModal({
   const [error, setError] = React.useState<string>("");
   const [errorVisible, setErrorVisible] = React.useState(false);
   const [copiedEscrow, setCopiedEscrow] = React.useState(false);
+  const [transferAlpha, setTransferAlpha] = React.useState<number | undefined>(undefined);
+  const [transferTao, setTransferTao] = React.useState<number | undefined>(undefined);
   const [liveParentPrice, setLiveParentPrice] = React.useState<{
     tao: number;
     alpha: number;
@@ -167,6 +170,8 @@ export function FillOrderModal({
       setError("");
       setCopiedEscrow(false);
       setLiveParentPrice(null);
+      setTransferAlpha(undefined);
+      setTransferTao(undefined);
       pendingEscrowRef.current = "";
     }
   }, [open]);
@@ -207,8 +212,8 @@ export function FillOrderModal({
         gtd: "gtc", // No GTD for filled orders
         partial: false, // No partial for filled orders
         public: false, // No public flag for filled orders
-        tao: 0.0, // auto fill
-        alpha: 0.0, // auto fill
+        alpha: fixedValues.type === 1 ? Number(transferAlpha ?? 0) : 0.0,
+        tao: fixedValues.type === 2 ? Number(transferTao ?? 0) : 0.0,
         price: 0.0, // auto fill
         status: -1, // -1 = Init status (triggers escrow generation in backend)
       };
@@ -332,8 +337,8 @@ export function FillOrderModal({
         gtd: "gtc",
         partial: false,
         public: false,
-        tao: 0.0, // auto fill
-        alpha: 0.0, // auto fill
+        alpha: fixedValues.type === 1 ? Number(transferAlpha ?? 0) : 0.0,
+        tao: fixedValues.type === 2 ? Number(transferTao ?? 0) : 0.0,
         price: 0.0, // auto fill
         status: 2,
       };
@@ -384,6 +389,8 @@ export function FillOrderModal({
       setWsUuid("");
       setEscrowGenerated(false);
       setError("");
+      setTransferAlpha(undefined);
+      setTransferTao(undefined);
       pendingEscrowRef.current = "";
     } catch (err: any) {
       console.error("Error filling order:", err);
@@ -403,6 +410,8 @@ export function FillOrderModal({
       setEscrowGenerated(false);
       setError("");
       setLiveParentPrice(null);
+      setTransferAlpha(undefined);
+      setTransferTao(undefined);
       pendingEscrowRef.current = "";
     }
   };
@@ -475,7 +484,94 @@ export function FillOrderModal({
                 {fixedValues.price > 0 ? fixedValues.price.toFixed(6) : "0.00"}
               </p>
             </div>
+          </div>
 
+          <div className="grid gap-2">
+            <Label htmlFor="transfer-amount">
+              {fixedValues.type === 2 ? "Transfer TAO" : "Transfer Alpha"}
+            </Label>
+            <div className="relative flex items-center">
+              <Input
+                id="transfer-amount"
+                type="number"
+                min="0"
+                step="0.001"
+                value={
+                  fixedValues.type === 2
+                    ? (transferTao === undefined ? "" : transferTao)
+                    : (transferAlpha === undefined ? "" : transferAlpha)
+                }
+                onChange={(e) => {
+                  const value = e.target.value.trim();
+                  if (value === "" || value === null || value === undefined) {
+                    if (fixedValues.type === 2) {
+                      setTransferTao(undefined);
+                    } else {
+                      setTransferAlpha(undefined);
+                    }
+                  } else {
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue)) {
+                      if (fixedValues.type === 2) {
+                        setTransferTao(numValue);
+                      } else {
+                        setTransferAlpha(numValue);
+                      }
+                    } else {
+                      if (fixedValues.type === 2) {
+                        setTransferTao(undefined);
+                      } else {
+                        setTransferAlpha(undefined);
+                      }
+                    }
+                  }
+                }}
+                disabled={escrowGenerated}
+                placeholder={fixedValues.type === 2 ? "Enter TAO amount" : "Enter alpha amount"}
+                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <div className="absolute right-1 flex flex-col gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!escrowGenerated) {
+                      const field = fixedValues.type === 2 ? "tao" : "alpha";
+                      const current = (fixedValues.type === 2 ? transferTao : transferAlpha) ?? 0;
+                      if (field === "tao") {
+                        setTransferTao(Number((current + 0.001).toFixed(3)));
+                      } else {
+                        setTransferAlpha(Number((current + 0.001).toFixed(3)));
+                      }
+                    }
+                  }}
+                  disabled={escrowGenerated}
+                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label={fixedValues.type === 2 ? "Increase TAO amount" : "Increase alpha amount"}
+                >
+                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!escrowGenerated) {
+                      const field = fixedValues.type === 2 ? "tao" : "alpha";
+                      const current = (fixedValues.type === 2 ? transferTao : transferAlpha) ?? 0;
+                      const newValue = Math.max(0, Number((current - 0.001).toFixed(3)));
+                      if (field === "tao") {
+                        setTransferTao(newValue > 0 ? newValue : undefined);
+                      } else {
+                        setTransferAlpha(newValue > 0 ? newValue : undefined);
+                      }
+                    }
+                  }}
+                  disabled={escrowGenerated}
+                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label={fixedValues.type === 2 ? "Decrease TAO amount" : "Decrease alpha amount"}
+                >
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
