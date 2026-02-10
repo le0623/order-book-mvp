@@ -466,26 +466,6 @@ export function FillOrderModal({
               )}
             </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-4 pt-2">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
-                Asset
-              </span>
-              <p className="font-mono text-sm mt-1">
-                {fixedValues.asset === 0 ? "—" : `SN${fixedValues.asset}`}
-              </p>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
-                Price
-              </span>
-              <p className="font-mono text-sm mt-1">
-                {fixedValues.price > 0 ? fixedValues.price.toFixed(6) : "0.00"}
-              </p>
-            </div>
-          </div>
-
           <div className="grid gap-2">
             <Label htmlFor="transfer-amount">
               {fixedValues.type === 2 ? "Transfer TAO" : "Transfer Alpha"}
@@ -573,6 +553,26 @@ export function FillOrderModal({
               </div>
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-4 pt-2">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
+                Asset
+              </span>
+              <p className="font-mono text-sm mt-1">
+                {fixedValues.asset === 0 ? "—" : `SN${fixedValues.asset}`}
+              </p>
+            </div>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
+                Price
+              </span>
+              <p className="font-mono text-sm mt-1">
+                {fixedValues.price > 0 ? fixedValues.price.toFixed(6) : "0.00"}
+              </p>
+            </div>
+          </div>
+
+          
         </div>
 
         <DialogFooter>

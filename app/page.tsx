@@ -545,7 +545,7 @@ export default function Home() {
                 size="sm"
                 onClick={handleMyOrdersClick}
                 className={`h-9 gap-2 ${showMyOrdersOnly
-                  ? "bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold border-blue-500/50 shadow-[0_4px_14px_0_rgba(37,99,235,0.3)]"
+                  ? "bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white hover:text-white font-semibold border-blue-500/50 shadow-[0_4px_14px_0_rgba(37,99,235,0.3)]"
                   : ""
                   }`}
               >
@@ -555,7 +555,7 @@ export default function Home() {
                     alt="My Orders"
                     width={32}
                     height={32}
-                    className="w-[1.375rem] h-[1.375rem]"
+                    className={`w-[1.375rem] h-[1.375rem] ${showMyOrdersOnly ? "brightness-0 invert" : ""}`}
                   />
                 ) : (
                   <Image

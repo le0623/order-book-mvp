@@ -69,6 +69,41 @@ function findWalletExtension(possibleNames: readonly string[]): string | null {
     return null
 }
 
+const STORAGE_KEY = 'wallet-connection'
+
+interface StoredWalletConnection {
+    walletType: string
+    selectedAddress: string
+}
+
+function saveWalletConnection(walletType: string, address: string) {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ walletType, selectedAddress: address }))
+    } catch (e) {
+        // localStorage might be unavailable
+    }
+}
+
+function loadWalletConnection(): StoredWalletConnection | null {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY)
+        if (stored) {
+            return JSON.parse(stored) as StoredWalletConnection
+        }
+    } catch (e) {
+        // localStorage might be unavailable or corrupt
+    }
+    return null
+}
+
+function clearWalletConnection() {
+    try {
+        localStorage.removeItem(STORAGE_KEY)
+    } catch (e) {
+        // localStorage might be unavailable
+    }
+}
+
 export function WalletProvider({ children }: { children: ReactNode }) {
     const [accounts, setAccounts] = useState<WalletAccount[]>([])
     const [selectedAccount, setSelectedAccount] = useState<WalletAccount | null>(null)
@@ -76,6 +111,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const [walletType, setWalletType] = useState<WalletType>(null)
     const [availableWallets, setAvailableWallets] = useState<{ name: string; installed: boolean; extensionName: string }[]>([])
     const [walletModalOpen, setWalletModalOpen] = useState(false)
+    const hasRestoredRef = useRef(false)
 
     const openWalletModal = useCallback(() => setWalletModalOpen(true), [])
     const closeWalletModal = useCallback(() => setWalletModalOpen(false), [])
@@ -116,6 +152,83 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             }
         }
     }, [checkAvailableWallets])
+
+    // Restore wallet connection from localStorage on page load
+    useEffect(() => {
+        if (hasRestoredRef.current) return
+        hasRestoredRef.current = true
+
+        const stored = loadWalletConnection()
+        if (!stored) return
+
+        const validTypes: WalletType[] = ['polkadot-js', 'bittensor-wallet', 'nova', 'talisman']
+        if (!validTypes.includes(stored.walletType as WalletType)) return
+
+        const type = stored.walletType as 'polkadot-js' | 'bittensor-wallet' | 'nova' | 'talisman'
+        const extensionInfo = WALLET_EXTENSIONS[type]
+
+        // Wait a bit for wallet extensions to inject into window
+        const restoreTimeout = setTimeout(async () => {
+            try {
+                const extensionName = findWalletExtension(extensionInfo.possibleKeys)
+                if (!extensionName || !window.injectedWeb3?.[extensionName]) {
+                    clearWalletConnection()
+                    return
+                }
+
+                const injected = window.injectedWeb3[extensionName]
+                const extension = await injected.enable('Infinity Exchange')
+
+                if (!extension?.accounts?.get) {
+                    clearWalletConnection()
+                    return
+                }
+
+                const rawAccounts = await extension.accounts.get()
+                if (!rawAccounts || rawAccounts.length === 0) {
+                    clearWalletConnection()
+                    return
+                }
+
+                const walletAccounts: WalletAccount[] = rawAccounts.map((acc: any) => ({
+                    address: acc.address,
+                    name: acc.name || acc.meta?.name || 'Account',
+                    source: acc.meta?.source || extensionInfo.extensionName,
+                }))
+
+                setAccounts(walletAccounts)
+                setWalletType(type)
+
+                // Try to select the previously selected account
+                const previousAccount = walletAccounts.find(
+                    acc => acc.address === stored.selectedAddress
+                )
+                setSelectedAccount(previousAccount || walletAccounts[0])
+
+                // Update stored address if previous account no longer exists
+                if (!previousAccount && walletAccounts.length > 0) {
+                    saveWalletConnection(type, walletAccounts[0].address)
+                }
+
+                // Subscribe to account changes
+                if (extension.accounts.subscribe) {
+                    extension.accounts.subscribe((accounts: any[]) => {
+                        const updatedAccounts = accounts.map((acc: any) => ({
+                            address: acc.address,
+                            name: acc.name || acc.meta?.name || 'Account',
+                            source: acc.meta?.source || extensionInfo.extensionName,
+                        }))
+                        setAccounts(updatedAccounts)
+                    })
+                }
+            } catch (e) {
+                console.warn('Failed to restore wallet connection:', e)
+                clearWalletConnection()
+            }
+        }, 500)
+
+        return () => clearTimeout(restoreTimeout)
+    }, [])
 
     const cancelConnection = useCallback(() => {
         if (connectionAbortController.current) {
@@ -281,6 +394,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
             if (walletAccounts.length > 0) {
                 setSelectedAccount(walletAccounts[0])
+                saveWalletConnection(type, walletAccounts[0].address)
             }
 
             if (extension.accounts.subscribe) {
@@ -345,12 +459,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         setAccounts([])
         setSelectedAccount(null)
         setWalletType(null)
+        clearWalletConnection()
     }
 
     const selectAccount = (address: string) => {
         const account = accounts.find(acc => acc.address === address)
         if (account) {
             setSelectedAccount(account)
+            if (walletType) {
+                saveWalletConnection(walletType, account.address)
+            }
         }
     }
 
