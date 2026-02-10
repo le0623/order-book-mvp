@@ -54,7 +54,7 @@ export const ConnectButton = () => {
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={disconnect} className="text-green-600">
+          <DropdownMenuItem onClick={disconnect}>
             Disconnect
           </DropdownMenuItem>
         </DropdownMenuContent>

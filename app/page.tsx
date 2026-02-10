@@ -29,6 +29,7 @@ const WS_PRICE_URL = getWebSocketPriceUrl();
 export default function Home() {
   const { selectedAccount, walletModalOpen, closeWalletModal } = useWallet();
   const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [newOrderModalOpen, setNewOrderModalOpen] = useState(false);
   const [prices, setPrices] = useState<Record<number, number>>({});
@@ -37,6 +38,10 @@ export default function Home() {
   >(new Map());
   const [showMyOrdersOnly, setShowMyOrdersOnly] = useState(false);
   const [showWalletConnectDialog, setShowWalletConnectDialog] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     // Only reset filter if wallet disconnects while filter is active
@@ -544,13 +549,23 @@ export default function Home() {
                   : ""
                   }`}
               >
-                <Image
-                  src={theme === "light" ? "/myorders-light.png" : "/myorders-black.png"}
-                  alt="My Orders"
-                  width={32}
-                  height={32}
-                  className="w-[1.375rem] h-[1.375rem]"
-                />
+                {mounted ? (
+                  <Image
+                    src={theme === "light" ? "/myorders-light.png" : "/myorders-black.png"}
+                    alt="My Orders"
+                    width={32}
+                    height={32}
+                    className="w-[1.375rem] h-[1.375rem]"
+                  />
+                ) : (
+                  <Image
+                    src="/myorders-light.png"
+                    alt="My Orders"
+                    width={32}
+                    height={32}
+                    className="w-[1.375rem] h-[1.375rem]"
+                  />
+                )}
                 <span className="hidden sm:inline">My Orders</span>
               </Button>
               <ConnectButton />
