@@ -54,7 +54,7 @@ export const ConnectButton = () => {
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={disconnect} className="text-red-600">
+          <DropdownMenuItem onClick={disconnect} className="text-green-600">
             Disconnect
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -71,7 +71,7 @@ export const ConnectButton = () => {
     >
       <Wallet className="h-4 w-4" />
       <span className="hidden sm:inline">Wallet</span>
-      <div className="w-2 h-2 rounded-full bg-red-500"></div>
+      <div className="w-2 h-2 rounded-full bg-green-500"></div>
     </Button>
   );
 };

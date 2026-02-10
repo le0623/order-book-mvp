@@ -415,7 +415,7 @@ export function DataTable<TData, TValue>({
                             id="search-asset-id"
                             type="number"
                             min="1"
-                            placeholder="Specify Asset"
+                            placeholder="Enter asset"
                             value={searchAssetId === undefined ? "" : searchAssetId}
                             onChange={(e) => {
                               const value = e.target.value;

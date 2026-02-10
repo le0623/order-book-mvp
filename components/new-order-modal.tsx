@@ -60,6 +60,8 @@ export function NewOrderModal({
   const { selectedAccount, isConnected } = useWallet();
   const [formData, setFormData] = React.useState<NewOrderFormData>({
     type: undefined,
+    alpha: undefined,
+    tao: undefined,
     asset: undefined,
     gtd: "gtc",
     stp: undefined,
@@ -247,6 +249,8 @@ export function NewOrderModal({
   const resetForm = () => {
     setFormData({
       type: undefined,
+      alpha: undefined,
+      tao: undefined,
       asset: undefined,
       gtd: "gtc",
       stp: undefined,
@@ -294,6 +298,7 @@ export function NewOrderModal({
         escrow: "",
         wallet: walletAddress,
         asset: Number(formData.asset),
+        alpha: formData.type === 1 ? Number(formData.alpha ?? 0) : 0.0,
         type: Number(formData.type),
         ask: Number(formData.type === 1 ? (formData.stp ?? 0) : 0.0),
         bid: Number(formData.type === 2 ? (formData.stp ?? 0) : 0.0),
@@ -303,9 +308,8 @@ export function NewOrderModal({
           formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
         partial: formData.partial ? true : false,
         public: formData.public ? true : false,
-        tao: 0.0, // auto fill
-        alpha: 0.0, // auto fill
-        price: 0.0, // auto fill
+        tao: formData.type === 2 ? Number(formData.tao ?? 0) : 0.0,
+        price: 0.0,
         status: -1,
       };
 
@@ -436,6 +440,7 @@ export function NewOrderModal({
         escrow: finalEscrow,
         wallet: finalWallet,
         asset: Number(formData.asset),
+        alpha: formData.type === 1 ? Number(formData.alpha ?? 0) : (alphaValue || 0.0),
         type: Number(formData.type),
         ask: Number(formData.type === 1 ? (formData.stp ?? 0) : 0.0),
         bid: Number(formData.type === 2 ? (formData.stp ?? 0) : 0.0),
@@ -445,8 +450,7 @@ export function NewOrderModal({
           formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
         partial: formData.partial ? true : false,
         public: formData.public ? true : false,
-        tao: taoValue,
-        alpha: alphaValue,
+        tao: formData.type === 2 ? Number(formData.tao ?? 0) : (taoValue || 0.0),
         price: priceValue,
         status: 1,
       };
@@ -573,6 +577,7 @@ export function NewOrderModal({
           escrow: escrowWallet.trim(),
           wallet: walletAddress,
           asset: Number(formData.asset),
+          alpha: formData.type === 1 ? Number(formData.alpha ?? 0) : 0.0,
           type: Number(formData.type),
           ask: Number(formData.type === 1 ? formData.stp : 0.0),
           bid: Number(formData.type === 2 ? formData.stp : 0.0),
@@ -581,8 +586,7 @@ export function NewOrderModal({
           gtd: formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
           partial: formData.partial ? true : false,
           public: formData.public ? true : false,
-          tao: 0.0,
-          alpha: 0.0,
+          tao: formData.type === 2 ? Number(formData.tao ?? 0) : 0.0,
           price: 0.0,
           status: -1,
         };
@@ -689,6 +693,81 @@ export function NewOrderModal({
           </div>
 
           <div className="grid gap-2">
+            <Label htmlFor="transfer-amount">
+              {formData.type === 2 ? "Transfer TAO" : "Transfer Alpha"}
+            </Label>
+            <div className="relative flex items-center">
+              <Input
+                id="transfer-amount"
+                type="number"
+                min="0"
+                step="0.001"
+                value={
+                  formData.type === 2
+                    ? (formData.tao === undefined ? "" : formData.tao)
+                    : (formData.alpha === undefined ? "" : formData.alpha)
+                }
+                onChange={(e) => {
+                  const value = e.target.value.trim();
+                  const field = formData.type === 2 ? "tao" : "alpha";
+                  if (value === "" || value === null || value === undefined) {
+                    setFormData({ ...formData, [field]: undefined });
+                  } else {
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue)) {
+                      setFormData({ ...formData, [field]: numValue });
+                    } else {
+                      setFormData({ ...formData, [field]: undefined });
+                    }
+                  }
+                }}
+                disabled={escrowGenerated && !isInReviewMode}
+                placeholder={formData.type === 2 ? "Enter TAO amount" : "Enter alpha amount"}
+                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <div className="absolute right-1 flex flex-col gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!escrowGenerated || isInReviewMode) {
+                      const field = formData.type === 2 ? "tao" : "alpha";
+                      const current = (formData.type === 2 ? formData.tao : formData.alpha) ?? 0;
+                      setFormData({
+                        ...formData,
+                        [field]: Number((current + 0.001).toFixed(3)),
+                      });
+                    }
+                  }}
+                  disabled={escrowGenerated && !isInReviewMode}
+                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label={formData.type === 2 ? "Increase TAO amount" : "Increase alpha amount"}
+                >
+                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!escrowGenerated || isInReviewMode) {
+                      const field = formData.type === 2 ? "tao" : "alpha";
+                      const current = (formData.type === 2 ? formData.tao : formData.alpha) ?? 0;
+                      const newValue = Math.max(0, Number((current - 0.001).toFixed(3)));
+                      setFormData({
+                        ...formData,
+                        [field]: newValue > 0 ? newValue : undefined,
+                      });
+                    }
+                  }}
+                  disabled={escrowGenerated && !isInReviewMode}
+                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label={formData.type === 2 ? "Decrease TAO amount" : "Decrease alpha amount"}
+                >
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-2">
             <Label htmlFor="type">Order Type</Label>
             <Select
               value={formData.type === undefined ? undefined : String(formData.type)}
@@ -725,7 +804,7 @@ export function NewOrderModal({
                   })
                 }
                 disabled={escrowGenerated && !isInReviewMode}
-                placeholder="Enter asset ID"
+                placeholder="Enter asset"
                 className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <div className="absolute right-1 flex flex-col gap-0.5">

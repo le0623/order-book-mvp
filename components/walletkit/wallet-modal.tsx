@@ -114,7 +114,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                     </div>
                 )}
 
-                <div className="space-y-3 py-4">
+                <div className="space-y-3 pb-4">
                     <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                         <div className="flex items-center gap-3">
                             <div className="relative w-10 h-10 flex-shrink-0 rounded-full overflow-hidden">

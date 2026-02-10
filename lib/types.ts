@@ -24,6 +24,8 @@ export interface Order {
 
 export interface NewOrderFormData {
   type?: number // 1: sell, 2: buy
+  alpha?: number // alpha amount (transfer amount for sell)
+  tao?: number // tao amount (transfer amount for buy)
   asset?: number // subnet ID
   gtd: string // good till date (ISO string or "gtc")
   stp?: number // stop price
@@ -42,7 +44,7 @@ export const getOrderType = (type: number): OrderType => {
 
 export const getOrderStatus = (status: number): OrderStatus => {
   switch (status) {
-    case -1: 
+    case -1:
     case 0: return "Init"
     case 1: return "Open"
     case 2: return "Filled"

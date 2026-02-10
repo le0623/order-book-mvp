@@ -547,9 +547,9 @@ export default function Home() {
                 <Image
                   src={theme === "light" ? "/myorders-light.png" : "/myorders-black.png"}
                   alt="My Orders"
-                  width={28}
-                  height={28}
-                  className="w-5 h-5"
+                  width={32}
+                  height={32}
+                  className="w-[1.375rem] h-[1.375rem]"
                 />
                 <span className="hidden sm:inline">My Orders</span>
               </Button>
