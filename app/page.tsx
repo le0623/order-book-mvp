@@ -21,10 +21,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
-import { getWebSocketBookUrl, getWebSocketPriceUrl, API_URL } from "../lib/config";
+import { getWebSocketBookUrl, getWebSocketPriceUrl, getWebSocketTapUrl, API_URL } from "../lib/config";
 
 const WS_URL = getWebSocketBookUrl();
 const WS_PRICE_URL = getWebSocketPriceUrl();
+const WS_TAP_URL = getWebSocketTapUrl();
 
 export default function Home() {
   const { selectedAccount, walletModalOpen, closeWalletModal } = useWallet();
@@ -38,9 +39,30 @@ export default function Home() {
   >(new Map());
   const [showMyOrdersOnly, setShowMyOrdersOnly] = useState(false);
   const [showWalletConnectDialog, setShowWalletConnectDialog] = useState(false);
+  const [ofm, setOfm] = useState<[number, number, number]>([10, 0.01, 0.001]); // [open_max, open_min, fill_min]
+  const [recPopupMessage, setRecPopupMessage] = useState<string>("");
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Fetch OFM settings from backend
+  useEffect(() => {
+    const fetchOfm = async () => {
+      try {
+        const response = await fetch(`${API_URL}/ofm`);
+        if (!response.ok) return;
+        const data = await response.json();
+        // Backend returns str([...]) so data is a string like "[10, 0.01, 0.001]"
+        const parsed = typeof data === "string" ? JSON.parse(data) : data;
+        if (Array.isArray(parsed) && parsed.length === 3) {
+          setOfm([Number(parsed[0]), Number(parsed[1]), Number(parsed[2])]);
+        }
+      } catch (error) {
+        console.error("Error fetching OFM settings:", error);
+      }
+    };
+    fetchOfm();
   }, []);
 
   useEffect(() => {
@@ -255,6 +277,7 @@ export default function Home() {
     onMessage: handleWebSocketMessage,
   });
 
+  // /ws/price - handles all subnet prices: { netuid: { price: ... } }
   const handlePriceMessage = useCallback((message: any) => {
     try {
       let priceData = message;
@@ -265,28 +288,6 @@ export default function Home() {
         }
       }
 
-      // new format: { escrow, asset, tao, alpha, price }
-      if (priceData && typeof priceData === "object" && "escrow" in priceData) {
-        const { escrow, tao, alpha, price } = priceData;
-        if (escrow && price) {
-          setOrders((prev) =>
-            prev.map((order) => {
-              if (order.escrow === escrow && order.status === 1) {
-                return {
-                  ...order,
-                  tao: Number(tao || 0),
-                  alpha: Number(alpha || 0),
-                  price: Number(price || 0),
-                };
-              }
-              return order;
-            })
-          );
-        }
-        return;
-      }
-
-      // Handle old format: { netuid: price } or { netuid: { price: ... } }
       if (priceData && typeof priceData === "object") {
         const priceMap: Record<number, number> = {};
         for (const [key, value] of Object.entries(priceData)) {
@@ -307,13 +308,52 @@ export default function Home() {
         setPrices(priceMap);
       }
     } catch (error) {
-      console.error("❌ Error processing price message:", error);
+      console.error("Error processing price message:", error);
     }
   }, []);
 
   const { connectionState: priceConnectionState } = useWebSocket({
     url: WS_PRICE_URL,
     onMessage: handlePriceMessage,
+  });
+
+  // /ws/tap - handles escrow tao, alpha, price updates: { escrow, asset, tao, alpha, price }
+  const handleTapMessage = useCallback((message: any) => {
+    try {
+      let tapData = message;
+      if (typeof message === "string") {
+        tapData = JSON.parse(message);
+        if (typeof tapData === "string") {
+          tapData = JSON.parse(tapData);
+        }
+      }
+
+      if (tapData && typeof tapData === "object" && "escrow" in tapData) {
+        const { escrow, tao, alpha, price } = tapData;
+        if (escrow) {
+          setOrders((prev) =>
+            prev.map((order) => {
+              if (order.escrow === escrow && order.status === 1) {
+                return {
+                  ...order,
+                  tao: Number(tao || 0),
+                  alpha: Number(alpha || 0),
+                  price: Number(price || 0),
+                };
+              }
+              return order;
+            })
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error processing tap message:", error);
+    }
+  }, []);
+
+  useWebSocket({
+    url: WS_TAP_URL,
+    onMessage: handleTapMessage,
   });
 
   useEffect(() => {
@@ -349,6 +389,29 @@ export default function Home() {
     fetchInitialOrders();
   }, [normalizeOrder]);
 
+  /**
+   * Parse backend /rec response string format: "['msg', tao, alpha, price]"
+   * Python's str() uses single quotes, so we replace them for JSON parsing.
+   * Returns { message, tao, alpha, price } or null on failure.
+   */
+  const parseRecResponse = useCallback((responseText: string): { message: string; tao: number; alpha: number; price: number } | null => {
+    try {
+      const trimmed = responseText.trim();
+      if (!trimmed.startsWith("[")) return null;
+      const jsonStr = trimmed.replace(/'/g, '"');
+      const parsed = JSON.parse(jsonStr);
+      if (Array.isArray(parsed) && parsed.length >= 4) {
+        return {
+          message: String(parsed[0] || ""),
+          tao: Number(parsed[1]) || 0,
+          alpha: Number(parsed[2]) || 0,
+          price: Number(parsed[3]) || 0,
+        };
+      }
+    } catch { /* ignore parse errors */ }
+    return null;
+  }, []);
+
   const handleUpdateOrder = async (uuid: string, updates: Partial<Order>) => {
     try {
       const order = orders.find((o) => o.uuid === uuid && o.status === 1);
@@ -366,15 +429,11 @@ export default function Home() {
         stp: Number(updates.stp !== undefined ? updates.stp : order.stp),
         lmt: Number(order.lmt),
         gtd: order.gtd || "gtc",
-        partial: order.partial ? "True" : "False",
+        partial: order.partial ? true : false,
         public:
           updates.public !== undefined
-            ? updates.public
-              ? "True"
-              : "False"
-            : order.public
-              ? "True"
-              : "False",
+            ? updates.public ? true : false
+            : order.public ? true : false,
         tao: Number(order.tao || 0),
         alpha: Number(order.alpha || 0),
         price: Number(order.price || 0),
@@ -390,6 +449,18 @@ export default function Home() {
       if (!response.ok) {
         throw new Error("Failed to update order");
       }
+
+      // Parse new /rec response format: ['msg', tao, alpha, price]
+      try {
+        const data = await response.json();
+        const text = typeof data === "string" ? data : JSON.stringify(data);
+        const recResult = parseRecResponse(text);
+        if (recResult) {
+          if (recResult.message) {
+            setRecPopupMessage(recResult.message);
+          }
+        }
+      } catch { /* ignore */ }
 
       setOrders((prev) =>
         prev.map((o) => {
@@ -424,8 +495,8 @@ export default function Home() {
         stp: Number(order.stp),
         lmt: Number(order.lmt),
         gtd: order.gtd || "gtc",
-        partial: order.partial ? "True" : "False",
-        public: order.public ? "True" : "False",
+        partial: order.partial ? true : false,
+        public: order.public ? true : false,
         tao: Number(order.tao || 0),
         alpha: Number(order.alpha || 0),
         price: Number(order.price || 0),
@@ -441,6 +512,18 @@ export default function Home() {
       if (!response.ok) {
         throw new Error("Failed to close order");
       }
+
+      // Parse new /rec response format: ['msg', tao, alpha, price]
+      try {
+        const data = await response.json();
+        const text = typeof data === "string" ? data : JSON.stringify(data);
+        const recResult = parseRecResponse(text);
+        if (recResult) {
+          if (recResult.message) {
+            setRecPopupMessage(recResult.message);
+          }
+        }
+      } catch { /* ignore */ }
     } catch (error) {
       console.error("Error closing order:", error);
     }
@@ -593,6 +676,8 @@ export default function Home() {
           open={newOrderModalOpen}
           onOpenChange={setNewOrderModalOpen}
           apiUrl={API_URL}
+          prices={prices}
+          ofm={ofm}
         />
 
         <Dialog open={showWalletConnectDialog} onOpenChange={setShowWalletConnectDialog}>
@@ -615,6 +700,21 @@ export default function Home() {
         </Dialog>
 
         <WalletModal open={walletModalOpen} onOpenChange={closeWalletModal} />
+
+        {/* Popup for /rec response messages */}
+        <Dialog open={!!recPopupMessage} onOpenChange={(open) => { if (!open) setRecPopupMessage(""); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Notice</DialogTitle>
+              <DialogDescription>{recPopupMessage}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button onClick={() => setRecPopupMessage("")} variant="outline">
+                OK
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </main>
   );

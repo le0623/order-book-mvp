@@ -34,13 +34,14 @@ import {
   CheckIcon,
   ChevronUp,
   ChevronDown,
+  ArrowLeftRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { NewOrderFormData, Order } from "@/lib/types";
 import { useWallet } from "@/context/wallet-context";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WebSocketMessage } from "@/lib/websocket-types";
-import { getWebSocketBookUrl, getWebSocketPriceUrl, API_URL } from "@/lib/config";
+import { getWebSocketBookUrl, getWebSocketPriceUrl, getWebSocketTapUrl, API_URL } from "@/lib/config";
 import { ConnectButton } from "@/components/walletkit/connect";
 
 
@@ -49,6 +50,8 @@ interface NewOrderModalProps {
   onOpenChange: (open: boolean) => void;
   onOrderPlaced?: () => void;
   apiUrl?: string;
+  prices?: Record<number, number>;
+  ofm?: [number, number, number]; // [open_max, open_min, fill_min]
 }
 
 export function NewOrderModal({
@@ -56,6 +59,8 @@ export function NewOrderModal({
   onOpenChange,
   onOrderPlaced,
   apiUrl,
+  prices = {},
+  ofm = [10, 0.01, 0.001],
 }: NewOrderModalProps) {
   const { selectedAccount, isConnected } = useWallet();
   const [formData, setFormData] = React.useState<NewOrderFormData>({
@@ -88,7 +93,10 @@ export function NewOrderModal({
     alpha: number;
     price: number;
   } | null>(null);
+  const [assetPrices, setAssetPrices] = React.useState<Record<number, number>>({});
+  const [transferInputMode, setTransferInputMode] = React.useState<"alpha" | "tao">("alpha");
 
+  const [recPopupMessage, setRecPopupMessage] = React.useState<string>("");
   const pendingEscrowRef = React.useRef<string>("");
 
   const WS_URL = React.useMemo(() => {
@@ -97,6 +105,10 @@ export function NewOrderModal({
 
   const WS_PRICE_URL = React.useMemo(() => {
     return getWebSocketPriceUrl();
+  }, []);
+
+  const WS_TAP_URL = React.useMemo(() => {
+    return getWebSocketTapUrl();
   }, []);
 
   const handleWebSocketMessage = React.useCallback((message: WebSocketMessage | any) => {
@@ -150,16 +162,7 @@ export function NewOrderModal({
             pendingEscrowRef.current = "";
           }
         }
-
-        if (order.escrow && order.status === 1) {
-          const tao = Number(order.tao) || 0;
-          const alpha = Number(order.alpha) || 0;
-          const price = Number(order.price) || 0;
-
-          if (order.escrow === escrowWallet && escrowWallet && price > 0) {
-            setPriceData({ tao, alpha, price });
-          }
-        }
+        // Note: escrow tao/alpha/price updates now come from /ws/tap, not /ws/book
       }
     } catch (error) {
       console.error("Error processing WebSocket message in new order modal:", error);
@@ -177,6 +180,7 @@ export function NewOrderModal({
     enabled: open,
   });
 
+  // /ws/price - only handles all subnet prices: { netuid: { price: ... } }
   const handlePriceMessage = React.useCallback((message: any) => {
     try {
       let priceDataMsg: any = message;
@@ -191,27 +195,30 @@ export function NewOrderModal({
         }
       }
 
-      if (
-        priceDataMsg &&
-        typeof priceDataMsg === "object" &&
-        "escrow" in priceDataMsg &&
-        "tao" in priceDataMsg &&
-        "alpha" in priceDataMsg &&
-        "price" in priceDataMsg
-      ) {
-        const escrow = priceDataMsg.escrow;
-        const tao = Number(priceDataMsg.tao) || 0;
-        const alpha = Number(priceDataMsg.alpha) || 0;
-        const price = Number(priceDataMsg.price) || 0;
-
-        if (escrow === escrowWallet && escrowWallet && price > 0) {
-          setPriceData({ tao, alpha, price });
+      if (priceDataMsg && typeof priceDataMsg === "object") {
+        const priceMap: Record<number, number> = {};
+        for (const [key, value] of Object.entries(priceDataMsg)) {
+          const netuid = Number(key);
+          let price: number;
+          if (typeof value === "object" && value !== null && "price" in value) {
+            price = Number((value as any).price);
+          } else if (typeof value === "number") {
+            price = Number(value);
+          } else {
+            continue;
+          }
+          if (!isNaN(netuid) && !isNaN(price) && price > 0) {
+            priceMap[netuid] = price;
+          }
+        }
+        if (Object.keys(priceMap).length > 0) {
+          setAssetPrices((prev) => ({ ...prev, ...priceMap }));
         }
       }
     } catch (error) {
       console.error("Error processing price WebSocket message:", error);
     }
-  }, [escrowWallet]);
+  }, []);
 
   const { connectionState: priceConnectionState } = useWebSocket({
     url: WS_PRICE_URL,
@@ -219,14 +226,59 @@ export function NewOrderModal({
     enabled: open,
   });
 
+  // /ws/tap - handles escrow tao, alpha, price updates: { escrow, asset, tao, alpha, price }
+  const handleTapMessage = React.useCallback((message: any) => {
+    try {
+      let tapData: any = message;
+      if (typeof message === "string") {
+        try {
+          tapData = JSON.parse(message);
+          if (typeof tapData === "string") {
+            tapData = JSON.parse(tapData);
+          }
+        } catch {
+          return;
+        }
+      }
+
+      if (
+        tapData &&
+        typeof tapData === "object" &&
+        "escrow" in tapData
+      ) {
+        const escrow = tapData.escrow;
+        const tao = Number(tapData.tao) || 0;
+        const alpha = Number(tapData.alpha) || 0;
+        const price = Number(tapData.price) || 0;
+
+        if (escrow === escrowWallet && escrowWallet && price > 0) {
+          setPriceData({ tao, alpha, price });
+        }
+      }
+    } catch (error) {
+      console.error("Error processing tap WebSocket message:", error);
+    }
+  }, [escrowWallet]);
+
+  useWebSocket({
+    url: WS_TAP_URL,
+    onMessage: handleTapMessage,
+    enabled: open,
+  });
+
   React.useEffect(() => {
     if (open && selectedAccount?.address) {
       setOriginWallet(selectedAccount.address);
     } else if (open) {
-      // Allow creating orders without wallet - set empty or use placeholder
       setOriginWallet("");
     }
   }, [open, selectedAccount?.address]);
+
+  React.useEffect(() => {
+    if (formData.type !== undefined) {
+      setTransferInputMode(formData.type === 2 ? "tao" : "alpha");
+    }
+  }, [formData.type]);
 
   React.useEffect(() => {
     if (error) {
@@ -268,6 +320,8 @@ export function NewOrderModal({
     setIsInReviewMode(false);
     setCopiedEscrow(false);
     setPriceData(null);
+    setTransferInputMode("alpha");
+    setRecPopupMessage("");
     pendingEscrowRef.current = "";
   };
 
@@ -281,6 +335,51 @@ export function NewOrderModal({
       console.error("Failed to copy:", err);
     }
   };
+
+  const assetPrice = formData.asset != null
+    ? (assetPrices[formData.asset] > 0 ? assetPrices[formData.asset] : (prices[formData.asset] > 0 ? prices[formData.asset] : 0))
+    : 0;
+  const priceForConversion = (priceData?.price && priceData.price > 0)
+    ? priceData.price
+    : assetPrice;
+
+  const getAlphaForSubmit = () => {
+    if (formData.type !== 1) return 0;
+    if (transferInputMode === "alpha") return formData.alpha ?? 0;
+    if (transferInputMode === "tao" && priceForConversion > 0) return (formData.tao ?? 0) / priceForConversion;
+    return formData.alpha ?? 0;
+  };
+
+  const getTaoForSubmit = () => {
+    if (formData.type !== 2) return 0;
+    if (transferInputMode === "tao") return formData.tao ?? 0;
+    if (transferInputMode === "alpha" && priceForConversion > 0) return (formData.alpha ?? 0) * priceForConversion;
+    return formData.tao ?? 0;
+  };
+
+  const [openMax, openMin, fillMin] = ofm;
+
+  /**
+   * Parse backend /rec response string: "['msg', tao, alpha, price]"
+   * Python's str() uses single quotes; replace for JSON parsing.
+   */
+  const parseRecResponse = React.useCallback((responseText: string): { message: string; tao: number; alpha: number; price: number } | null => {
+    try {
+      const trimmed = responseText.trim();
+      if (!trimmed.startsWith("[")) return null;
+      const jsonStr = trimmed.replace(/'/g, '"');
+      const parsed = JSON.parse(jsonStr);
+      if (Array.isArray(parsed) && parsed.length >= 4) {
+        return {
+          message: String(parsed[0] || ""),
+          tao: Number(parsed[1]) || 0,
+          alpha: Number(parsed[2]) || 0,
+          price: Number(parsed[3]) || 0,
+        };
+      }
+    } catch { /* ignore */ }
+    return null;
+  }, []);
 
   const handleNext = async () => {
     try {
@@ -298,7 +397,7 @@ export function NewOrderModal({
         escrow: "",
         wallet: walletAddress,
         asset: Number(formData.asset),
-        alpha: formData.type === 1 ? Number(formData.alpha ?? 0) : 0.0,
+        alpha: formData.type === 1 ? Number(getAlphaForSubmit()) : 0.0,
         type: Number(formData.type),
         ask: Number(formData.type === 1 ? (formData.stp ?? 0) : 0.0),
         bid: Number(formData.type === 2 ? (formData.stp ?? 0) : 0.0),
@@ -308,7 +407,7 @@ export function NewOrderModal({
           formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
         partial: formData.partial ? true : false,
         public: formData.public ? true : false,
-        tao: formData.type === 2 ? Number(formData.tao ?? 0) : 0.0,
+        tao: formData.type === 2 ? Number(getTaoForSubmit()) : 0.0,
         price: 0.0,
         status: -1,
       };
@@ -440,7 +539,7 @@ export function NewOrderModal({
         escrow: finalEscrow,
         wallet: finalWallet,
         asset: Number(formData.asset),
-        alpha: formData.type === 1 ? Number(formData.alpha ?? 0) : (alphaValue || 0.0),
+        alpha: formData.type === 1 ? Number(getAlphaForSubmit()) : (alphaValue || 0.0),
         type: Number(formData.type),
         ask: Number(formData.type === 1 ? (formData.stp ?? 0) : 0.0),
         bid: Number(formData.type === 2 ? (formData.stp ?? 0) : 0.0),
@@ -450,7 +549,7 @@ export function NewOrderModal({
           formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
         partial: formData.partial ? true : false,
         public: formData.public ? true : false,
-        tao: formData.type === 2 ? Number(formData.tao ?? 0) : (taoValue || 0.0),
+        tao: formData.type === 2 ? Number(getTaoForSubmit()) : (taoValue || 0.0),
         price: priceValue,
         status: 1,
       };
@@ -493,6 +592,7 @@ export function NewOrderModal({
         );
       }
 
+      // Parse new /rec response format: ['msg', tao, alpha, price]
       try {
         const contentType = responseClone.headers.get("content-type");
         let responseText: string;
@@ -504,25 +604,18 @@ export function NewOrderModal({
           responseText = await responseClone.text();
         }
 
-        if (responseText && responseText.trim().startsWith("[")) {
-          try {
-            const parsed = JSON.parse(responseText);
-            if (Array.isArray(parsed) && parsed.length >= 3) {
-              const [tao, alpha, price] = parsed;
-              const taoNum = Number(tao) || 0;
-              const alphaNum = Number(alpha) || 0;
-              const priceNum = Number(price) || 0;
-
-              if (priceNum > 0) {
-                setPriceData({ tao: taoNum, alpha: alphaNum, price: priceNum });
-              }
-            }
-          } catch (e) {
-            console.warn("Could not parse response as array:", e);
+        const recResult = parseRecResponse(responseText);
+        if (recResult) {
+          if (recResult.price > 0) {
+            setPriceData({ tao: recResult.tao, alpha: recResult.alpha, price: recResult.price });
+          }
+          // Show popup if first field (message) is non-empty
+          if (recResult.message) {
+            setRecPopupMessage(recResult.message);
           }
         }
       } catch (e) {
-        console.warn("Could not extract price data from response:", e);
+        console.warn("Could not extract data from response:", e);
       }
 
       onOrderPlaced?.();
@@ -577,7 +670,7 @@ export function NewOrderModal({
           escrow: escrowWallet.trim(),
           wallet: walletAddress,
           asset: Number(formData.asset),
-          alpha: formData.type === 1 ? Number(formData.alpha ?? 0) : 0.0,
+          alpha: formData.type === 1 ? Number(getAlphaForSubmit()) : 0.0,
           type: Number(formData.type),
           ask: Number(formData.type === 1 ? formData.stp : 0.0),
           bid: Number(formData.type === 2 ? formData.stp : 0.0),
@@ -586,7 +679,7 @@ export function NewOrderModal({
           gtd: formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
           partial: formData.partial ? true : false,
           public: formData.public ? true : false,
-          tao: formData.type === 2 ? Number(formData.tao ?? 0) : 0.0,
+          tao: formData.type === 2 ? Number(getTaoForSubmit()) : 0.0,
           price: 0.0,
           status: -1,
         };
@@ -691,82 +784,6 @@ export function NewOrderModal({
               )}
             </div>
           </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="transfer-amount">
-              {formData.type === 2 ? "Transfer TAO" : "Transfer Alpha"}
-            </Label>
-            <div className="relative flex items-center">
-              <Input
-                id="transfer-amount"
-                type="number"
-                min="0"
-                step="0.001"
-                value={
-                  formData.type === 2
-                    ? (formData.tao === undefined ? "" : formData.tao)
-                    : (formData.alpha === undefined ? "" : formData.alpha)
-                }
-                onChange={(e) => {
-                  const value = e.target.value.trim();
-                  const field = formData.type === 2 ? "tao" : "alpha";
-                  if (value === "" || value === null || value === undefined) {
-                    setFormData({ ...formData, [field]: undefined });
-                  } else {
-                    const numValue = parseFloat(value);
-                    if (!isNaN(numValue)) {
-                      setFormData({ ...formData, [field]: numValue });
-                    } else {
-                      setFormData({ ...formData, [field]: undefined });
-                    }
-                  }
-                }}
-                disabled={escrowGenerated && !isInReviewMode}
-                placeholder={formData.type === 2 ? "Enter TAO amount" : "Enter alpha amount"}
-                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-              <div className="absolute right-1 flex flex-col gap-0.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!escrowGenerated || isInReviewMode) {
-                      const field = formData.type === 2 ? "tao" : "alpha";
-                      const current = (formData.type === 2 ? formData.tao : formData.alpha) ?? 0;
-                      setFormData({
-                        ...formData,
-                        [field]: Number((current + 0.001).toFixed(3)),
-                      });
-                    }
-                  }}
-                  disabled={escrowGenerated && !isInReviewMode}
-                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  aria-label={formData.type === 2 ? "Increase TAO amount" : "Increase alpha amount"}
-                >
-                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!escrowGenerated || isInReviewMode) {
-                      const field = formData.type === 2 ? "tao" : "alpha";
-                      const current = (formData.type === 2 ? formData.tao : formData.alpha) ?? 0;
-                      const newValue = Math.max(0, Number((current - 0.001).toFixed(3)));
-                      setFormData({
-                        ...formData,
-                        [field]: newValue > 0 ? newValue : undefined,
-                      });
-                    }
-                  }}
-                  disabled={escrowGenerated && !isInReviewMode}
-                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  aria-label={formData.type === 2 ? "Decrease TAO amount" : "Decrease alpha amount"}
-                >
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                </button>
-              </div>
-            </div>
-          </div>
-
           <div className="grid gap-2">
             <Label htmlFor="type">Order Type</Label>
             <Select
@@ -788,6 +805,129 @@ export function NewOrderModal({
               </SelectContent>
             </Select>
           </div>
+          <div className="grid gap-2">
+            <Label htmlFor="transfer-amount">
+              {transferInputMode === "tao" ? "Transfer TAO" : "Transfer Alpha"}
+            </Label>
+            <div className="relative flex items-center">
+              <Input
+                id="transfer-amount"
+                type="number"
+                min="0"
+                step="0.001"
+                value={
+                  transferInputMode === "tao"
+                    ? (formData.tao === undefined ? "" : formData.tao)
+                    : (formData.alpha === undefined ? "" : formData.alpha)
+                }
+                onChange={(e) => {
+                  const value = e.target.value.trim();
+                  const field = transferInputMode === "tao" ? "tao" : "alpha";
+                  if (value === "" || value === null || value === undefined) {
+                    setFormData({ ...formData, [field]: undefined });
+                  } else {
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue)) {
+                      setFormData({ ...formData, [field]: numValue });
+                    } else {
+                      setFormData({ ...formData, [field]: undefined });
+                    }
+                  }
+                }}
+                disabled={escrowGenerated && !isInReviewMode}
+                placeholder={transferInputMode === "tao" ? "Enter TAO amount" : "Enter alpha amount"}
+                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <div className="absolute right-1 flex items-center gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (escrowGenerated && !isInReviewMode) return;
+                    if (formData.asset == null) return;
+                    const price = priceForConversion;
+                    if (price <= 0) return;
+                    if (transferInputMode === "alpha") {
+                      const alpha = formData.alpha ?? 0;
+                      if (alpha <= 0) return;
+                      const tao = alpha * price;
+                      setFormData({ ...formData, tao: Number(tao.toFixed(6)) });
+                      setTransferInputMode("tao");
+                    } else {
+                      const tao = formData.tao ?? 0;
+                      if (tao <= 0) return;
+                      const alpha = tao / price;
+                      setFormData({ ...formData, alpha: Number(alpha.toFixed(6)) });
+                      setTransferInputMode("alpha");
+                    }
+                  }}
+                  disabled={
+                    (escrowGenerated && !isInReviewMode)
+                    || formData.asset == null
+                    || priceForConversion <= 0
+                    || (transferInputMode === "alpha" ? !(formData.alpha && formData.alpha > 0) : !(formData.tao && formData.tao > 0))
+                  }
+                  className="h-9 w-8 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Convert between Alpha and TAO"
+                  title={
+                    formData.asset == null
+                      ? "Select Asset (NetUID) first"
+                      : priceForConversion <= 0
+                        ? "Waiting for price from WebSocket..."
+                        : `Convert: Alpha = TAO / ${priceForConversion.toFixed(6)}, TAO = Alpha × ${priceForConversion.toFixed(6)}`
+                  }
+                >
+                  <ArrowLeftRight className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+                <div className="flex flex-col gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!escrowGenerated || isInReviewMode) {
+                        const field = transferInputMode === "tao" ? "tao" : "alpha";
+                        const current = (transferInputMode === "tao" ? formData.tao : formData.alpha) ?? 0;
+                        setFormData({
+                          ...formData,
+                          [field]: Number((current + 0.001).toFixed(3)),
+                        });
+                      }
+                    }}
+                    disabled={escrowGenerated && !isInReviewMode}
+                    className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label={transferInputMode === "tao" ? "Increase TAO amount" : "Increase alpha amount"}
+                  >
+                    <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!escrowGenerated || isInReviewMode) {
+                        const field = transferInputMode === "tao" ? "tao" : "alpha";
+                        const current = (transferInputMode === "tao" ? formData.tao : formData.alpha) ?? 0;
+                        const newValue = Math.max(0, Number((current - 0.001).toFixed(3)));
+                        setFormData({
+                          ...formData,
+                          [field]: newValue > 0 ? newValue : undefined,
+                        });
+                      }
+                    }}
+                    disabled={escrowGenerated && !isInReviewMode}
+                    className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label={transferInputMode === "tao" ? "Decrease TAO amount" : "Decrease alpha amount"}
+                  >
+                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Alpha = TAO / price · TAO = Alpha × price. Select Asset (NetUID) to fetch price via WebSocket.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Escrow limits (TAO): min {openMin}, max {openMax}. Fill min: {fillMin}.
+            </p>
+          </div>
+
+        
 
           <div className="grid gap-2">
             <Label htmlFor="asset">Asset (NETUID)</Label>
@@ -1097,6 +1237,21 @@ export function NewOrderModal({
           </div>
         )}
       </DialogContent>
+
+      {/* Popup for /rec response messages */}
+      <Dialog open={!!recPopupMessage} onOpenChange={(isOpen) => { if (!isOpen) setRecPopupMessage(""); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Notice</DialogTitle>
+            <DialogDescription>{recPopupMessage}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setRecPopupMessage("")} variant="outline">
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

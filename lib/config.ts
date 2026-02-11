@@ -20,6 +20,11 @@ export const getWebSocketPriceUrl = (): string => {
     return `${normalized}/price`;
 };
 
+export const getWebSocketTapUrl = (): string => {
+    const normalized = WS_BASE_URL.replace(/\/book\/?$/, "").replace(/\/tap\/?$/, "");
+    return `${normalized}/tap`;
+};
+
 export const DEV_MODE = isDevMode;
 
 if (typeof window !== "undefined") {
