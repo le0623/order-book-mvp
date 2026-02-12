@@ -466,16 +466,15 @@ export function FillOrderModal({
               )}
             </div>
             {escrowWallet &&
-              fixedValues.price > 0 &&
               (fixedValues.type === 2 ? (transferTao ?? 0) > 0 : (transferAlpha ?? 0) > 0) && (
                 <p className="text-sm text-muted-foreground">
                   {fixedValues.type === 2 ? (
                     <>
-                      {(transferTao ?? 0).toFixed(6)} TAO will be transferred to escrow, price {fixedValues.price.toFixed(6)}
+                      {(transferTao ?? 0).toFixed(4)} TAO will be transferred to escrow
                     </>
                   ) : (
                     <>
-                      {(transferAlpha ?? 0).toFixed(6)} Alpha will be transferred to escrow, price {fixedValues.price.toFixed(6)}
+                      {(transferAlpha ?? 0).toFixed(2)} Alpha will be transferred to escrow
                     </>
                   )}
                 </p>

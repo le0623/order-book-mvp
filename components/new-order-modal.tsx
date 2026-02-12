@@ -342,9 +342,6 @@ export function NewOrderModal({
   const priceForConversion = (priceData?.price && priceData.price > 0)
     ? priceData.price
     : assetPrice;
-  const priceForDisplay = priceForConversion > 0
-    ? priceForConversion
-    : (formData.stp ?? 0);
 
   const getAlphaForSubmit = () => {
     if (formData.type !== 1) return 0;
@@ -792,37 +789,18 @@ export function NewOrderModal({
                 <p className="text-sm text-muted-foreground">
                   {formData.type === 2 ? (
                     <>
-                      {getTaoForSubmit().toFixed(6)} TAO will be transferred to escrow, price {priceForDisplay > 0 ? priceForDisplay.toFixed(6) : "—"}
+                      {getTaoForSubmit().toFixed(4)} TAO will be transferred to escrow
                     </>
                   ) : (
                     <>
-                      {getAlphaForSubmit().toFixed(6)} Alpha will be transferred to escrow, price {priceForDisplay > 0 ? priceForDisplay.toFixed(6) : "—"}
+                      {getAlphaForSubmit().toFixed(2)} Alpha will be transferred to escrow
                     </>
                   )}
                 </p>
               )}
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="type">Order Type</Label>
-            <Select
-              value={formData.type === undefined ? undefined : String(formData.type)}
-              onValueChange={(value) =>
-                setFormData({ ...formData, type: parseInt(value) })
-              }
-              disabled={escrowGenerated && !isInReviewMode}
-            >
-              <SelectTrigger
-                id="type"
-                className="focus:ring-1 focus:ring-blue-500/50 focus:ring-offset-0 focus:border-blue-500/70 [&[data-placeholder]>span]:opacity-60 [&[data-placeholder]>span]:text-muted-foreground"
-              >
-                <SelectValue placeholder="Select order type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1" className="opacity-60">Sell</SelectItem>
-                <SelectItem value="2" className="opacity-60">Buy</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+
+          {/* order size */}
           <div className="grid gap-2">
             <div className="flex items-center gap-2">
               <Label htmlFor="transfer-amount">
@@ -855,7 +833,7 @@ export function NewOrderModal({
                   || priceForConversion <= 0
                   || (transferInputMode === "alpha" ? !(formData.alpha && formData.alpha > 0) : !(formData.tao && formData.tao > 0))
                 }
-                className="h-8 w-12 flex items-center justify-center rounded-sm bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                className="h-8 w-8 flex items-center justify-center rounded-[6px] border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
                 aria-label="Convert between Alpha and TAO"
                 title={
                   formData.asset == null
@@ -865,15 +843,14 @@ export function NewOrderModal({
                       : `Convert: Alpha = TAO / ${priceForConversion.toFixed(6)}, TAO = Alpha × ${priceForConversion.toFixed(6)}`
                 }
               >
-                <ArrowLeftRight className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-xs ml-1">τ/α</span>
+                <span className="text-xs">τ/α</span>
               </button>
             </div>
             <div className="relative flex items-center">
               <Input
                 id="transfer-amount"
                 type="number"
-                min="0"
-                step="0.001"
+                step="1"
                 value={
                   transferInputMode === "tao"
                     ? (formData.tao === undefined ? "" : formData.tao)
@@ -898,46 +875,70 @@ export function NewOrderModal({
                 className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <div className="absolute right-1 flex flex-col gap-0.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!escrowGenerated || isInReviewMode) {
-                        const field = transferInputMode === "tao" ? "tao" : "alpha";
-                        const current = (transferInputMode === "tao" ? formData.tao : formData.alpha) ?? 0;
-                        setFormData({
-                          ...formData,
-                          [field]: Number((current + 0.001).toFixed(3)),
-                        });
-                      }
-                    }}
-                    disabled={escrowGenerated && !isInReviewMode}
-                    className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    aria-label={transferInputMode === "tao" ? "Increase TAO amount" : "Increase alpha amount"}
-                  >
-                    <ChevronUp className="h-3 w-3 text-muted-foreground" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!escrowGenerated || isInReviewMode) {
-                        const field = transferInputMode === "tao" ? "tao" : "alpha";
-                        const current = (transferInputMode === "tao" ? formData.tao : formData.alpha) ?? 0;
-                        const newValue = Math.max(0, Number((current - 0.001).toFixed(3)));
-                        setFormData({
-                          ...formData,
-                          [field]: newValue > 0 ? newValue : undefined,
-                        });
-                      }
-                    }}
-                    disabled={escrowGenerated && !isInReviewMode}
-                    className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    aria-label={transferInputMode === "tao" ? "Decrease TAO amount" : "Decrease alpha amount"}
-                  >
-                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!escrowGenerated || isInReviewMode) {
+                      const field = transferInputMode === "tao" ? "tao" : "alpha";
+                      const current = (transferInputMode === "tao" ? formData.tao : formData.alpha) ?? 0;
+                      setFormData({
+                        ...formData,
+                        [field]: current + 1,
+                      });
+                    }
+                  }}
+                  disabled={escrowGenerated && !isInReviewMode}
+                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label={transferInputMode === "tao" ? "Increase TAO amount" : "Increase alpha amount"}
+                >
+                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!escrowGenerated || isInReviewMode) {
+                      const field = transferInputMode === "tao" ? "tao" : "alpha";
+                      const current = (transferInputMode === "tao" ? formData.tao : formData.alpha) ?? 0;
+                      setFormData({
+                        ...formData,
+                        [field]: current - 1,
+                      });
+                    }
+                  }}
+                  disabled={escrowGenerated && !isInReviewMode}
+                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label={transferInputMode === "tao" ? "Decrease TAO amount" : "Decrease alpha amount"}
+                >
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                </button>
               </div>
+            </div>
           </div>
+
+          {/* order type */}
+          <div className="grid gap-2">
+            <Label htmlFor="type">Order Type</Label>
+            <Select
+              value={formData.type === undefined ? undefined : String(formData.type)}
+              onValueChange={(value) =>
+                setFormData({ ...formData, type: parseInt(value) })
+              }
+              disabled={escrowGenerated && !isInReviewMode}
+            >
+              <SelectTrigger
+                id="type"
+                className="focus:ring-1 focus:ring-blue-500/50 focus:ring-offset-0 focus:border-blue-500/70 [&[data-placeholder]>span]:opacity-60 [&[data-placeholder]>span]:text-muted-foreground"
+              >
+                <SelectValue placeholder="Select order type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1" className="opacity-60">Sell</SelectItem>
+                <SelectItem value="2" className="opacity-60">Buy</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          
 
           <div className="grid gap-2">
             <Label htmlFor="asset">Asset (NETUID)</Label>
