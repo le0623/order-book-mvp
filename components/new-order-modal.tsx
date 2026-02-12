@@ -98,6 +98,7 @@ export function NewOrderModal({
 
   const [recPopupMessage, setRecPopupMessage] = React.useState<string>("");
   const pendingEscrowRef = React.useRef<string>("");
+  const prevOrderTypeRef = React.useRef<number | undefined>(undefined);
 
   const WS_URL = React.useMemo(() => {
     return getWebSocketBookUrl();
@@ -275,8 +276,32 @@ export function NewOrderModal({
   }, [open, selectedAccount?.address]);
 
   React.useEffect(() => {
-    if (formData.type !== undefined) {
-      setTransferInputMode(formData.type === 2 ? "tao" : "alpha");
+    if (formData.type === undefined) return;
+
+    const prevType = prevOrderTypeRef.current;
+    prevOrderTypeRef.current = formData.type;
+    setTransferInputMode(formData.type === 2 ? "tao" : "alpha");
+
+    if (prevType !== undefined && prevType !== formData.type) {
+      const price = (priceData?.price && priceData.price > 0)
+        ? priceData.price
+        : (formData.asset != null && (assetPrices[formData.asset] > 0 || prices[formData.asset] > 0))
+          ? (assetPrices[formData.asset] || prices[formData.asset] || 0)
+          : 0;
+
+      if (formData.type === 2) {
+        const alpha = formData.alpha ?? 0;
+        if (alpha > 0) {
+          const tao = price > 0 ? alpha * price : alpha;
+          setFormData((prev) => ({ ...prev, tao, alpha: undefined }));
+        }
+      } else {
+        const tao = formData.tao ?? 0;
+        if (tao > 0) {
+          const alpha = price > 0 ? tao / price : tao;
+          setFormData((prev) => ({ ...prev, alpha, tao: undefined }));
+        }
+      }
     }
   }, [formData.type]);
 
@@ -323,6 +348,7 @@ export function NewOrderModal({
     setTransferInputMode("alpha");
     setRecPopupMessage("");
     pendingEscrowRef.current = "";
+    prevOrderTypeRef.current = undefined;
   };
 
   const copyEscrowToClipboard = async () => {
