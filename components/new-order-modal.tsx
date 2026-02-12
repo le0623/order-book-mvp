@@ -342,6 +342,9 @@ export function NewOrderModal({
   const priceForConversion = (priceData?.price && priceData.price > 0)
     ? priceData.price
     : assetPrice;
+  const priceForDisplay = priceForConversion > 0
+    ? priceForConversion
+    : (formData.stp ?? 0);
 
   const getAlphaForSubmit = () => {
     if (formData.type !== 1) return 0;
@@ -397,21 +400,21 @@ export function NewOrderModal({
         escrow: "",
         wallet: walletAddress,
         asset: Number(formData.asset),
-        alpha: formData.type === 1 ? Number(getAlphaForSubmit()) : 0.0,
         type: Number(formData.type),
         ask: Number(formData.type === 1 ? (formData.stp ?? 0) : 0.0),
         bid: Number(formData.type === 2 ? (formData.stp ?? 0) : 0.0),
         stp: Number(formData.stp ?? 0),
         lmt: Number(formData.stp ?? 0),
         gtd:
-          formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
+        formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
         partial: formData.partial ? true : false,
         public: formData.public ? true : false,
         tao: formData.type === 2 ? Number(getTaoForSubmit()) : 0.0,
+        alpha: formData.type === 1 ? Number(getAlphaForSubmit()) : 0.0,
         price: 0.0,
         status: -1,
       };
-
+      console.log("111111 orderData: ", orderData);
       const backendUrl = apiUrl || API_URL;
       const response = await fetch(`${backendUrl}/rec`, {
         method: "POST",
@@ -785,16 +788,15 @@ export function NewOrderModal({
             </div>
             {escrowWallet &&
               formData.type != null &&
-              priceForConversion > 0 &&
               (formData.type === 2 ? getTaoForSubmit() > 0 : getAlphaForSubmit() > 0) && (
                 <p className="text-sm text-muted-foreground">
                   {formData.type === 2 ? (
                     <>
-                      {getTaoForSubmit().toFixed(6)} TAO will be transferred to escrow, price {priceForConversion.toFixed(6)}
+                      {getTaoForSubmit().toFixed(6)} TAO will be transferred to escrow, price {priceForDisplay > 0 ? priceForDisplay.toFixed(6) : "—"}
                     </>
                   ) : (
                     <>
-                      {getAlphaForSubmit().toFixed(6)} Alpha will be transferred to escrow, price {priceForConversion.toFixed(6)}
+                      {getAlphaForSubmit().toFixed(6)} Alpha will be transferred to escrow, price {priceForDisplay > 0 ? priceForDisplay.toFixed(6) : "—"}
                     </>
                   )}
                 </p>
