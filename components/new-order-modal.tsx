@@ -41,7 +41,7 @@ import { NewOrderFormData, Order } from "@/lib/types";
 import { useWallet } from "@/context/wallet-context";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WebSocketMessage } from "@/lib/websocket-types";
-import { getWebSocketBookUrl, getWebSocketPriceUrl, getWebSocketTapUrl, API_URL } from "@/lib/config";
+import { getWebSocketBookUrl, getWebSocketTapUrl, API_URL } from "@/lib/config";
 import { ConnectButton } from "@/components/walletkit/connect";
 
 
@@ -93,18 +93,14 @@ export function NewOrderModal({
     alpha: number;
     price: number;
   } | null>(null);
-  const [assetPrices, setAssetPrices] = React.useState<Record<number, number>>({});
   const [transferInputMode, setTransferInputMode] = React.useState<"alpha" | "tao">("tao");
+  const [httpPrices, setHttpPrices] = React.useState<Record<number, number>>({});
 
   const [recPopupMessage, setRecPopupMessage] = React.useState<string>("");
   const pendingEscrowRef = React.useRef<string>("");
 
   const WS_URL = React.useMemo(() => {
     return getWebSocketBookUrl();
-  }, []);
-
-  const WS_PRICE_URL = React.useMemo(() => {
-    return getWebSocketPriceUrl();
   }, []);
 
   const WS_TAP_URL = React.useMemo(() => {
@@ -180,52 +176,6 @@ export function NewOrderModal({
     enabled: open,
   });
 
-  // /ws/price - only handles all subnet prices: { netuid: { price: ... } }
-  const handlePriceMessage = React.useCallback((message: any) => {
-    try {
-      let priceDataMsg: any = message;
-      if (typeof message === "string") {
-        try {
-          priceDataMsg = JSON.parse(message);
-          if (typeof priceDataMsg === "string") {
-            priceDataMsg = JSON.parse(priceDataMsg);
-          }
-        } catch {
-          return;
-        }
-      }
-
-      if (priceDataMsg && typeof priceDataMsg === "object") {
-        const priceMap: Record<number, number> = {};
-        for (const [key, value] of Object.entries(priceDataMsg)) {
-          const netuid = Number(key);
-          let price: number;
-          if (typeof value === "object" && value !== null && "price" in value) {
-            price = Number((value as any).price);
-          } else if (typeof value === "number") {
-            price = Number(value);
-          } else {
-            continue;
-          }
-          if (!isNaN(netuid) && !isNaN(price) && price > 0) {
-            priceMap[netuid] = price;
-          }
-        }
-        if (Object.keys(priceMap).length > 0) {
-          setAssetPrices((prev) => ({ ...prev, ...priceMap }));
-        }
-      }
-    } catch (error) {
-      console.error("Error processing price WebSocket message:", error);
-    }
-  }, []);
-
-  const { connectionState: priceConnectionState } = useWebSocket({
-    url: WS_PRICE_URL,
-    onMessage: handlePriceMessage,
-    enabled: open,
-  });
-  
   // /ws/tap - handles escrow tao, alpha, price updates: { escrow, asset, tao, alpha, price }
   const handleTapMessage = React.useCallback((message: any) => {
     try {
@@ -273,6 +223,39 @@ export function NewOrderModal({
       setOriginWallet("");
     }
   }, [open, selectedAccount?.address]);
+
+  // Fetch all subnet prices via HTTP when modal opens
+  React.useEffect(() => {
+    if (!open) return;
+    const backendUrl = apiUrl || API_URL;
+    const fetchPrices = async () => {
+      try {
+        const response = await fetch(`${backendUrl}/price`);
+        if (!response.ok) return;
+        let data = await response.json();
+        // Response may be double-encoded as a JSON string
+        if (typeof data === "string") {
+          data = JSON.parse(data);
+        }
+        // data is an array: [{price: 1.0}, {price: 0.01}, ...] where index = netuid
+        if (Array.isArray(data)) {
+          const priceMap: Record<number, number> = {};
+          data.forEach((item: any, index: number) => {
+            const p = Number(item?.price ?? item);
+            if (!isNaN(p) && p > 0) {
+              priceMap[index] = p;
+            }
+          });
+          if (Object.keys(priceMap).length > 0) {
+            setHttpPrices(priceMap);
+          }
+        }
+      } catch (err) {
+        console.warn("[NewOrder] Failed to fetch prices via HTTP:", err);
+      }
+    };
+    fetchPrices();
+  }, [open, apiUrl]);
 
   React.useEffect(() => {
     if (error) {
@@ -330,11 +313,10 @@ export function NewOrderModal({
     }
   };
 
-  // Use prices prop from parent (ws/price) — same source as main order book
+  // Use HTTP-fetched prices first, then fall back to parent's WebSocket prices
   const priceForConversion = formData.asset != null
-    ? (prices[formData.asset] > 0 ? prices[formData.asset] : (assetPrices[formData.asset] > 0 ? assetPrices[formData.asset] : 0))
+    ? (httpPrices[formData.asset] > 0 ? httpPrices[formData.asset] : (prices[formData.asset] > 0 ? prices[formData.asset] : 0))
     : 0;
-  console.log("priceForConversion: ", priceForConversion);
   const getAlphaForSubmit = () => {
     if (formData.type !== 1) return 0;
     // Sell + Alpha: no conversion needed
@@ -342,12 +324,8 @@ export function NewOrderModal({
     // Sell + TAO: convert TAO → Alpha = TAO / price
     const raw = formData.tao ?? 0;
     if (priceForConversion > 0) {
-      const converted = raw / priceForConversion;
-      console.log("111111 priceForConversion: ", priceForConversion);
-      console.log(`[getAlphaForSubmit] Sell+TAO conversion: ${raw} TAO / ${priceForConversion} = ${converted} Alpha`);
-      return converted;
+      return raw / priceForConversion;
     }
-    console.warn(`[getAlphaForSubmit] priceForConversion is 0, cannot convert. assetPrices:`, assetPrices, `prices:`, prices, `stp:`, formData.stp);
     return 0;
   };
 
@@ -358,11 +336,8 @@ export function NewOrderModal({
     // Buy + Alpha: convert Alpha → TAO = Alpha × price
     const raw = formData.alpha ?? 0;
     if (priceForConversion > 0) {
-      const converted = raw * priceForConversion;
-      console.log(`[getTaoForSubmit] Buy+Alpha conversion: ${raw} Alpha * ${priceForConversion} = ${converted} TAO`);
-      return converted;
+      return raw * priceForConversion;
     }
-    console.warn(`[getTaoForSubmit] priceForConversion is 0, cannot convert. assetPrices:`, assetPrices, `prices:`, prices, `stp:`, formData.stp);
     return 0;
   };
 
