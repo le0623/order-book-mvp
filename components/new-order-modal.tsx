@@ -769,7 +769,7 @@ export function NewOrderModal({
             {escrowWallet &&
               formData.type != null &&
               (formData.type === 2 ? getTaoForSubmit() > 0 : getAlphaForSubmit() > 0) && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground opacity-60">
                   {formData.type === 2 ? (
                     <>
                       {getTaoForSubmit().toFixed(4)} TAO will be transferred to escrow
@@ -1077,7 +1077,7 @@ export function NewOrderModal({
                 </Popover>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground opacity-60">
               GTC = Good Till Cancel (order stays active until you cancel it)
             </p>
           </div>
