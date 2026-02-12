@@ -225,7 +225,7 @@ export function NewOrderModal({
     onMessage: handlePriceMessage,
     enabled: open,
   });
-
+  
   // /ws/tap - handles escrow tao, alpha, price updates: { escrow, asset, tao, alpha, price }
   const handleTapMessage = React.useCallback((message: any) => {
     try {
@@ -317,7 +317,7 @@ export function NewOrderModal({
     setTransferInputMode("tao");
     setRecPopupMessage("");
     pendingEscrowRef.current = "";
-    };
+  };
 
   const copyEscrowToClipboard = async () => {
     if (!escrowWallet) return;
@@ -330,8 +330,41 @@ export function NewOrderModal({
     }
   };
 
-  const getAlphaForSubmit = () => (formData.type === 1 ? (formData.alpha ?? formData.tao ?? 0) : 0);
-  const getTaoForSubmit = () => (formData.type === 2 ? (formData.tao ?? formData.alpha ?? 0) : 0);
+  // Use prices prop from parent (ws/price) — same source as main order book
+  const priceForConversion = formData.asset != null
+    ? (prices[formData.asset] > 0 ? prices[formData.asset] : (assetPrices[formData.asset] > 0 ? assetPrices[formData.asset] : 0))
+    : 0;
+  console.log("priceForConversion: ", priceForConversion);
+  const getAlphaForSubmit = () => {
+    if (formData.type !== 1) return 0;
+    // Sell + Alpha: no conversion needed
+    if (transferInputMode === "alpha") return formData.alpha ?? 0;
+    // Sell + TAO: convert TAO → Alpha = TAO / price
+    const raw = formData.tao ?? 0;
+    if (priceForConversion > 0) {
+      const converted = raw / priceForConversion;
+      console.log("111111 priceForConversion: ", priceForConversion);
+      console.log(`[getAlphaForSubmit] Sell+TAO conversion: ${raw} TAO / ${priceForConversion} = ${converted} Alpha`);
+      return converted;
+    }
+    console.warn(`[getAlphaForSubmit] priceForConversion is 0, cannot convert. assetPrices:`, assetPrices, `prices:`, prices, `stp:`, formData.stp);
+    return 0;
+  };
+
+  const getTaoForSubmit = () => {
+    if (formData.type !== 2) return 0;
+    // Buy + TAO: no conversion needed
+    if (transferInputMode === "tao") return formData.tao ?? 0;
+    // Buy + Alpha: convert Alpha → TAO = Alpha × price
+    const raw = formData.alpha ?? 0;
+    if (priceForConversion > 0) {
+      const converted = raw * priceForConversion;
+      console.log(`[getTaoForSubmit] Buy+Alpha conversion: ${raw} Alpha * ${priceForConversion} = ${converted} TAO`);
+      return converted;
+    }
+    console.warn(`[getTaoForSubmit] priceForConversion is 0, cannot convert. assetPrices:`, assetPrices, `prices:`, prices, `stp:`, formData.stp);
+    return 0;
+  };
 
   const [openMax, openMin, fillMin] = ofm;
 
@@ -379,7 +412,7 @@ export function NewOrderModal({
         stp: Number(formData.stp ?? 0),
         lmt: Number(formData.stp ?? 0),
         gtd:
-        formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
+          formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
         partial: formData.partial ? true : false,
         public: formData.public ? true : false,
         tao: formData.type === 2 ? Number(getTaoForSubmit()) : 0.0,
@@ -760,15 +793,16 @@ export function NewOrderModal({
               )}
             </div>
             {escrowWallet &&
-              ((formData.tao ?? formData.alpha ?? 0) > 0) && (
+              formData.type != null &&
+              (formData.type === 2 ? getTaoForSubmit() > 0 : getAlphaForSubmit() > 0) && (
                 <p className="text-sm text-muted-foreground">
-                  {transferInputMode === "tao" ? (
+                  {formData.type === 2 ? (
                     <>
-                      {(formData.tao ?? formData.alpha ?? 0).toFixed(4)} TAO will be transferred to escrow
+                      {getTaoForSubmit().toFixed(4)} TAO will be transferred to escrow
                     </>
                   ) : (
                     <>
-                      {(formData.alpha ?? formData.tao ?? 0).toFixed(2)} Alpha will be transferred to escrow
+                      {getAlphaForSubmit().toFixed(2)} Alpha will be transferred to escrow
                     </>
                   )}
                 </p>
@@ -785,10 +819,18 @@ export function NewOrderModal({
                 type="button"
                 onClick={() => {
                   if (escrowGenerated && !isInReviewMode) return;
-                  setTransferInputMode((m) => (m === "tao" ? "alpha" : "tao"));
+                  if (transferInputMode === "tao") {
+                    const v = formData.tao ?? formData.alpha;
+                    setFormData((prev) => ({ ...prev, alpha: v }));
+                    setTransferInputMode("alpha");
+                  } else {
+                    const v = formData.alpha ?? formData.tao;
+                    setFormData((prev) => ({ ...prev, tao: v }));
+                    setTransferInputMode("tao");
+                  }
                 }}
                 disabled={escrowGenerated && !isInReviewMode}
-                className="h-[1.5rem] w-[2rem] flex items-center rounded justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                className="h-[1.5rem] w-[2rem] flex items-center rounded-md justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
                 aria-label="Switch between TAO and Alpha"
                 title="Switch unit (TAO ↔ Alpha)"
               >
@@ -800,12 +842,13 @@ export function NewOrderModal({
                 id="transfer-amount"
                 type="number"
                 step="1"
-                value={(transferInputMode === "tao" ? (formData.tao ?? formData.alpha) : (formData.alpha ?? formData.tao)) ?? ""}
+                value={(transferInputMode === "tao" ? formData.tao : formData.alpha) ?? ""}
                 onChange={(e) => {
                   const value = e.target.value.trim();
-                  const numValue = value === "" ? undefined : parseFloat(value);
-                  const v = numValue !== undefined && !isNaN(numValue) ? numValue : undefined;
-                  setFormData((prev) => ({ ...prev, tao: v, alpha: v }));
+                  const parsed = parseFloat(value);
+                  const v = value === "" ? undefined : (isNaN(parsed) ? undefined : parsed);
+                  const field = transferInputMode === "tao" ? "tao" : "alpha";
+                  setFormData((prev) => ({ ...prev, [field]: v }));
                 }}
                 disabled={escrowGenerated && !isInReviewMode}
                 placeholder={transferInputMode === "tao" ? "Enter TAO amount" : "Enter Alpha amount"}
@@ -816,8 +859,9 @@ export function NewOrderModal({
                   type="button"
                   onClick={() => {
                     if (!escrowGenerated || isInReviewMode) {
-                      const current = (formData.tao ?? formData.alpha ?? 0);
-                      setFormData((prev) => ({ ...prev, tao: current + 1, alpha: current + 1 }));
+                      const field = transferInputMode === "tao" ? "tao" : "alpha";
+                      const current = (transferInputMode === "tao" ? formData.tao : formData.alpha) ?? 0;
+                      setFormData((prev) => ({ ...prev, [field]: current + 1 }));
                     }
                   }}
                   disabled={escrowGenerated && !isInReviewMode}
@@ -830,8 +874,9 @@ export function NewOrderModal({
                   type="button"
                   onClick={() => {
                     if (!escrowGenerated || isInReviewMode) {
-                      const current = (formData.tao ?? formData.alpha ?? 0);
-                      setFormData((prev) => ({ ...prev, tao: current - 1, alpha: current - 1 }));
+                      const field = transferInputMode === "tao" ? "tao" : "alpha";
+                      const current = (transferInputMode === "tao" ? formData.tao : formData.alpha) ?? 0;
+                      setFormData((prev) => ({ ...prev, [field]: Math.max(0, current - 1) }));
                     }
                   }}
                   disabled={escrowGenerated && !isInReviewMode}
@@ -867,7 +912,7 @@ export function NewOrderModal({
             </Select>
           </div>
 
-          
+
 
           <div className="grid gap-2">
             <Label htmlFor="asset">Asset (NETUID)</Label>
