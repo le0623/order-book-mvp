@@ -783,6 +783,22 @@ export function NewOrderModal({
                 </Button>
               )}
             </div>
+            {escrowWallet &&
+              formData.type != null &&
+              priceForConversion > 0 &&
+              (formData.type === 2 ? getTaoForSubmit() > 0 : getAlphaForSubmit() > 0) && (
+                <p className="text-sm text-muted-foreground">
+                  {formData.type === 2 ? (
+                    <>
+                      {getTaoForSubmit().toFixed(6)} TAO will be transferred to escrow, price {priceForConversion.toFixed(6)}
+                    </>
+                  ) : (
+                    <>
+                      {getAlphaForSubmit().toFixed(6)} Alpha will be transferred to escrow, price {priceForConversion.toFixed(6)}
+                    </>
+                  )}
+                </p>
+              )}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="type">Order Type</Label>
@@ -806,9 +822,50 @@ export function NewOrderModal({
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="transfer-amount">
-              {transferInputMode === "tao" ? "Transfer TAO" : "Transfer Alpha"}
-            </Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="transfer-amount">
+                {transferInputMode === "tao" ? "Order Size in TAO" : "Order Size in Alpha"}
+              </Label>
+              <button
+                type="button"
+                onClick={() => {
+                  if (escrowGenerated && !isInReviewMode) return;
+                  if (formData.asset == null) return;
+                  const price = priceForConversion;
+                  if (price <= 0) return;
+                  if (transferInputMode === "alpha") {
+                    const alpha = formData.alpha ?? 0;
+                    if (alpha <= 0) return;
+                    const tao = alpha * price;
+                    setFormData({ ...formData, tao: Number(tao.toFixed(6)) });
+                    setTransferInputMode("tao");
+                  } else {
+                    const tao = formData.tao ?? 0;
+                    if (tao <= 0) return;
+                    const alpha = tao / price;
+                    setFormData({ ...formData, alpha: Number(alpha.toFixed(6)) });
+                    setTransferInputMode("alpha");
+                  }
+                }}
+                disabled={
+                  (escrowGenerated && !isInReviewMode)
+                  || formData.asset == null
+                  || priceForConversion <= 0
+                  || (transferInputMode === "alpha" ? !(formData.alpha && formData.alpha > 0) : !(formData.tao && formData.tao > 0))
+                }
+                className="h-8 w-12 flex items-center justify-center rounded-sm bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                aria-label="Convert between Alpha and TAO"
+                title={
+                  formData.asset == null
+                    ? "Select Asset (NetUID) first"
+                    : priceForConversion <= 0
+                      ? "Waiting for price from WebSocket..."
+                      : `Convert: Alpha = TAO / ${priceForConversion.toFixed(6)}, TAO = Alpha × ${priceForConversion.toFixed(6)}`
+                }
+              >
+                <ArrowLeftRight className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-xs ml-1">τ/α</span>
+              </button>
+            </div>
             <div className="relative flex items-center">
               <Input
                 id="transfer-amount"
@@ -835,50 +892,10 @@ export function NewOrderModal({
                   }
                 }}
                 disabled={escrowGenerated && !isInReviewMode}
-                placeholder={transferInputMode === "tao" ? "Enter TAO amount" : "Enter alpha amount"}
-                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                placeholder={transferInputMode === "tao" ? "Enter TAO amount" : "Enter Alpha amount"}
+                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
-              <div className="absolute right-1 flex items-center gap-0.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (escrowGenerated && !isInReviewMode) return;
-                    if (formData.asset == null) return;
-                    const price = priceForConversion;
-                    if (price <= 0) return;
-                    if (transferInputMode === "alpha") {
-                      const alpha = formData.alpha ?? 0;
-                      if (alpha <= 0) return;
-                      const tao = alpha * price;
-                      setFormData({ ...formData, tao: Number(tao.toFixed(6)) });
-                      setTransferInputMode("tao");
-                    } else {
-                      const tao = formData.tao ?? 0;
-                      if (tao <= 0) return;
-                      const alpha = tao / price;
-                      setFormData({ ...formData, alpha: Number(alpha.toFixed(6)) });
-                      setTransferInputMode("alpha");
-                    }
-                  }}
-                  disabled={
-                    (escrowGenerated && !isInReviewMode)
-                    || formData.asset == null
-                    || priceForConversion <= 0
-                    || (transferInputMode === "alpha" ? !(formData.alpha && formData.alpha > 0) : !(formData.tao && formData.tao > 0))
-                  }
-                  className="h-9 w-8 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Convert between Alpha and TAO"
-                  title={
-                    formData.asset == null
-                      ? "Select Asset (NetUID) first"
-                      : priceForConversion <= 0
-                        ? "Waiting for price from WebSocket..."
-                        : `Convert: Alpha = TAO / ${priceForConversion.toFixed(6)}, TAO = Alpha × ${priceForConversion.toFixed(6)}`
-                  }
-                >
-                  <ArrowLeftRight className="h-3.5 w-3.5 text-muted-foreground" />
-                </button>
-                <div className="flex flex-col gap-0.5">
+              <div className="absolute right-1 flex flex-col gap-0.5">
                   <button
                     type="button"
                     onClick={() => {
@@ -918,16 +935,7 @@ export function NewOrderModal({
                   </button>
                 </div>
               </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Alpha = TAO / price · TAO = Alpha × price. Select Asset (NetUID) to fetch price via WebSocket.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Escrow limits (TAO): min {openMin}, max {openMax}. Fill min: {fillMin}.
-            </p>
           </div>
-
-        
 
           <div className="grid gap-2">
             <Label htmlFor="asset">Asset (NETUID)</Label>

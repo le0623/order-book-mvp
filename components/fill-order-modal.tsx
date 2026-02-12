@@ -212,8 +212,8 @@ export function FillOrderModal({
         gtd: "gtc", // No GTD for filled orders
         partial: false, // No partial for filled orders
         public: false, // No public flag for filled orders
-        alpha: fixedValues.type === 1 ? Number(transferAlpha ?? 0) : 0.0,
         tao: fixedValues.type === 2 ? Number(transferTao ?? 0) : 0.0,
+        alpha: fixedValues.type === 1 ? Number(transferAlpha ?? 0) : 0.0,
         price: 0.0, // auto fill
         status: -1, // -1 = Init status (triggers escrow generation in backend)
       };
@@ -337,8 +337,8 @@ export function FillOrderModal({
         gtd: "gtc",
         partial: false,
         public: false,
-        alpha: fixedValues.type === 1 ? Number(transferAlpha ?? 0) : 0.0,
         tao: fixedValues.type === 2 ? Number(transferTao ?? 0) : 0.0,
+        alpha: fixedValues.type === 1 ? Number(transferAlpha ?? 0) : 0.0,
         price: 0.0, // auto fill
         status: 2,
       };
@@ -465,6 +465,21 @@ export function FillOrderModal({
                 </Button>
               )}
             </div>
+            {escrowWallet &&
+              fixedValues.price > 0 &&
+              (fixedValues.type === 2 ? (transferTao ?? 0) > 0 : (transferAlpha ?? 0) > 0) && (
+                <p className="text-sm text-muted-foreground">
+                  {fixedValues.type === 2 ? (
+                    <>
+                      {(transferTao ?? 0).toFixed(6)} TAO will be transferred to escrow, price {fixedValues.price.toFixed(6)}
+                    </>
+                  ) : (
+                    <>
+                      {(transferAlpha ?? 0).toFixed(6)} Alpha will be transferred to escrow, price {fixedValues.price.toFixed(6)}
+                    </>
+                  )}
+                </p>
+              )}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="transfer-amount">
