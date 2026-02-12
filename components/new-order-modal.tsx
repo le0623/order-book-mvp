@@ -859,7 +859,7 @@ export function NewOrderModal({
                   || priceForConversion <= 0
                   || (transferInputMode === "alpha" ? !(formData.alpha && formData.alpha > 0) : !(formData.tao && formData.tao > 0))
                 }
-                className="h-[1.5rem] w-[1.5rem] flex items-center justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                className="h-[1.5rem] w-[2rem] flex items-center justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
                 aria-label="Convert between Alpha and TAO"
                 title={
                   formData.asset == null
