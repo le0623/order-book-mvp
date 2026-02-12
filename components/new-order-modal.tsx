@@ -392,10 +392,9 @@ export function NewOrderModal({
         public: formData.public ? true : false,
         tao: formData.type === 2 ? Number(getTaoForSubmit()) : 0.0,
         alpha: formData.type === 1 ? Number(getAlphaForSubmit()) : 0.0,
-        price: 0.0,
+        price: priceForConversion,
         status: -1,
       };
-      console.log("111111 orderData: ", orderData);
       const backendUrl = apiUrl || API_URL;
       const response = await fetch(`${backendUrl}/rec`, {
         method: "POST",
