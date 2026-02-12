@@ -38,9 +38,32 @@ export function OrderBook({
   walletAddress,
   connectionState = "disconnected",
 }: OrderBookProps) {
+  // Memoize columns so they don't recreate on every render
+  const memoizedColumns = React.useMemo(() => columns(prices), [prices]);
+
+  // Memoize renderSubComponent so the table doesn't get a new function reference each render
+  const renderSubComponent = React.useCallback(({ row }: { row: any }) => {
+    const order = row.original;
+    const filledOrders = filledOrdersMap[order.uuid] || [];
+    return (
+      <OrderBookRowDetails
+        key={`${order.uuid}-${order.status}-${order.stp}-${order.public}`}
+        order={order}
+        filledOrders={filledOrders}
+        prices={prices}
+        newlyAddedOrderIds={newlyAddedOrderIds}
+        onUpdateOrder={onUpdateOrder}
+        onCancelOrder={onCancelOrder}
+        onFillOrder={onFillOrder}
+        apiUrl={apiUrl}
+        walletAddress={walletAddress}
+      />
+    );
+  }, [filledOrdersMap, prices, newlyAddedOrderIds, onUpdateOrder, onCancelOrder, onFillOrder, apiUrl, walletAddress]);
+
   return (
     <DataTable
-      columns={columns(prices)}
+      columns={memoizedColumns}
       data={orders}
       onNewOrder={onNewOrder}
       newlyAddedOrderIds={newlyAddedOrderIds}
@@ -48,24 +71,7 @@ export function OrderBook({
       allOrdersForSearch={allOrdersForSearch}
       showMyOrdersOnly={showMyOrdersOnly}
       connectionState={connectionState}
-      renderSubComponent={({ row }) => {
-        const order = row.original;
-        const filledOrders = filledOrdersMap[order.uuid] || [];
-        return (
-          <OrderBookRowDetails
-            key={`${order.uuid}-${order.status}-${order.stp}-${order.public}`}
-            order={order}
-            filledOrders={filledOrders}
-            prices={prices}
-            newlyAddedOrderIds={newlyAddedOrderIds}
-            onUpdateOrder={onUpdateOrder}
-            onCancelOrder={onCancelOrder}
-            onFillOrder={onFillOrder}
-            apiUrl={apiUrl}
-            walletAddress={walletAddress}
-          />
-        );
-      }}
+      renderSubComponent={renderSubComponent}
     />
   );
 }

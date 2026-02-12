@@ -70,7 +70,7 @@ interface OrderBookRowDetailsProps {
   walletAddress?: string;
 }
 
-export function OrderBookRowDetails({
+export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
   order,
   filledOrders = [],
   prices = {},
@@ -779,4 +779,4 @@ export function OrderBookRowDetails({
       />
     </div>
   );
-}
+});

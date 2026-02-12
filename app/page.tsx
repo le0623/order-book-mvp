@@ -2,7 +2,7 @@
 
 import { OrderBook } from "../components/order-book";
 import { Order } from "../lib/types";
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import Image from "next/image";
 import { ThemeToggle } from "../components/theme-toggle";
 import { useTheme } from "../components/theme-provider";
@@ -278,6 +278,17 @@ export default function Home() {
   });
 
   // /ws/price - handles all subnet prices: { netuid: { price: ... } }
+  // Throttled: accumulate price updates and flush every 200ms
+  const pendingPricesRef = useRef<Record<number, number>>({});
+  const priceFlushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushPrices = useCallback(() => {
+    const pending = pendingPricesRef.current;
+    if (Object.keys(pending).length === 0) return;
+    pendingPricesRef.current = {};
+    setPrices((prev) => ({ ...prev, ...pending }));
+  }, []);
+
   const handlePriceMessage = useCallback((message: any) => {
     try {
       let priceData = message;
@@ -289,7 +300,6 @@ export default function Home() {
       }
 
       if (priceData && typeof priceData === "object") {
-        const priceMap: Record<number, number> = {};
         for (const [key, value] of Object.entries(priceData)) {
           const netuid = Number(key);
           let price: number;
@@ -302,14 +312,27 @@ export default function Home() {
           }
 
           if (!isNaN(netuid) && !isNaN(price) && price > 0) {
-            priceMap[netuid] = price;
+            pendingPricesRef.current[netuid] = price;
           }
         }
-        setPrices(priceMap);
+        // Throttle: schedule a flush if not already pending
+        if (!priceFlushTimerRef.current) {
+          priceFlushTimerRef.current = setTimeout(() => {
+            priceFlushTimerRef.current = null;
+            flushPrices();
+          }, 200);
+        }
       }
     } catch (error) {
       console.error("Error processing price message:", error);
     }
+  }, [flushPrices]);
+
+  // Cleanup price throttle timer
+  useEffect(() => {
+    return () => {
+      if (priceFlushTimerRef.current) clearTimeout(priceFlushTimerRef.current);
+    };
   }, []);
 
   const { connectionState: priceConnectionState } = useWebSocket({
@@ -318,6 +341,25 @@ export default function Home() {
   });
 
   // /ws/tap - handles escrow tao, alpha, price updates: { escrow, asset, tao, alpha, price }
+  // Throttled: accumulate tap updates and flush every 200ms
+  const pendingTapsRef = useRef<Map<string, { tao: number; alpha: number; price: number }>>(new Map());
+  const tapFlushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushTaps = useCallback(() => {
+    const pending = new Map(pendingTapsRef.current);
+    pendingTapsRef.current.clear();
+    if (pending.size === 0) return;
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.status === 1 && order.escrow && pending.has(order.escrow)) {
+          const update = pending.get(order.escrow)!;
+          return { ...order, ...update };
+        }
+        return order;
+      })
+    );
+  }, []);
+
   const handleTapMessage = useCallback((message: any) => {
     try {
       let tapData = message;
@@ -331,24 +373,30 @@ export default function Home() {
       if (tapData && typeof tapData === "object" && "escrow" in tapData) {
         const { escrow, tao, alpha, price } = tapData;
         if (escrow) {
-          setOrders((prev) =>
-            prev.map((order) => {
-              if (order.escrow === escrow && order.status === 1) {
-                return {
-                  ...order,
-                  tao: Number(tao || 0),
-                  alpha: Number(alpha || 0),
-                  price: Number(price || 0),
-                };
-              }
-              return order;
-            })
-          );
+          pendingTapsRef.current.set(escrow, {
+            tao: Number(tao || 0),
+            alpha: Number(alpha || 0),
+            price: Number(price || 0),
+          });
+          // Throttle: schedule a flush if not already pending
+          if (!tapFlushTimerRef.current) {
+            tapFlushTimerRef.current = setTimeout(() => {
+              tapFlushTimerRef.current = null;
+              flushTaps();
+            }, 200);
+          }
         }
       }
     } catch (error) {
       console.error("Error processing tap message:", error);
     }
+  }, [flushTaps]);
+
+  // Cleanup tap throttle timer
+  useEffect(() => {
+    return () => {
+      if (tapFlushTimerRef.current) clearTimeout(tapFlushTimerRef.current);
+    };
   }, []);
 
   useWebSocket({

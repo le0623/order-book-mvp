@@ -12,6 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
   Row,
+  ExpandedState,
 } from "@tanstack/react-table";
 import { ConnectionState } from "@/lib/websocket-types";
 
@@ -82,7 +83,9 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
-  const [expanded, setExpanded] = React.useState({});
+  const [expanded, setExpanded] = React.useState<ExpandedState>({});
+  // Track expanded ids separately so filteredData doesn't depend on `expanded`
+  const expandedIdsRef = React.useRef<Set<string>>(new Set());
   const [searchPopoverOpen, setSearchPopoverOpen] = React.useState(false);
   const [searchAddress, setSearchAddress] = React.useState<string>("");
   const [searchOrderType, setSearchOrderType] = React.useState<
@@ -261,16 +264,13 @@ export function DataTable<TData, TValue>({
       });
     }
 
-    const expandedOrderIds = Object.keys(expanded).filter(
-      (id) => (expanded as Record<string, boolean>)[id]
-    );
-
+    // Include rows that match normal filter OR are currently expanded
+    // Use the ref to avoid re-filtering on every expand/collapse
+    const currentExpandedIds = expandedIdsRef.current;
     const filtered = data.filter((order: any) => {
       const orderId = `${order.uuid}-${order.status}-${order.escrow || ""}`;
-      const isExpanded = expandedOrderIds.includes(orderId);
       const matches = order.status === 1 && order.public === true;
-
-      return matches || isExpanded;
+      return matches || currentExpandedIds.has(orderId);
     });
     return filtered;
   }, [
@@ -279,11 +279,35 @@ export function DataTable<TData, TValue>({
     searchAddress,
     searchOrderType,
     searchAssetId,
-    expanded,
     filledOrdersMap,
     allOrdersForSearch,
   ]);
 
+
+  // Wrap expand changes in startTransition so the click stays responsive
+  const handleExpandedChange = React.useCallback((updater: React.SetStateAction<ExpandedState>) => {
+    React.startTransition(() => {
+      setExpanded(updater);
+    });
+  }, []);
+
+  // Stable callback for row click — toggles one row, collapses others
+  const handleRowClick = React.useCallback((rowId: string, isCurrentlyExpanded: boolean) => {
+    const newExpanded: Record<string, boolean> = {};
+    // Collapse all currently expanded
+    expandedIdsRef.current.forEach((id) => {
+      newExpanded[id] = false;
+    });
+    if (!isCurrentlyExpanded) {
+      newExpanded[rowId] = true;
+      expandedIdsRef.current = new Set([rowId]);
+    } else {
+      expandedIdsRef.current = new Set();
+    }
+    React.startTransition(() => {
+      setExpanded(newExpanded);
+    });
+  }, []);
 
   const table = useReactTable({
     data: filteredData,
@@ -295,7 +319,7 @@ export function DataTable<TData, TValue>({
     getExpandedRowModel: getExpandedRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onExpandedChange: setExpanded,
+    onExpandedChange: handleExpandedChange,
     state: { sorting, columnFilters, expanded },
   });
 
@@ -572,26 +596,7 @@ export function DataTable<TData, TValue>({
                                   : "animate-flash-sell"
                                 : ""
                                 }`}
-                              onClick={() => {
-                                const currentExpanded = expanded as Record<
-                                  string,
-                                  boolean
-                                >;
-                                const allExpandedIds = Object.keys(
-                                  currentExpanded
-                                ).filter((id) => currentExpanded[id]);
-
-                                const newExpanded: Record<string, boolean> = {};
-                                allExpandedIds.forEach((id) => {
-                                  newExpanded[id] = false;
-                                });
-
-                                if (!row.getIsExpanded()) {
-                                  newExpanded[row.id] = true;
-                                }
-
-                                setExpanded(newExpanded);
-                              }}
+                              onClick={() => handleRowClick(row.id, row.getIsExpanded())}
                             >
                               {row.getVisibleCells().map((cell) => (
                                 <TableCell
@@ -672,26 +677,7 @@ export function DataTable<TData, TValue>({
                             : "animate-flash-sell"
                           : ""
                           }`}
-                        onClick={() => {
-                          const currentExpanded = expanded as Record<
-                            string,
-                            boolean
-                          >;
-                          const allExpandedIds = Object.keys(
-                            currentExpanded
-                          ).filter((id) => currentExpanded[id]);
-
-                          const newExpanded: Record<string, boolean> = {};
-                          allExpandedIds.forEach((id) => {
-                            newExpanded[id] = false;
-                          });
-
-                          if (!row.getIsExpanded()) {
-                            newExpanded[row.id] = true;
-                          }
-
-                          setExpanded(newExpanded);
-                        }}
+                        onClick={() => handleRowClick(row.id, row.getIsExpanded())}
                       >
                         {row.getVisibleCells().map((cell) => (
                           <TableCell
