@@ -84,6 +84,14 @@ export const formatNumber = (num: number) => {
   }).format(num);
 };
 
+/** TAO in main order: 4 decimal places */
+export const formatTao = (num: number) => {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  }).format(num);
+};
+
 export const formatPrice = (num: number) => {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 6,
@@ -108,9 +116,8 @@ function EscrowCell({ escrowAddress }: { escrowAddress: string }) {
   return (
     <div className="flex items-center gap-1.5">
       <span
-        className="font-mono whitespace-nowrap block"
+        className="font-mono whitespace-nowrap block text-sm"
         title={escrowAddress}
-        style={{ fontSize: "0.875rem" }}
       >
         {formatWalletAddress(escrowAddress)}
       </span>
@@ -132,7 +139,7 @@ function EscrowCell({ escrowAddress }: { escrowAddress: string }) {
         href={taostatsUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-muted-foreground hover:text-muted-foreground/80 transition-all flex-shrink-0 opacity-60 hover:opacity-90"
+        className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 opacity-60 hover:opacity-90"
         title={`View on Taostats: ${escrowAddress}`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -179,7 +186,7 @@ export const columns = (
           variant={orderType === "Buy" ? "outline" : "secondary"}
             className={`font-medium ${orderType === "Buy"
               ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
-              : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
+              : "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400 hover:bg-rose-50 hover:dark:bg-rose-950/30"
           }`}
         >
           {orderType}
@@ -209,7 +216,7 @@ export const columns = (
             href={taostatsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground/80 hover:text-muted-foreground/80 transition-all flex-shrink-0 opacity-80 hover:opacity-90"
+            className="text-muted-foreground mt-[2px] hover:text-foreground transition-colors flex-shrink-0 opacity-60 hover:opacity-90"
             title={`View subnet ${asset} on Taostats`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -236,7 +243,7 @@ export const columns = (
       
       return (
         <div className="text-right font-mono text-sm">
-          {formatNumber(taoValue || 0)}
+          {formatTao(taoValue || 0)}
         </div>
       );
     },

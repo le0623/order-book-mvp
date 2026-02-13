@@ -1,11 +1,3 @@
-/**
- * Shared API utilities for fetch error handling and response parsing.
- * Used by new-order-modal, fill-order-modal, and page.tsx.
- */
-
-/**
- * Post JSON to a backend endpoint and handle network errors consistently.
- */
 export async function postJson(url: string, body: unknown): Promise<Response> {
   const response = await fetch(url, {
     method: "POST",

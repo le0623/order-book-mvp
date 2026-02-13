@@ -22,6 +22,7 @@ import { getWebSocketBookUrl, API_URL } from "@/lib/config";
 import { ConnectButton } from "@/components/walletkit/connect";
 import { parseWsMessage } from "@/lib/websocket-utils";
 import { postJson, extractResponseError, readResponseBody } from "@/lib/api-utils";
+import { useBittensorTransfer } from "@/hooks/useBittensorTransfer";
 
 interface FillOrderModalProps {
   open: boolean;
@@ -40,7 +41,16 @@ export function FillOrderModal({
   apiUrl,
   onOrderFilled,
 }: FillOrderModalProps) {
-  const { selectedAccount } = useWallet();
+  const { selectedAccount, isConnected } = useWallet();
+  const {
+    sendTao,
+    sendAlpha,
+    status: transferStatus,
+    statusMessage: transferStatusMessage,
+    error: transferError,
+    isTransferring,
+    reset: resetTransfer,
+  } = useBittensorTransfer();
   const [escrowWallet, setEscrowWallet] = React.useState<string>("");
   const [originWallet, setOriginWallet] = React.useState<string>("");
   const [orderUuid, setOrderUuid] = React.useState<string>("");
@@ -290,6 +300,7 @@ export function FillOrderModal({
     try {
       setLoading(true);
       setError("");
+      resetTransfer();
 
       const walletAddress = selectedAccount?.address || "";
 
@@ -298,6 +309,37 @@ export function FillOrderModal({
         throw new Error("Missing order UUID or escrow wallet address");
       }
 
+      // --- Step 1: On-chain transfer to escrow ---
+      // Fill order type is the opposite of the parent order type
+      // If parent is Sell (type=1), fill is Buy (type=2) → transfer TAO
+      // If parent is Buy (type=2), fill is Sell (type=1) → transfer Alpha
+      if (isConnected && selectedAccount) {
+        if (fixedValues.type === 2) {
+          // Fill is Buy: transfer TAO
+          const taoAmount = getTaoForSubmit();
+          if (taoAmount > 0) {
+            console.log(`[FillOrder] Transferring ${taoAmount} TAO to escrow ${escrowWallet}`);
+            const txResult = await sendTao(escrowWallet, taoAmount);
+            if (!txResult) {
+              throw new Error("TAO transfer to escrow failed or was cancelled. Order not filled.");
+            }
+            console.log(`[FillOrder] TAO transfer confirmed: ${txResult.txHash}`);
+          }
+        } else if (fixedValues.type === 1) {
+          // Fill is Sell: transfer Alpha
+          const alphaAmount = getAlphaForSubmit();
+          if (alphaAmount > 0 && fixedValues.asset > 0) {
+            console.log(`[FillOrder] Transferring ${alphaAmount} Alpha (netuid ${fixedValues.asset}) to escrow ${escrowWallet}`);
+            const txResult = await sendAlpha(escrowWallet, alphaAmount, fixedValues.asset);
+            if (!txResult) {
+              throw new Error("Alpha transfer to escrow failed or was cancelled. Order not filled.");
+            }
+            console.log(`[FillOrder] Alpha transfer confirmed: ${txResult.txHash}`);
+          }
+        }
+      }
+
+      // --- Step 2: Submit fill order to backend ---
       const fillOrderData = {
         uuid: finalUuid,
         origin: order.escrow,
@@ -336,6 +378,7 @@ export function FillOrderModal({
       setTransferAlpha(undefined);
       setTransferTao(undefined);
       pendingEscrowRef.current = "";
+      resetTransfer();
     } catch (err) {
       console.error("Error filling order:", err);
       setError(err instanceof Error ? err.message : "Failed to fill order. Please try again.");
@@ -345,7 +388,7 @@ export function FillOrderModal({
   };
 
   const handleClose = () => {
-    if (!loading) {
+    if (!loading && !isTransferring) {
       onOpenChange(false);
       setEscrowWallet("");
       setOriginWallet("");
@@ -357,6 +400,7 @@ export function FillOrderModal({
       setTransferAlpha(undefined);
       setTransferTao(undefined);
       pendingEscrowRef.current = "";
+      resetTransfer();
     }
   };
 
@@ -378,6 +422,24 @@ export function FillOrderModal({
               }`}
           >
             {error}
+          </div>
+        )}
+
+        {/* On-chain transfer status indicator */}
+        {isTransferring && (
+          <div className="p-3 rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 text-sm flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+            <span>{transferStatusMessage || "Processing on-chain transfer..."}</span>
+          </div>
+        )}
+        {transferError && !isTransferring && (
+          <div className="p-3 rounded-md bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-sm">
+            {transferError}
+          </div>
+        )}
+        {transferStatus === "finalized" && !isTransferring && (
+          <div className="p-3 rounded-md bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 text-sm">
+            Transfer confirmed on-chain. Submitting fill order...
           </div>
         )}
 
@@ -537,18 +599,18 @@ export function FillOrderModal({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={loading}>
+          <Button variant="outline" onClick={handleClose} disabled={loading || isTransferring}>
             Cancel
           </Button>
           <Button
             onClick={handleFillOrder}
-            disabled={loading}
+            disabled={loading || isTransferring}
             variant="outline"
           >
-            {loading ? (
+            {(loading || isTransferring) ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {escrowGenerated ? "Filling..." : "Creating Escrow..."}
+                {isTransferring ? "Transferring..." : escrowGenerated ? "Filling..." : "Creating Escrow..."}
               </>
             ) : escrowGenerated ? (
               "Fill Order"

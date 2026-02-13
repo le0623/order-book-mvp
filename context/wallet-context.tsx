@@ -24,6 +24,8 @@ interface WalletContextType {
     walletModalOpen: boolean
     openWalletModal: () => void
     closeWalletModal: () => void
+    /** Get the injected signer from the connected wallet extension (for signing transactions). */
+    getSigner: () => InjectedExtension['signer'] | null
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
@@ -112,6 +114,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const [availableWallets, setAvailableWallets] = useState<{ name: string; installed: boolean; extensionName: string }[]>([])
     const [walletModalOpen, setWalletModalOpen] = useState(false)
     const hasRestoredRef = useRef(false)
+    const enabledExtensionRef = useRef<InjectedExtension | null>(null)
 
     const openWalletModal = useCallback(() => setWalletModalOpen(true), [])
     const closeWalletModal = useCallback(() => setWalletModalOpen(false), [])
@@ -189,6 +192,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
                     clearWalletConnection()
                     return
                 }
+
+                // Store the enabled extension so its signer is available
+                enabledExtensionRef.current = extension as InjectedExtension
 
                 const walletAccounts: WalletAccount[] = rawAccounts.map((acc: any) => ({
                     address: acc.address,
@@ -317,6 +323,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             if (!extension) {
                 throw new Error('Failed to enable wallet extension')
             }
+
+            // Store the enabled extension so we can retrieve its signer later
+            enabledExtensionRef.current = extension as InjectedExtension
 
             const accountsApi = extension.accounts
 
@@ -455,10 +464,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         }
     }
 
+    const getSigner = useCallback(() => {
+        return enabledExtensionRef.current?.signer ?? null
+    }, [])
+
     const disconnect = () => {
         setAccounts([])
         setSelectedAccount(null)
         setWalletType(null)
+        enabledExtensionRef.current = null
         clearWalletConnection()
     }
 
@@ -488,6 +502,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
                 walletModalOpen,
                 openWalletModal,
                 closeWalletModal,
+                getSigner,
             }}
         >
             {children}

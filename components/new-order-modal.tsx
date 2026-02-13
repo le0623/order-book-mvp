@@ -44,6 +44,7 @@ import { getWebSocketBookUrl, getWebSocketTapUrl, API_URL } from "@/lib/config";
 import { ConnectButton } from "@/components/walletkit/connect";
 import { parseWsMessage } from "@/lib/websocket-utils";
 import { postJson, extractResponseError, readResponseBody, parseRecResponse } from "@/lib/api-utils";
+import { useBittensorTransfer } from "@/hooks/useBittensorTransfer";
 
 
 interface NewOrderModalProps {
@@ -64,6 +65,15 @@ export function NewOrderModal({
   ofm = [10, 0.01, 0.001],
 }: NewOrderModalProps) {
   const { selectedAccount, isConnected } = useWallet();
+  const {
+    sendTao,
+    sendAlpha,
+    status: transferStatus,
+    statusMessage: transferStatusMessage,
+    error: transferError,
+    isTransferring,
+    reset: resetTransfer,
+  } = useBittensorTransfer();
   const [formData, setFormData] = React.useState<NewOrderFormData>({
     type: undefined,
     alpha: undefined,
@@ -260,6 +270,7 @@ export function NewOrderModal({
     setTransferInputMode("tao");
     setRecPopupMessage("");
     pendingEscrowRef.current = "";
+    resetTransfer();
   };
 
   const copyEscrowToClipboard = async () => {
@@ -388,6 +399,7 @@ export function NewOrderModal({
     try {
       setLoading(true);
       setError("");
+      resetTransfer();
 
       const walletAddress = selectedAccount?.address || originWallet || "";
 
@@ -405,8 +417,43 @@ export function NewOrderModal({
       const finalOrigin = escrowWallet.trim();
       const finalEscrow = escrowWallet.trim();
 
+      // --- Step 1: On-chain transfer to escrow ---
+      // Buy order → transfer TAO to escrow
+      // Sell order → transfer Alpha to escrow
+      if (isConnected && selectedAccount) {
+        if (formData.type === 2) {
+          // Buy order: transfer TAO
+          const taoAmount = getTaoForSubmit();
+          if (taoAmount > 0) {
+            console.log(`[PlaceOrder] Transferring ${taoAmount} TAO to escrow ${finalEscrow}`);
+            const txResult = await sendTao(finalEscrow, taoAmount);
+            if (!txResult) {
+              // Transfer failed or was cancelled — don't proceed
+              throw new Error(
+                "TAO transfer to escrow failed or was cancelled. Order not placed."
+              );
+            }
+            console.log(`[PlaceOrder] TAO transfer confirmed: ${txResult.txHash}`);
+          }
+        } else if (formData.type === 1) {
+          // Sell order: transfer Alpha
+          const alphaAmount = getAlphaForSubmit();
+          const netuid = Number(formData.asset);
+          if (alphaAmount > 0 && netuid > 0) {
+            console.log(`[PlaceOrder] Transferring ${alphaAmount} Alpha (netuid ${netuid}) to escrow ${finalEscrow}`);
+            const txResult = await sendAlpha(finalEscrow, alphaAmount, netuid);
+            if (!txResult) {
+              throw new Error(
+                "Alpha transfer to escrow failed or was cancelled. Order not placed."
+              );
+            }
+            console.log(`[PlaceOrder] Alpha transfer confirmed: ${txResult.txHash}`);
+          }
+        }
+      }
+
+      // --- Step 2: Submit order to backend ---
       // Use price data from WebSocket if available, otherwise backend will calculate
-      // Note: Backend calculates price when order is placed, so we send 0.0 and extract from response
       const taoValue = priceData?.tao ?? 0.0;
       const alphaValue = priceData?.alpha ?? 0.0;
       const priceValue = priceData?.price && priceData.price > 0 ? priceData.price : 0.0;
@@ -566,6 +613,24 @@ export function NewOrderModal({
               }`}
           >
             {error}
+          </div>
+        )}
+
+        {/* On-chain transfer status indicator */}
+        {isTransferring && (
+          <div className="p-3 rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 text-sm flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+            <span>{transferStatusMessage || "Processing on-chain transfer..."}</span>
+          </div>
+        )}
+        {transferError && !isTransferring && (
+          <div className="p-3 rounded-md bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-sm">
+            {transferError}
+          </div>
+        )}
+        {transferStatus === "finalized" && !isTransferring && (
+          <div className="p-3 rounded-md bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 text-sm">
+            Transfer confirmed on-chain. Submitting order...
           </div>
         )}
 
@@ -983,17 +1048,18 @@ export function NewOrderModal({
               <Button
                 variant="outline"
                 onClick={isInReviewMode ? handleCancel : handleBack}
-                disabled={loading}
+                disabled={loading || isTransferring}
               >
                 {isInReviewMode ? "Cancel" : "Back"}
               </Button>
               <Button
                 variant={isInReviewMode ? "outline" : undefined}
                 onClick={isInReviewMode ? handleReviewOrder : handlePlaceOrder}
-                disabled={loading}
+                disabled={loading || isTransferring}
                 className={isInReviewMode ? "" : "bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.4)]"}
               >
-                {isInReviewMode ? "Review Order" : "Place Order"}
+                {(loading || isTransferring) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isInReviewMode ? "Review Order" : isTransferring ? "Transferring..." : "Place Order"}
               </Button>
             </>
           )}
@@ -1015,14 +1081,16 @@ export function NewOrderModal({
 
         {showPaymentButtons && (
           <div className="flex gap-2 justify-end mt-4 pt-4 border-t">
-            <Button variant="outline" onClick={handleBack}>
+            <Button variant="outline" onClick={handleBack} disabled={isTransferring}>
               Back
             </Button>
             <Button
               onClick={handlePlaceOrder}
+              disabled={loading || isTransferring}
               className="bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.4)]"
             >
-              Place Order
+              {isTransferring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isTransferring ? "Transferring..." : "Place Order"}
             </Button>
           </div>
         )}
