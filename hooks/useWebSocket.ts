@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 interface UseWebSocketOptions {
   url: string;
   enabled?: boolean;
-  onMessage?: (message: WebSocketMessage | any) => void;
+  onMessage?: (message: WebSocketMessage | unknown) => void;
   onError?: (error: Event) => void;
   onUuidReceived?: (uuid: string) => void;
 }

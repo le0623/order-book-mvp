@@ -627,8 +627,6 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                     const orderTypeLabel = getOrderType(filledOrder.type);
                     const uniqueKey = `${filledOrder.uuid}-${filledOrder.escrow}-${index}`;
 
-                    const displayGtd = "";
-
                     const filledOrderId = `${filledOrder.uuid}-${filledOrder.status
                     }-${filledOrder.escrow || ""}`;
                     const shouldFlash = newlyAddedOrderIds.has(filledOrderId);

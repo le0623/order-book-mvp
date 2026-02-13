@@ -3,15 +3,7 @@
 import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  ChevronsUpDown,
-  ArrowUp,
-  ArrowDown,
-  ExternalLink,
-  Copy,
-  CheckIcon,
-} from "lucide-react";
+import { ExternalLink, Copy, CheckIcon } from "lucide-react";
 import {
   Order,
   formatWalletAddress,
@@ -40,7 +32,11 @@ const getStatusColor = (status: number): string => {
   }
 };
 
-export const formatDate = (date: string | Date) => {
+/**
+ * Parse a date string/Date into a UTC Date, handling backend formats.
+ * Returns null if invalid.
+ */
+function parseUTCDate(date: string | Date): Date | null {
   let d: Date;
   if (typeof date === "string") {
     let dateStr = date.trim();
@@ -53,8 +49,12 @@ export const formatDate = (date: string | Date) => {
   } else {
     d = date;
   }
+  return !d || isNaN(d.getTime()) ? null : d;
+}
 
-  if (!d || isNaN(d.getTime())) return "—";
+export const formatDate = (date: string | Date) => {
+  const d = parseUTCDate(date);
+  if (!d) return "—";
 
   const year = d.getUTCFullYear();
   const month = String(d.getUTCMonth() + 1).padStart(2, "0");
@@ -67,20 +67,8 @@ export const formatDate = (date: string | Date) => {
 };
 
 export const formatDateOnly = (date: string | Date) => {
-  let d: Date;
-  if (typeof date === "string") {
-    let dateStr = date.trim();
-    if (dateStr.endsWith(" UTC")) {
-      dateStr = dateStr.replace(" UTC", "Z");
-    } else if (!dateStr.includes("Z") && !dateStr.match(/[+-]\d{2}:?\d{2}$/)) {
-      dateStr = dateStr + "Z";
-    }
-    d = new Date(dateStr);
-  } else {
-    d = date;
-  }
-
-  if (!d || isNaN(d.getTime())) return "—";
+  const d = parseUTCDate(date);
+  if (!d) return "—";
 
   const year = d.getUTCFullYear();
   const month = String(d.getUTCMonth() + 1).padStart(2, "0");
@@ -102,38 +90,6 @@ export const formatPrice = (num: number) => {
     maximumFractionDigits: 6,
   }).format(num);
 };
-
-interface SortableColumnHeaderProps {
-  column: any;
-  title: string;
-  className?: string;
-}
-
-function SortableColumnHeader({
-  column,
-  title,
-  className = "",
-}: SortableColumnHeaderProps) {
-  const isSorted = column.getIsSorted();
-
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className={`-ml-3 h-8 data-[state=open]:bg-accent hover:bg-transparent ${className}`}
-      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-    >
-      <span>{title}</span>
-      {isSorted === "asc" ? (
-        <ArrowUp className="ml-2 h-4 w-4" />
-      ) : isSorted === "desc" ? (
-        <ArrowDown className="ml-2 h-4 w-4" />
-      ) : (
-        <ChevronsUpDown className="ml-2 h-4 w-4" />
-      )}
-    </Button>
-  );
-}
 
 function EscrowCell({ escrowAddress }: { escrowAddress: string }) {
   const [copied, setCopied] = React.useState(false);

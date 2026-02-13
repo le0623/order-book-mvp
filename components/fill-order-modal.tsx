@@ -20,6 +20,8 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { WebSocketMessage } from "@/lib/websocket-types";
 import { getWebSocketBookUrl, API_URL } from "@/lib/config";
 import { ConnectButton } from "@/components/walletkit/connect";
+import { parseWsMessage } from "@/lib/websocket-utils";
+import { postJson, extractResponseError, readResponseBody } from "@/lib/api-utils";
 
 interface FillOrderModalProps {
   open: boolean;
@@ -38,7 +40,7 @@ export function FillOrderModal({
   apiUrl,
   onOrderFilled,
 }: FillOrderModalProps) {
-  const { selectedAccount, isConnected } = useWallet();
+  const { selectedAccount } = useWallet();
   const [escrowWallet, setEscrowWallet] = React.useState<string>("");
   const [originWallet, setOriginWallet] = React.useState<string>("");
   const [orderUuid, setOrderUuid] = React.useState<string>("");
@@ -63,26 +65,17 @@ export function FillOrderModal({
     return getWebSocketBookUrl();
   }, []);
 
-  const handleWebSocketMessage = React.useCallback((message: WebSocketMessage | any) => {
+  const handleWebSocketMessage = React.useCallback((message: WebSocketMessage | unknown) => {
     try {
-      let orderData: any = message;
-      if (typeof message === "string") {
-        try {
-          orderData = JSON.parse(message);
-          if (typeof orderData === "string") {
-            orderData = JSON.parse(orderData);
-          }
-        } catch {
-          return;
-        }
-      }
+      const orderData = parseWsMessage<Record<string, unknown>>(message);
+      if (!orderData || typeof orderData !== "object") return;
 
-      const processOrderItem = (item: any) => {
+      const processOrderItem = (item: Record<string, unknown>) => {
         if (!item || typeof item !== "object") return;
 
         if (item.escrow === pendingEscrowRef.current && item.status === -1) {
-          const uuid = item.uuid || "";
-          const escrow = item.escrow || "";
+          const uuid = String(item.uuid || "");
+          const escrow = String(item.escrow || "");
           if (uuid && escrow) {
             setOrderUuid(uuid);
             setEscrowWallet((prev) => (escrow && escrow !== prev ? escrow : prev));
@@ -100,13 +93,13 @@ export function FillOrderModal({
         }
       };
 
-      if (orderData && typeof orderData === "object" && "data" in orderData) {
+      if ("data" in orderData) {
         const wsMessage = orderData as WebSocketMessage;
         if (wsMessage.data) {
           const item = Array.isArray(wsMessage.data) ? wsMessage.data[0] : wsMessage.data;
-          processOrderItem(item);
+          processOrderItem(item as unknown as Record<string, unknown>);
         }
-      } else if (orderData && typeof orderData === "object" && "escrow" in orderData) {
+      } else if ("escrow" in orderData) {
         processOrderItem(orderData);
       }
     } catch (error) {
@@ -118,7 +111,7 @@ export function FillOrderModal({
     setWsUuid(uuid);
   }, []);
 
-  const { connectionState: wsConnectionState } = useWebSocket({
+  useWebSocket({
     url: WS_URL,
     onMessage: handleWebSocketMessage,
     onUuidReceived: handleUuidReceived,
@@ -245,56 +238,13 @@ export function FillOrderModal({
       console.log("Fill Order: Creating escrow with UUID:", wsUuid);
 
       const backendUrl = apiUrl || API_URL;
-      const response = await fetch(`${backendUrl}/rec`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(orderData),
-      }).catch((error) => {
-        if (error.message === "Failed to fetch") {
-          throw new Error(
-            "Cannot connect to server. This may be due to network issues or the server being unavailable."
-          );
-        }
-        throw error;
-      });
+      const response = await postJson(`${backendUrl}/rec`, orderData);
 
       if (!response.ok) {
-        let errorText: string;
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          try {
-            const errorData = await response.json();
-            errorText =
-              typeof errorData === "string"
-                ? errorData
-                : JSON.stringify(errorData);
-          } catch {
-            errorText = await response.text();
-          }
-        } else {
-          errorText = await response.text();
-        }
-        throw new Error(
-          `Error (${response.status}): ${errorText || response.statusText
-          }`
-        );
+        throw new Error(await extractResponseError(response));
       }
 
-      let data: any;
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        try {
-          data = await response.json();
-        } catch {
-          const text = await response.text();
-          data = text;
-        }
-      } else {
-        const text = await response.text();
-        data = text;
-      }
+      const data = await readResponseBody(response);
 
       let escrowAddress = "";
       let originAddress = "";
@@ -307,8 +257,9 @@ export function FillOrderModal({
         escrowAddress = data[0].escrow || "";
         originAddress = data[0].origin || "";
       } else if (data && typeof data === "object") {
-        escrowAddress = data.escrow || "";
-        originAddress = data.origin || "";
+        const obj = data as Record<string, unknown>;
+        escrowAddress = String(obj.escrow || "");
+        originAddress = String(obj.origin || "");
       }
 
       if (!escrowAddress) {
@@ -322,9 +273,9 @@ export function FillOrderModal({
       setOriginWallet(originAddress || escrowAddress);
       setOrderUuid(wsUuid);
       setEscrowGenerated(true);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error creating escrow:", err);
-      setError(err.message || "Failed to create escrow");
+      setError(err instanceof Error ? err.message : "Failed to create escrow");
     } finally {
       setLoading(false);
     }
@@ -368,41 +319,10 @@ export function FillOrderModal({
       };
 
       const backendUrl = apiUrl || API_URL;
-      const response = await fetch(`${backendUrl}/rec`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(fillOrderData),
-      }).catch((error) => {
-        if (error.message === "Failed to fetch") {
-          throw new Error(
-            "Cannot connect to server. This may be due to network issues or the server being unavailable."
-          );
-        }
-        throw error;
-      });
+      const response = await postJson(`${backendUrl}/rec`, fillOrderData);
 
       if (!response.ok) {
-        let errorText: string;
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          try {
-            const errorData = await response.json();
-            errorText =
-              typeof errorData === "string"
-                ? errorData
-                : JSON.stringify(errorData);
-          } catch {
-            errorText = await response.text();
-          }
-        } else {
-          errorText = await response.text();
-        }
-        throw new Error(
-          `Error (${response.status}): ${errorText || response.statusText
-          }`
-        );
+        throw new Error(await extractResponseError(response));
       }
 
       onOrderFilled?.();
@@ -416,9 +336,9 @@ export function FillOrderModal({
       setTransferAlpha(undefined);
       setTransferTao(undefined);
       pendingEscrowRef.current = "";
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error filling order:", err);
-      setError(err.message || "Failed to fill order. Please try again.");
+      setError(err instanceof Error ? err.message : "Failed to fill order. Please try again.");
     } finally {
       setLoading(false);
     }

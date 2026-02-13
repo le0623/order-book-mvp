@@ -22,6 +22,8 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 import { getWebSocketBookUrl, getWebSocketPriceUrl, getWebSocketTapUrl, API_URL } from "../lib/config";
+import { parseWsMessage } from "../lib/websocket-utils";
+import { parseRecResponse, postJson, extractResponseError } from "../lib/api-utils";
 
 const WS_URL = getWebSocketBookUrl();
 const WS_PRICE_URL = getWebSocketPriceUrl();
@@ -227,8 +229,8 @@ export default function Home() {
   );
 
   const handleWebSocketMessage = useCallback(
-    (message: WebSocketMessage) => {
-      const extracted = extractOrderData(message);
+    (message: WebSocketMessage | unknown) => {
+      const extracted = extractOrderData(message as WebSocketMessage | Order);
       if (!extracted) {
         return;
       }
@@ -289,39 +291,32 @@ export default function Home() {
     setPrices((prev) => ({ ...prev, ...pending }));
   }, []);
 
-  const handlePriceMessage = useCallback((message: any) => {
+  const handlePriceMessage = useCallback((message: unknown) => {
     try {
-      let priceData = message;
-      if (typeof message === "string") {
-        priceData = JSON.parse(message);
-        if (typeof priceData === "string") {
-          priceData = JSON.parse(priceData);
+      const priceData = parseWsMessage<Record<string, unknown>>(message);
+      if (!priceData || typeof priceData !== "object") return;
+
+      for (const [key, value] of Object.entries(priceData)) {
+        const netuid = Number(key);
+        let price: number;
+        if (typeof value === "object" && value !== null && "price" in value) {
+          price = Number((value as { price: unknown }).price);
+        } else if (typeof value === "number") {
+          price = value;
+        } else {
+          continue;
+        }
+
+        if (!isNaN(netuid) && !isNaN(price) && price > 0) {
+          pendingPricesRef.current[netuid] = price;
         }
       }
-
-      if (priceData && typeof priceData === "object") {
-        for (const [key, value] of Object.entries(priceData)) {
-          const netuid = Number(key);
-          let price: number;
-          if (typeof value === "object" && value !== null && "price" in value) {
-            price = Number((value as any).price);
-          } else if (typeof value === "number") {
-            price = Number(value);
-          } else {
-            continue;
-          }
-
-          if (!isNaN(netuid) && !isNaN(price) && price > 0) {
-            pendingPricesRef.current[netuid] = price;
-          }
-        }
-        // Throttle: schedule a flush if not already pending
-        if (!priceFlushTimerRef.current) {
-          priceFlushTimerRef.current = setTimeout(() => {
-            priceFlushTimerRef.current = null;
-            flushPrices();
-          }, 200);
-        }
+      // Throttle: schedule a flush if not already pending
+      if (!priceFlushTimerRef.current) {
+        priceFlushTimerRef.current = setTimeout(() => {
+          priceFlushTimerRef.current = null;
+          flushPrices();
+        }, 200);
       }
     } catch (error) {
       console.error("Error processing price message:", error);
@@ -335,7 +330,7 @@ export default function Home() {
     };
   }, []);
 
-  const { connectionState: priceConnectionState } = useWebSocket({
+  useWebSocket({
     url: WS_PRICE_URL,
     onMessage: handlePriceMessage,
   });
@@ -360,31 +355,24 @@ export default function Home() {
     );
   }, []);
 
-  const handleTapMessage = useCallback((message: any) => {
+  const handleTapMessage = useCallback((message: unknown) => {
     try {
-      let tapData = message;
-      if (typeof message === "string") {
-        tapData = JSON.parse(message);
-        if (typeof tapData === "string") {
-          tapData = JSON.parse(tapData);
-        }
-      }
+      const tapData = parseWsMessage<{ escrow?: string; tao?: number; alpha?: number; price?: number }>(message);
+      if (!tapData || typeof tapData !== "object" || !("escrow" in tapData)) return;
 
-      if (tapData && typeof tapData === "object" && "escrow" in tapData) {
-        const { escrow, tao, alpha, price } = tapData;
-        if (escrow) {
-          pendingTapsRef.current.set(escrow, {
-            tao: Number(tao || 0),
-            alpha: Number(alpha || 0),
-            price: Number(price || 0),
-          });
-          // Throttle: schedule a flush if not already pending
-          if (!tapFlushTimerRef.current) {
-            tapFlushTimerRef.current = setTimeout(() => {
-              tapFlushTimerRef.current = null;
-              flushTaps();
-            }, 200);
-          }
+      const { escrow, tao, alpha, price } = tapData;
+      if (escrow) {
+        pendingTapsRef.current.set(escrow, {
+          tao: Number(tao || 0),
+          alpha: Number(alpha || 0),
+          price: Number(price || 0),
+        });
+        // Throttle: schedule a flush if not already pending
+        if (!tapFlushTimerRef.current) {
+          tapFlushTimerRef.current = setTimeout(() => {
+            tapFlushTimerRef.current = null;
+            flushTaps();
+          }, 200);
         }
       }
     } catch (error) {
@@ -437,29 +425,6 @@ export default function Home() {
     fetchInitialOrders();
   }, [normalizeOrder]);
 
-  /**
-   * Parse backend /rec response string format: "['msg', tao, alpha, price]"
-   * Python's str() uses single quotes, so we replace them for JSON parsing.
-   * Returns { message, tao, alpha, price } or null on failure.
-   */
-  const parseRecResponse = useCallback((responseText: string): { message: string; tao: number; alpha: number; price: number } | null => {
-    try {
-      const trimmed = responseText.trim();
-      if (!trimmed.startsWith("[")) return null;
-      const jsonStr = trimmed.replace(/'/g, '"');
-      const parsed = JSON.parse(jsonStr);
-      if (Array.isArray(parsed) && parsed.length >= 4) {
-        return {
-          message: String(parsed[0] || ""),
-          tao: Number(parsed[1]) || 0,
-          alpha: Number(parsed[2]) || 0,
-          price: Number(parsed[3]) || 0,
-        };
-      }
-    } catch { /* ignore parse errors */ }
-    return null;
-  }, []);
-
   const handleUpdateOrder = async (uuid: string, updates: Partial<Order>) => {
     try {
       const order = orders.find((o) => o.uuid === uuid && o.status === 1);
@@ -488,38 +453,20 @@ export default function Home() {
         status: 1,
       };
 
-      const response = await fetch(`${API_URL}/rec`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedOrderData),
-      });
+      const response = await postJson(`${API_URL}/rec`, updatedOrderData);
+      if (!response.ok) throw new Error("Failed to update order");
 
-      if (!response.ok) {
-        throw new Error("Failed to update order");
-      }
-
-      // Parse new /rec response format: ['msg', tao, alpha, price]
       try {
         const data = await response.json();
         const text = typeof data === "string" ? data : JSON.stringify(data);
         const recResult = parseRecResponse(text);
-        if (recResult) {
-          if (recResult.message) {
-            setRecPopupMessage(recResult.message);
-          }
-        }
+        if (recResult?.message) setRecPopupMessage(recResult.message);
       } catch { /* ignore */ }
 
       setOrders((prev) =>
-        prev.map((o) => {
-          if (o.uuid === uuid && o.status === 1) {
-            return {
-              ...o,
-              ...updates,
-            };
-          }
-          return o;
-        })
+        prev.map((o) =>
+          o.uuid === uuid && o.status === 1 ? { ...o, ...updates } : o
+        )
       );
     } catch (error) {
       console.error("Error updating order:", error);
@@ -551,33 +498,18 @@ export default function Home() {
         status: 3,
       };
 
-      const response = await fetch(`${API_URL}/rec`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(closeOrderData),
-      });
+      const response = await postJson(`${API_URL}/rec`, closeOrderData);
+      if (!response.ok) throw new Error("Failed to close order");
 
-      if (!response.ok) {
-        throw new Error("Failed to close order");
-      }
-
-      // Parse new /rec response format: ['msg', tao, alpha, price]
       try {
         const data = await response.json();
         const text = typeof data === "string" ? data : JSON.stringify(data);
         const recResult = parseRecResponse(text);
-        if (recResult) {
-          if (recResult.message) {
-            setRecPopupMessage(recResult.message);
-          }
-        }
+        if (recResult?.message) setRecPopupMessage(recResult.message);
       } catch { /* ignore */ }
     } catch (error) {
       console.error("Error closing order:", error);
     }
-  };
-
-  const handleFillOrder = () => {
   };
 
   const { openOrders, filledOrdersMap } = useMemo(() => {
@@ -712,7 +644,7 @@ export default function Home() {
           allOrdersForSearch={orders}
           onUpdateOrder={handleUpdateOrder}
           onCancelOrder={handleCancelOrder}
-          onFillOrder={handleFillOrder}
+          onFillOrder={undefined}
           onNewOrder={() => setNewOrderModalOpen(true)}
           apiUrl={API_URL}
           showMyOrdersOnly={showMyOrdersOnly}

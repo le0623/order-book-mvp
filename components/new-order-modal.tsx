@@ -34,7 +34,6 @@ import {
   CheckIcon,
   ChevronUp,
   ChevronDown,
-  ArrowLeftRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { NewOrderFormData, Order } from "@/lib/types";
@@ -43,6 +42,8 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { WebSocketMessage } from "@/lib/websocket-types";
 import { getWebSocketBookUrl, getWebSocketTapUrl, API_URL } from "@/lib/config";
 import { ConnectButton } from "@/components/walletkit/connect";
+import { parseWsMessage } from "@/lib/websocket-utils";
+import { postJson, extractResponseError, readResponseBody, parseRecResponse } from "@/lib/api-utils";
 
 
 interface NewOrderModalProps {
@@ -107,63 +108,37 @@ export function NewOrderModal({
     return getWebSocketTapUrl();
   }, []);
 
-  const handleWebSocketMessage = React.useCallback((message: WebSocketMessage | any) => {
+  const handleWebSocketMessage = React.useCallback((message: WebSocketMessage | unknown) => {
     try {
-      let orderData: any = message;
-      if (typeof message === "string") {
-        try {
-          orderData = JSON.parse(message);
-          if (typeof orderData === "string") {
-            orderData = JSON.parse(orderData);
-          }
-        } catch {
-          return;
-        }
-      }
+      const orderData = parseWsMessage<Record<string, unknown>>(message);
+      if (!orderData || typeof orderData !== "object") return;
 
-      if (orderData && typeof orderData === "object" && "data" in orderData) {
-        const wsMessage = orderData as WebSocketMessage;
-        if (wsMessage.data) {
-          const order = Array.isArray(wsMessage.data) ? wsMessage.data[0] : wsMessage.data;
-          if (order && order.escrow === pendingEscrowRef.current && order.status === -1) {
-            const uuid = order.uuid || wsMessage.uuid || "";
-            const escrow = order.escrow || "";
-            if (uuid && escrow) {
-              setOrderUuid(uuid);
-              setEscrowWallet((prevEscrow) => {
-                if (escrow && escrow !== prevEscrow) {
-                  return escrow;
-                }
-                return prevEscrow;
-              });
-              pendingEscrowRef.current = "";
-            }
-          }
-        }
-      }
-      else if (orderData && typeof orderData === "object" && "escrow" in orderData && "uuid" in orderData) {
-        const order = orderData as Order;
-
-        if (order.escrow === pendingEscrowRef.current && order.status === -1) {
-          const uuid = order.uuid || "";
-          const escrow = order.escrow || "";
+      // Extract the order item from either nested or flat format
+      const processInit = (item: Partial<Order> & { uuid?: string; escrow?: string; status?: number }) => {
+        if (item.escrow === pendingEscrowRef.current && item.status === -1) {
+          const uuid = item.uuid || "";
+          const escrow = item.escrow || "";
           if (uuid && escrow) {
             setOrderUuid(uuid);
-            setEscrowWallet((prevEscrow) => {
-              if (escrow && escrow !== prevEscrow) {
-                return escrow;
-              }
-              return prevEscrow;
-            });
+            setEscrowWallet((prev) => (escrow !== prev ? escrow : prev));
             pendingEscrowRef.current = "";
           }
         }
-        // Note: escrow tao/alpha/price updates now come from /ws/tap, not /ws/book
+      };
+
+      if ("data" in orderData) {
+        const wsMessage = orderData as WebSocketMessage;
+        if (wsMessage.data) {
+          const order = Array.isArray(wsMessage.data) ? wsMessage.data[0] : wsMessage.data;
+          if (order) processInit({ ...order, uuid: order.uuid || wsMessage.uuid });
+        }
+      } else if ("escrow" in orderData && "uuid" in orderData) {
+        processInit(orderData as unknown as Order);
       }
     } catch (error) {
       console.error("Error processing WebSocket message in new order modal:", error);
     }
-  }, [escrowWallet]);
+  }, []);
 
   const handleUuidReceived = React.useCallback((uuid: string) => {
     setWsUuid(uuid);
@@ -177,33 +152,18 @@ export function NewOrderModal({
   });
 
   // /ws/tap - handles escrow tao, alpha, price updates: { escrow, asset, tao, alpha, price }
-  const handleTapMessage = React.useCallback((message: any) => {
+  const handleTapMessage = React.useCallback((message: unknown) => {
     try {
-      let tapData: any = message;
-      if (typeof message === "string") {
-        try {
-          tapData = JSON.parse(message);
-          if (typeof tapData === "string") {
-            tapData = JSON.parse(tapData);
-          }
-        } catch {
-          return;
-        }
-      }
+      const tapData = parseWsMessage<{ escrow?: string; tao?: number; alpha?: number; price?: number }>(message);
+      if (!tapData || typeof tapData !== "object" || !("escrow" in tapData)) return;
 
-      if (
-        tapData &&
-        typeof tapData === "object" &&
-        "escrow" in tapData
-      ) {
-        const escrow = tapData.escrow;
-        const tao = Number(tapData.tao) || 0;
-        const alpha = Number(tapData.alpha) || 0;
-        const price = Number(tapData.price) || 0;
+      const escrow = tapData.escrow;
+      const tao = Number(tapData.tao || 0);
+      const alpha = Number(tapData.alpha || 0);
+      const price = Number(tapData.price || 0);
 
-        if (escrow === escrowWallet && escrowWallet && price > 0) {
-          setPriceData({ tao, alpha, price });
-        }
+      if (escrow === escrowWallet && escrowWallet && price > 0) {
+        setPriceData({ tao, alpha, price });
       }
     } catch (error) {
       console.error("Error processing tap WebSocket message:", error);
@@ -240,8 +200,8 @@ export function NewOrderModal({
         // data is an array: [{price: 1.0}, {price: 0.01}, ...] where index = netuid
         if (Array.isArray(data)) {
           const priceMap: Record<number, number> = {};
-          data.forEach((item: any, index: number) => {
-            const p = Number(item?.price ?? item);
+          data.forEach((item: unknown, index: number) => {
+            const p = Number(typeof item === "object" && item !== null && "price" in item ? (item as { price: number }).price : item);
             if (!isNaN(p) && p > 0) {
               priceMap[index] = p;
             }
@@ -341,29 +301,7 @@ export function NewOrderModal({
     return 0;
   };
 
-  const [openMax, openMin, fillMin] = ofm;
-
-  /**
-   * Parse backend /rec response string: "['msg', tao, alpha, price]"
-   * Python's str() uses single quotes; replace for JSON parsing.
-   */
-  const parseRecResponse = React.useCallback((responseText: string): { message: string; tao: number; alpha: number; price: number } | null => {
-    try {
-      const trimmed = responseText.trim();
-      if (!trimmed.startsWith("[")) return null;
-      const jsonStr = trimmed.replace(/'/g, '"');
-      const parsed = JSON.parse(jsonStr);
-      if (Array.isArray(parsed) && parsed.length >= 4) {
-        return {
-          message: String(parsed[0] || ""),
-          tao: Number(parsed[1]) || 0,
-          alpha: Number(parsed[2]) || 0,
-          price: Number(parsed[3]) || 0,
-        };
-      }
-    } catch { /* ignore */ }
-    return null;
-  }, []);
+  // ofm = [open_max, open_min, fill_min] — available for future validation
 
   const handleNext = async () => {
     try {
@@ -396,58 +334,15 @@ export function NewOrderModal({
         status: -1,
       };
       const backendUrl = apiUrl || API_URL;
-      const response = await fetch(`${backendUrl}/rec`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(orderData),
-      }).catch((error) => {
-        if (error.message === "Failed to fetch") {
-          throw new Error(
-            "Cannot connect to server. This may be due to network issues or the server being unavailable."
-          );
-        }
-        throw error;
-      });
+      const response = await postJson(`${backendUrl}/rec`, orderData);
 
       if (!response.ok) {
-        let errorText: string;
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          try {
-            const errorData = await response.json();
-            errorText =
-              typeof errorData === "string"
-                ? errorData
-                : JSON.stringify(errorData);
-          } catch {
-            errorText = await response.text();
-          }
-        } else {
-          errorText = await response.text();
-        }
-        throw new Error(
-          `Error (${response.status}): ${errorText || response.statusText
-          }`
-        );
+        throw new Error(await extractResponseError(response));
       }
 
-      let data: any;
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        try {
-          data = await response.json();
-        } catch {
-          const text = await response.text();
-          data = text;
-        }
-      } else {
-        const text = await response.text();
-        data = text;
-      }
+      const data = await readResponseBody(response);
 
-      let escrowAddress = data;
+      let escrowAddress = data as string;
 
       if (!escrowAddress) {
         throw new Error("Failed to create escrow wallet. Please try again.");
@@ -468,9 +363,9 @@ export function NewOrderModal({
         setOriginWallet("");
       }
       setEscrowGenerated(true);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error creating order:", err);
-      setError(err.message || "Failed to create order");
+      setError(err instanceof Error ? err.message : "Failed to create order");
     } finally {
       setLoading(false);
     }
@@ -537,62 +432,21 @@ export function NewOrderModal({
         status: 1,
       };
       const backendUrl = apiUrl || API_URL;
-      const response = await fetch(`${backendUrl}/rec`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(orderData),
-      }).catch((error) => {
-        if (error.message === "Failed to fetch") {
-          throw new Error(
-            "Cannot connect to server. This may be due to network issues or the server being unavailable."
-          );
-        }
-        throw error;
-      });
-      const responseClone = response.clone();
+      const response = await postJson(`${backendUrl}/rec`, orderData);
 
       if (!response.ok) {
-        let errorText: string;
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          try {
-            const errorData = await response.json();
-            errorText =
-              typeof errorData === "string"
-                ? errorData
-                : JSON.stringify(errorData);
-          } catch {
-            errorText = await response.text();
-          }
-        } else {
-          errorText = await response.text();
-        }
-        throw new Error(
-          `Error (${response.status}): ${errorText || response.statusText
-          }`
-        );
+        throw new Error(await extractResponseError(response));
       }
 
-      // Parse new /rec response format: ['msg', tao, alpha, price]
+      // Parse /rec response format: ['msg', tao, alpha, price]
       try {
-        const contentType = responseClone.headers.get("content-type");
-        let responseText: string;
-
-        if (contentType && contentType.includes("application/json")) {
-          const responseData = await responseClone.json();
-          responseText = typeof responseData === "string" ? responseData : JSON.stringify(responseData);
-        } else {
-          responseText = await responseClone.text();
-        }
-
+        const responseBody = await readResponseBody(response);
+        const responseText = typeof responseBody === "string" ? responseBody : JSON.stringify(responseBody);
         const recResult = parseRecResponse(responseText);
         if (recResult) {
           if (recResult.price > 0) {
             setPriceData({ tao: recResult.tao, alpha: recResult.alpha, price: recResult.price });
           }
-          // Show popup if first field (message) is non-empty
           if (recResult.message) {
             setRecPopupMessage(recResult.message);
           }
@@ -604,9 +458,9 @@ export function NewOrderModal({
       onOrderPlaced?.();
       onOpenChange(false);
       resetForm();
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error placing order:", err);
-      setError(err.message || "Failed to place order");
+      setError(err instanceof Error ? err.message : "Failed to place order");
     } finally {
       setLoading(false);
     }
@@ -668,39 +522,16 @@ export function NewOrderModal({
         };
 
         const backendUrl = apiUrl || API_URL;
-        const response = await fetch(`${backendUrl}/rec`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(orderData),
-        }).catch((fetchError) => {
-          if (fetchError.message === "Failed to fetch") {
-            throw new Error("Cannot connect to server. This may be due to network issues or the server being unavailable.");
-          }
-          throw fetchError;
-        });
+        const response = await postJson(`${backendUrl}/rec`, orderData);
 
         if (!response.ok) {
-          let errorText: string;
-          const contentType = response.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            try {
-              const errorData = await response.json();
-              errorText = typeof errorData === "string" ? errorData : JSON.stringify(errorData);
-            } catch {
-              errorText = await response.text();
-            }
-          } else {
-            errorText = await response.text();
-          }
-          throw new Error(`Error (${response.status}): ${errorText || response.statusText}`);
+          throw new Error(await extractResponseError(response));
         }
 
         setIsInReviewMode(false);
-      } catch (err: any) {
+      } catch (err) {
         console.error("Error updating order:", err);
-        setError(err.message || "Failed to update order");
+        setError(err instanceof Error ? err.message : "Failed to update order");
       } finally {
         setLoading(false);
       }
