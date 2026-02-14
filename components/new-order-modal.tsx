@@ -45,6 +45,7 @@ import { ConnectButton } from "@/components/walletkit/connect";
 import { parseWsMessage } from "@/lib/websocket-utils";
 import { postJson, extractResponseError, readResponseBody, parseRecResponse } from "@/lib/api-utils";
 import { useBittensorTransfer } from "@/hooks/useBittensorTransfer";
+import { resolveHotkey } from "@/lib/bittensor";
 
 
 interface NewOrderModalProps {
@@ -106,6 +107,7 @@ export function NewOrderModal({
   } | null>(null);
   const [transferInputMode, setTransferInputMode] = React.useState<"alpha" | "tao">("tao");
   const [httpPrices, setHttpPrices] = React.useState<Record<number, number>>({});
+  const [poolData, setPoolData] = React.useState<Record<number, { tao_in: number; alpha_in: number }>>({});
 
   const [recPopupMessage, setRecPopupMessage] = React.useState<string>("");
   const pendingEscrowRef = React.useRef<string>("");
@@ -207,17 +209,28 @@ export function NewOrderModal({
         if (typeof data === "string") {
           data = JSON.parse(data);
         }
-        // data is an array: [{price: 1.0}, {price: 0.01}, ...] where index = netuid
         if (Array.isArray(data)) {
           const priceMap: Record<number, number> = {};
+          const pools: Record<number, { tao_in: number; alpha_in: number }> = {};
           data.forEach((item: unknown, index: number) => {
-            const p = Number(typeof item === "object" && item !== null && "price" in item ? (item as { price: number }).price : item);
-            if (!isNaN(p) && p > 0) {
-              priceMap[index] = p;
+            if (typeof item === "object" && item !== null) {
+              const obj = item as { price?: number; tao_in?: number; alpha_in?: number };
+              const p = Number(obj.price);
+              if (!isNaN(p) && p > 0) {
+                priceMap[index] = p;
+              }
+              const taoIn = Number(obj.tao_in);
+              const alphaIn = Number(obj.alpha_in);
+              if (!isNaN(taoIn) && !isNaN(alphaIn) && taoIn > 0 && alphaIn > 0) {
+                pools[index] = { tao_in: taoIn, alpha_in: alphaIn };
+              }
             }
           });
           if (Object.keys(priceMap).length > 0) {
             setHttpPrices(priceMap);
+          }
+          if (Object.keys(pools).length > 0) {
+            setPoolData(pools);
           }
         }
       } catch (err) {
@@ -428,10 +441,10 @@ export function NewOrderModal({
             console.log(`[PlaceOrder] Transferring ${taoAmount} TAO to escrow ${finalEscrow}`);
             const txResult = await sendTao(finalEscrow, taoAmount);
             if (!txResult) {
-              // Transfer failed or was cancelled — don't proceed
-              throw new Error(
-                "TAO transfer to escrow failed or was cancelled. Order not placed"
-              );
+              // Transfer failed or was cancelled — use the hook's error for the specific reason
+              const reason = transferError || "TAO transfer to escrow failed or was cancelled.";
+              resetTransfer();
+              throw new Error(reason);
             }
             console.log(`[PlaceOrder] TAO transfer confirmed: ${txResult.txHash}`);
           }
@@ -440,12 +453,19 @@ export function NewOrderModal({
           const alphaAmount = getAlphaForSubmit();
           const netuid = Number(formData.asset);
           if (alphaAmount > 0 && netuid > 0) {
+            // Step 1a: Check hotkey exists before attempting transfer
+            const hotkey = await resolveHotkey(selectedAccount.address, netuid);
+            if (!hotkey) {
+              throw new Error("No hotkey for this subnet. You need Alpha staked on this subnet (via a hotkey) to place a Sell order");
+            }
+
+            // Step 1b: Hotkey exists — proceed with on-chain transfer
             console.log(`[PlaceOrder] Transferring ${alphaAmount} Alpha (netuid ${netuid}) to escrow ${finalEscrow}`);
             const txResult = await sendAlpha(finalEscrow, alphaAmount, netuid);
             if (!txResult) {
-              throw new Error(
-                "Alpha transfer to escrow failed or was cancelled. Order not placed"
-              );
+              const reason = transferError || "Alpha transfer failed.";
+              resetTransfer();
+              throw new Error(reason);
             }
             console.log(`[PlaceOrder] Alpha transfer confirmed: ${txResult.txHash}`);
           }
@@ -607,7 +627,7 @@ export function NewOrderModal({
 
         {error && (
           <div
-            className={`p-3 rounded-md bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 text-sm transition-all duration-300 ease-in-out ${errorVisible
+            className={`p-3 rounded-md bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-sm transition-all duration-300 ease-in-out ${errorVisible
               ? "opacity-100 translate-y-0"
               : "opacity-0 -translate-y-2 pointer-events-none"
               }`}
@@ -623,11 +643,7 @@ export function NewOrderModal({
             <span>{transferStatusMessage || "Processing on-chain transfer..."}</span>
           </div>
         )}
-        {transferError && !isTransferring && (
-          <div className="p-3 rounded-md bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-sm">
-            {transferError}
-          </div>
-        )}
+        {/* transferError is now shown via the unified error display above */}
         {transferStatus === "finalized" && !isTransferring && (
           <div className="p-3 rounded-md bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 text-sm">
             Transfer confirmed on-chain. Submitting order...
@@ -667,14 +683,32 @@ export function NewOrderModal({
               (formData.type === 2 ? getTaoForSubmit() > 0 : getAlphaForSubmit() > 0) && (
                 <p className="text-sm text-muted-foreground opacity-60">
                   {formData.type === 2 ? (
-                    <>
-                      {getTaoForSubmit().toFixed(4)} TAO will be transferred to escrow
-                    </>
+                    <>{getTaoForSubmit().toFixed(4)} TAO will be transferred to escrow</>
                   ) : (
-                    <>
-                      {getAlphaForSubmit().toFixed(2)} Alpha will be transferred to escrow
-                    </>
+                    <>{getAlphaForSubmit().toFixed(2)} Alpha will be transferred to escrow</>
                   )}
+                  {formData.asset != null && poolData[formData.asset] && (() => {
+                    const pool = poolData[formData.asset!];
+                    const price = priceForConversion;
+                    if (!pool || price <= 0) return null;
+                    let slippage = 0;
+                    if (formData.type === 1) {
+                      const alpha = getAlphaForSubmit();
+                      if (alpha <= 0) return null;
+                      const cost = alpha * price;
+                      const received = pool.tao_in * alpha / (pool.alpha_in + alpha);
+                      if (cost > 0) slippage = (cost - received) / cost * 100;
+                    } else if (formData.type === 2) {
+                      const tao = getTaoForSubmit();
+                      if (tao <= 0) return null;
+                      const stake = tao;
+                      const receivedAlpha = pool.alpha_in * tao / (pool.tao_in + tao);
+                      const received = receivedAlpha * price;
+                      if (stake > 0) slippage = (stake - received) / stake * 100;
+                    }
+                    if (slippage <= 0) return null;
+                    return <> Slippage savings: {slippage.toFixed(2)}%</>;
+                  })()}
                 </p>
               )}
           </div>

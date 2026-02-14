@@ -279,10 +279,7 @@ export async function transferAlpha(
   const hotkey = await resolveHotkey(fromAddress, netuid);
 
   if (!hotkey) {
-    throw new Error(
-      `No Alpha stake found on subnet ${netuid} for your wallet. ` +
-      `You must have Alpha staked on this subnet to create a Sell order.`
-    );
+    throw new Error("No hotkey for this subnet.");
   }
 
   console.log(`[transferAlpha] Resolved hotkey for netuid ${netuid}: ${hotkey}`);

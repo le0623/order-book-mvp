@@ -23,6 +23,7 @@ import { ConnectButton } from "@/components/walletkit/connect";
 import { parseWsMessage } from "@/lib/websocket-utils";
 import { postJson, extractResponseError, readResponseBody } from "@/lib/api-utils";
 import { useBittensorTransfer } from "@/hooks/useBittensorTransfer";
+import { resolveHotkey } from "@/lib/bittensor";
 
 interface FillOrderModalProps {
   open: boolean;
@@ -68,6 +69,7 @@ export function FillOrderModal({
     alpha: number;
     price: number;
   } | null>(null);
+  const [poolData, setPoolData] = React.useState<Record<number, { tao_in: number; alpha_in: number }>>({});
 
   const pendingEscrowRef = React.useRef<string>("");
 
@@ -193,6 +195,7 @@ export function FillOrderModal({
       setTransferAlpha(undefined);
       setTransferTao(undefined);
       setTransferInputMode("tao");
+      setPoolData({});
       pendingEscrowRef.current = "";
     }
   }, [open]);
@@ -202,6 +205,36 @@ export function FillOrderModal({
       setTransferInputMode(fixedValues.type === 2 ? "tao" : "alpha");
     }
   }, [open, fixedValues.type]);
+
+  // Fetch pool data (tao_in, alpha_in) for slippage when modal opens
+  React.useEffect(() => {
+    if (!open) return;
+    const backendUrl = apiUrl || API_URL;
+    const fetchPools = async () => {
+      try {
+        const response = await fetch(`${backendUrl}/price`);
+        if (!response.ok) return;
+        let data = await response.json();
+        if (typeof data === "string") data = JSON.parse(data);
+        if (!Array.isArray(data)) return;
+        const pools: Record<number, { tao_in: number; alpha_in: number }> = {};
+        data.forEach((item: unknown, index: number) => {
+          if (typeof item === "object" && item !== null) {
+            const obj = item as { tao_in?: number; alpha_in?: number };
+            const taoIn = Number(obj.tao_in);
+            const alphaIn = Number(obj.alpha_in);
+            if (!isNaN(taoIn) && !isNaN(alphaIn) && taoIn > 0 && alphaIn > 0) {
+              pools[index] = { tao_in: taoIn, alpha_in: alphaIn };
+            }
+          }
+        });
+        if (Object.keys(pools).length > 0) setPoolData(pools);
+      } catch (err) {
+        console.warn("[FillOrder] Failed to fetch pool data:", err);
+      }
+    };
+    fetchPools();
+  }, [open, apiUrl]);
 
   const copyEscrowToClipboard = async () => {
     if (!escrowWallet) return;
@@ -329,10 +362,18 @@ export function FillOrderModal({
           // Fill is Sell: transfer Alpha
           const alphaAmount = getAlphaForSubmit();
           if (alphaAmount > 0 && fixedValues.asset > 0) {
+            // Check hotkey exists before attempting transfer
+            const hotkey = await resolveHotkey(selectedAccount.address, fixedValues.asset);
+            if (!hotkey) {
+              throw new Error("No hotkey.");
+            }
+
             console.log(`[FillOrder] Transferring ${alphaAmount} Alpha (netuid ${fixedValues.asset}) to escrow ${escrowWallet}`);
             const txResult = await sendAlpha(escrowWallet, alphaAmount, fixedValues.asset);
             if (!txResult) {
-              throw new Error("Alpha transfer to escrow failed or was cancelled. Order not filled.");
+              const reason = transferError || "Alpha transfer failed.";
+              resetTransfer();
+              throw new Error(reason);
             }
             console.log(`[FillOrder] Alpha transfer confirmed: ${txResult.txHash}`);
           }
@@ -416,7 +457,7 @@ export function FillOrderModal({
 
         {error && (
           <div
-            className={`p-3 rounded-md bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 text-sm transition-all duration-300 ease-in-out ${errorVisible
+            className={`p-3 rounded-md bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-sm transition-all duration-300 ease-in-out ${errorVisible
               ? "opacity-100 translate-y-0"
               : "opacity-0 -translate-y-2 pointer-events-none"
               }`}
@@ -475,14 +516,32 @@ export function FillOrderModal({
               (fixedValues.type === 2 ? getTaoForSubmit() > 0 : getAlphaForSubmit() > 0) && (
                 <p className="text-sm text-muted-foreground opacity-60">
                   {fixedValues.type === 2 ? (
-                    <>
-                      {getTaoForSubmit().toFixed(4)} TAO will be transferred to escrow
-                    </>
+                    <>{getTaoForSubmit().toFixed(4)} TAO will be transferred to escrow</>
                   ) : (
-                    <>
-                      {getAlphaForSubmit().toFixed(2)} Alpha will be transferred to escrow
-                    </>
+                    <>{getAlphaForSubmit().toFixed(2)} Alpha will be transferred to escrow</>
                   )}
+                  {poolData[fixedValues.asset] && (() => {
+                    const pool = poolData[fixedValues.asset];
+                    const price = priceForConversion;
+                    if (!pool || price <= 0) return null;
+                    let slippage = 0;
+                    if (fixedValues.type === 1) {
+                      const alpha = getAlphaForSubmit();
+                      if (alpha <= 0) return null;
+                      const cost = alpha * price;
+                      const received = pool.tao_in * alpha / (pool.alpha_in + alpha);
+                      if (cost > 0) slippage = (cost - received) / cost * 100;
+                    } else if (fixedValues.type === 2) {
+                      const tao = getTaoForSubmit();
+                      if (tao <= 0) return null;
+                      const stake = tao;
+                      const receivedAlpha = pool.alpha_in * tao / (pool.tao_in + tao);
+                      const received = receivedAlpha * price;
+                      if (stake > 0) slippage = (stake - received) / stake * 100;
+                    }
+                    if (slippage <= 0) return null;
+                    return <> Slippage savings: {slippage.toFixed(2)}%</>;
+                  })()}
                 </p>
               )}
           </div>
