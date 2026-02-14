@@ -516,9 +516,9 @@ export function FillOrderModal({
               (fixedValues.type === 2 ? getTaoForSubmit() > 0 : getAlphaForSubmit() > 0) && (
                 <p className="text-sm text-muted-foreground opacity-60">
                   {fixedValues.type === 2 ? (
-                    <>{getTaoForSubmit().toFixed(4)} TAO will be transferred to escrow</>
+                    <>{getTaoForSubmit().toFixed(4)} TAO to be transferred to escrow.</>
                   ) : (
-                    <>{getAlphaForSubmit().toFixed(2)} Alpha will be transferred to escrow</>
+                    <>{getAlphaForSubmit().toFixed(2)} Alpha to be transferred to escrow.</>
                   )}
                   {poolData[fixedValues.asset] && (() => {
                     const pool = poolData[fixedValues.asset];

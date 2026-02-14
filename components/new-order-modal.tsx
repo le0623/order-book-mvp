@@ -683,9 +683,9 @@ export function NewOrderModal({
               (formData.type === 2 ? getTaoForSubmit() > 0 : getAlphaForSubmit() > 0) && (
                 <p className="text-sm text-muted-foreground opacity-60">
                   {formData.type === 2 ? (
-                    <>{getTaoForSubmit().toFixed(4)} TAO will be transferred to escrow</>
+                    <>{getTaoForSubmit().toFixed(4)} TAO to be transferred to escrow.</>
                   ) : (
-                    <>{getAlphaForSubmit().toFixed(2)} Alpha will be transferred to escrow</>
+                    <>{getAlphaForSubmit().toFixed(2)} Alpha to be transferred to escrow.</>
                   )}
                   {formData.asset != null && poolData[formData.asset] && (() => {
                     const pool = poolData[formData.asset!];
