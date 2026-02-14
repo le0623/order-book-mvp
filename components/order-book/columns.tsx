@@ -115,10 +115,7 @@ function EscrowCell({ escrowAddress }: { escrowAddress: string }) {
 
   return (
     <div className="flex items-center gap-1.5">
-      <span
-        className="font-mono whitespace-nowrap block text-sm"
-        title={escrowAddress}
-      >
+      <span className="font-mono whitespace-nowrap block text-sm">
         {formatWalletAddress(escrowAddress)}
       </span>
       <button

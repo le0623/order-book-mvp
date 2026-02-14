@@ -430,7 +430,7 @@ export function NewOrderModal({
             if (!txResult) {
               // Transfer failed or was cancelled — don't proceed
               throw new Error(
-                "TAO transfer to escrow failed or was cancelled. Order not placed."
+                "TAO transfer to escrow failed or was cancelled. Order not placed"
               );
             }
             console.log(`[PlaceOrder] TAO transfer confirmed: ${txResult.txHash}`);
@@ -444,7 +444,7 @@ export function NewOrderModal({
             const txResult = await sendAlpha(finalEscrow, alphaAmount, netuid);
             if (!txResult) {
               throw new Error(
-                "Alpha transfer to escrow failed or was cancelled. Order not placed."
+                "Alpha transfer to escrow failed or was cancelled. Order not placed"
               );
             }
             console.log(`[PlaceOrder] Alpha transfer confirmed: ${txResult.txHash}`);

@@ -399,21 +399,36 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                       </Dialog>
                     </div>
                   </TooltipTrigger>
-
+                  <TooltipContent>
+                    <p>Only the order creator can modify this order</p>
+                  </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
 
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 gap-2"
-                onClick={() => setIsCloseConfirmOpen(true)}
-                disabled={!isOwner}
-              >
-                <span className="text-base leading-none">✗</span>
-                Close Order
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-block">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 gap-2"
+                        onClick={() => setIsCloseConfirmOpen(true)}
+                        disabled={!isOwner}
+                      >
+                        <span className="text-base leading-none">✗</span>
+                        Close Order
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!isOwner && (
+                    <TooltipContent>
+                      <p>Only the order creator can close this order</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
 
               <Dialog
                 open={isCloseConfirmOpen}
