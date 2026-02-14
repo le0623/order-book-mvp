@@ -513,7 +513,10 @@ export function FillOrderModal({
               )}
             </div>
             {escrowWallet &&
-              (fixedValues.type === 2 ? getTaoForSubmit() > 0 : getAlphaForSubmit() > 0) && (
+              (fixedValues.type === 2
+                ? (getTaoForSubmit() > 0 || (transferInputMode === "alpha" && (transferAlpha ?? 0) > 0))
+                : (getAlphaForSubmit() > 0 || (transferInputMode === "tao" && (transferTao ?? 0) > 0))
+              ) && (
                 <p className="text-sm text-muted-foreground opacity-60">
                   {fixedValues.type === 2 ? (
                     <>{getTaoForSubmit().toFixed(4)} TAO to be transferred to escrow.</>
@@ -522,22 +525,37 @@ export function FillOrderModal({
                   )}
                   {poolData[fixedValues.asset] && (() => {
                     const pool = poolData[fixedValues.asset];
+                    if (!pool) return null;
                     const price = priceForConversion;
-                    if (!pool || price <= 0) return null;
                     let slippage = 0;
                     if (fixedValues.type === 1) {
-                      const alpha = getAlphaForSubmit();
+                      let alpha = 0;
+                      if (transferInputMode === "alpha") {
+                        alpha = transferAlpha ?? 0;
+                      } else {
+                        const taoInput = transferTao ?? 0;
+                        const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
+                        if (spotPrice > 0) alpha = taoInput / spotPrice;
+                      }
                       if (alpha <= 0) return null;
-                      const cost = alpha * price;
+                      const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
+                      const cost = alpha * spotPrice;
                       const received = pool.tao_in * alpha / (pool.alpha_in + alpha);
                       if (cost > 0) slippage = (cost - received) / cost * 100;
                     } else if (fixedValues.type === 2) {
-                      const tao = getTaoForSubmit();
+                      let tao = 0;
+                      if (transferInputMode === "tao") {
+                        tao = transferTao ?? 0;
+                      } else {
+                        const alphaInput = transferAlpha ?? 0;
+                        const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
+                        if (spotPrice > 0) tao = alphaInput * spotPrice;
+                      }
                       if (tao <= 0) return null;
-                      const stake = tao;
+                      const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
                       const receivedAlpha = pool.alpha_in * tao / (pool.tao_in + tao);
-                      const received = receivedAlpha * price;
-                      if (stake > 0) slippage = (stake - received) / stake * 100;
+                      const received = receivedAlpha * spotPrice;
+                      if (tao > 0) slippage = (tao - received) / tao * 100;
                     }
                     if (slippage <= 0) return null;
                     return <> Slippage savings {slippage.toFixed(4)}%</>;

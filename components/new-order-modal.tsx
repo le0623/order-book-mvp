@@ -680,7 +680,10 @@ export function NewOrderModal({
             </div>
             {escrowWallet &&
               formData.type != null &&
-              (formData.type === 2 ? getTaoForSubmit() > 0 : getAlphaForSubmit() > 0) && (
+              (formData.type === 2
+                ? (getTaoForSubmit() > 0 || (transferInputMode === "alpha" && (formData.alpha ?? 0) > 0))
+                : (getAlphaForSubmit() > 0 || (transferInputMode === "tao" && (formData.tao ?? 0) > 0))
+              ) && (
                 <p className="text-sm text-muted-foreground opacity-60">
                   {formData.type === 2 ? (
                     <>{getTaoForSubmit().toFixed(4)} TAO to be transferred to escrow.</>
@@ -689,22 +692,41 @@ export function NewOrderModal({
                   )}
                   {formData.asset != null && poolData[formData.asset] && (() => {
                     const pool = poolData[formData.asset!];
+                    if (!pool) return null;
                     const price = priceForConversion;
-                    if (!pool || price <= 0) return null;
                     let slippage = 0;
                     if (formData.type === 1) {
-                      const alpha = getAlphaForSubmit();
+                      // Sell order: user sends Alpha
+                      // Get alpha from direct input or convert from TAO input
+                      let alpha = 0;
+                      if (transferInputMode === "alpha") {
+                        alpha = formData.alpha ?? 0;
+                      } else {
+                        // User entered TAO — convert to alpha using pool spot price
+                        const taoInput = formData.tao ?? 0;
+                        const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
+                        if (spotPrice > 0) alpha = taoInput / spotPrice;
+                      }
                       if (alpha <= 0) return null;
-                      const cost = alpha * price;
+                      const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
+                      const cost = alpha * spotPrice;
                       const received = pool.tao_in * alpha / (pool.alpha_in + alpha);
                       if (cost > 0) slippage = (cost - received) / cost * 100;
                     } else if (formData.type === 2) {
-                      const tao = getTaoForSubmit();
+                      // Buy order: user sends TAO
+                      let tao = 0;
+                      if (transferInputMode === "tao") {
+                        tao = formData.tao ?? 0;
+                      } else {
+                        const alphaInput = formData.alpha ?? 0;
+                        const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
+                        if (spotPrice > 0) tao = alphaInput * spotPrice;
+                      }
                       if (tao <= 0) return null;
-                      const stake = tao;
+                      const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
                       const receivedAlpha = pool.alpha_in * tao / (pool.tao_in + tao);
-                      const received = receivedAlpha * price;
-                      if (stake > 0) slippage = (stake - received) / stake * 100;
+                      const received = receivedAlpha * spotPrice;
+                      if (tao > 0) slippage = (tao - received) / tao * 100;
                     }
                     if (slippage <= 0) return null;
                     return <> Slippage savings {slippage.toFixed(4)}%</>;
