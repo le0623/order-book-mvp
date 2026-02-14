@@ -707,7 +707,7 @@ export function NewOrderModal({
                       if (stake > 0) slippage = (stake - received) / stake * 100;
                     }
                     if (slippage <= 0) return null;
-                    return <> Slippage savings: {slippage.toFixed(2)}%</>;
+                    return <> Slippage savings {slippage.toFixed(4)}%</>;
                   })()}
                 </p>
               )}
