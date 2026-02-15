@@ -165,7 +165,7 @@ export async function transferTao(
         // User rejected the signing request
         const msg = err instanceof Error ? err.message : String(err);
         if (msg.includes('Rejected') || msg.includes('Cancelled') || msg.includes('cancelled')) {
-          reject(new Error('Transaction signing was cancelled by the user.'));
+          reject(new Error('Transaction signing was cancelled by the user'));
         } else {
           reject(err);
         }
@@ -279,7 +279,7 @@ export async function transferAlpha(
   const hotkey = await resolveHotkey(fromAddress, netuid);
 
   if (!hotkey) {
-    throw new Error("No hotkey for this subnet.");
+    throw new Error("No hotkey for this subnet");
   }
 
   console.log(`[transferAlpha] Resolved hotkey for netuid ${netuid}: ${hotkey}`);
@@ -301,7 +301,7 @@ export async function transferAlpha(
   if (!txMethod) {
     throw new Error(
       'subtensorModule.transferStake is not available on this chain. ' +
-      'The runtime may not support stake transfers.'
+      'The runtime may not support stake transfers'
     );
   }
 
@@ -353,7 +353,7 @@ export async function transferAlpha(
       .catch((err) => {
         const msg = err instanceof Error ? err.message : String(err);
         if (msg.includes('Rejected') || msg.includes('Cancelled') || msg.includes('cancelled')) {
-          reject(new Error('Transaction signing was cancelled by the user.'));
+          reject(new Error('Transaction signing was cancelled by the user'));
         } else {
           reject(err);
         }

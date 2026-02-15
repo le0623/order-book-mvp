@@ -485,7 +485,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
               </TooltipTrigger>
               {isOwner && (
                 <TooltipContent>
-                  <p>You cannot fill your own order.</p>
+                  <p>You cannot fill your own order</p>
                 </TooltipContent>
               )}
             </Tooltip>

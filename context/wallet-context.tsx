@@ -265,7 +265,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             const timeoutPromise = new Promise<never>((_, reject) => {
                 connectionTimeoutRef.current = setTimeout(() => {
                     if (abortController.signal.aborted) return
-                    reject(new Error('Connection timeout. Please try again.'))
+                    reject(new Error('Connection timeout. Please try again'))
                 }, 30000) // 30 seconds
             })
 
@@ -282,7 +282,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             const injected = window.injectedWeb3![extensionName]
 
             if (!injected) {
-                throw new Error(`${extensionInfo.name} extension not found. Please install it first.`)
+                throw new Error(`${extensionInfo.name} extension not found. Please install it first`)
             }
 
             let extension
@@ -309,7 +309,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
                 // Better error messages for user rejection
                 const errorMessage = enableError.message || 'Unknown error'
                 if (errorMessage.includes('Rejected') || errorMessage.includes('User rejected') || errorMessage.includes('User cancelled') || errorMessage.includes('rejected')) {
-                    throw new Error('Connection request was cancelled. Please try again when ready.')
+                    throw new Error('Connection request was cancelled. Please try again when ready')
                 }
 
                 console.error('Enable error:', enableError)
@@ -380,7 +380,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             }
 
             if (!accounts || accounts.length === 0) {
-                throw new Error('No accounts found. Please create an account in the wallet extension.')
+                throw new Error('No accounts found. Please create an account in the wallet extension')
             }
 
             if (abortController.signal.aborted) {

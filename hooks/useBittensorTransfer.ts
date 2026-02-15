@@ -26,6 +26,12 @@ export interface TransferState {
   isTransferring: boolean;
 }
 
+/** Return type for sendTao / sendAlpha — always includes the error so callers don't need to rely on async state. */
+export interface TransferOutcome {
+  result: TransferResult | null;
+  error: string | null;
+}
+
 /**
  * React hook for performing on-chain Bittensor transfers.
  *
@@ -62,30 +68,22 @@ export function useBittensorTransfer() {
    *
    * @param toAddress - Escrow wallet address
    * @param taoAmount - Amount of TAO to transfer
-   * @returns TransferResult on success, or null if failed/cancelled
+   * @returns TransferOutcome with result on success, or error message on failure
    */
   const sendTao = useCallback(
-    async (toAddress: string, taoAmount: number): Promise<TransferResult | null> => {
-      if (transferringRef.current) return null;
+    async (toAddress: string, taoAmount: number): Promise<TransferOutcome> => {
+      if (transferringRef.current) return { result: null, error: 'Transfer already in progress' };
       if (!isConnected || !selectedAccount) {
-        setState((prev) => ({
-          ...prev,
-          status: 'error',
-          error: 'Wallet not connected. Please connect your wallet first.',
-          isTransferring: false,
-        }));
-        return null;
+        const error = 'Wallet not connected. Please connect your wallet first';
+        setState((prev) => ({ ...prev, status: 'error', error, isTransferring: false }));
+        return { result: null, error };
       }
 
       const signer = getSigner();
       if (!signer) {
-        setState((prev) => ({
-          ...prev,
-          status: 'error',
-          error: 'Wallet signer not available. Please reconnect your wallet.',
-          isTransferring: false,
-        }));
-        return null;
+        const error = 'Wallet signer not available. Please reconnect your wallet';
+        setState((prev) => ({ ...prev, status: 'error', error, isTransferring: false }));
+        return { result: null, error };
       }
 
       transferringRef.current = true;
@@ -114,7 +112,7 @@ export function useBittensorTransfer() {
           isTransferring: false,
         });
 
-        return result;
+        return { result, error: null };
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Transfer failed';
         setState({
@@ -124,7 +122,7 @@ export function useBittensorTransfer() {
           result: null,
           isTransferring: false,
         });
-        return null;
+        return { result: null, error: message };
       } finally {
         transferringRef.current = false;
       }
@@ -138,30 +136,22 @@ export function useBittensorTransfer() {
    * @param toAddress   - Escrow wallet address
    * @param alphaAmount - Amount of Alpha to transfer
    * @param netuid      - Subnet ID for the alpha token
-   * @returns TransferResult on success, or null if failed/cancelled
+   * @returns TransferOutcome with result on success, or error message on failure
    */
   const sendAlpha = useCallback(
-    async (toAddress: string, alphaAmount: number, netuid: number): Promise<TransferResult | null> => {
-      if (transferringRef.current) return null;
+    async (toAddress: string, alphaAmount: number, netuid: number): Promise<TransferOutcome> => {
+      if (transferringRef.current) return { result: null, error: 'Transfer already in progress' };
       if (!isConnected || !selectedAccount) {
-        setState((prev) => ({
-          ...prev,
-          status: 'error',
-          error: 'Wallet not connected. Please connect your wallet first.',
-          isTransferring: false,
-        }));
-        return null;
+        const error = 'Wallet not connected. Please connect your wallet first';
+        setState((prev) => ({ ...prev, status: 'error', error, isTransferring: false }));
+        return { result: null, error };
       }
 
       const signer = getSigner();
       if (!signer) {
-        setState((prev) => ({
-          ...prev,
-          status: 'error',
-          error: 'Wallet signer not available. Please reconnect your wallet.',
-          isTransferring: false,
-        }));
-        return null;
+        const error = 'Wallet signer not available. Please reconnect your wallet';
+        setState((prev) => ({ ...prev, status: 'error', error, isTransferring: false }));
+        return { result: null, error };
       }
 
       transferringRef.current = true;
@@ -191,7 +181,7 @@ export function useBittensorTransfer() {
           isTransferring: false,
         });
 
-        return result;
+        return { result, error: null };
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Transfer failed';
         setState({
@@ -201,7 +191,7 @@ export function useBittensorTransfer() {
           result: null,
           isTransferring: false,
         });
-        return null;
+        return { result: null, error: message };
       } finally {
         transferringRef.current = false;
       }

@@ -71,7 +71,6 @@ export function NewOrderModal({
     sendAlpha,
     status: transferStatus,
     statusMessage: transferStatusMessage,
-    error: transferError,
     isTransferring,
     reset: resetTransfer,
   } = useBittensorTransfer();
@@ -335,7 +334,7 @@ export function NewOrderModal({
       const walletAddress = selectedAccount?.address || "";
 
       if (!wsUuid) {
-        throw new Error("WebSocket connection UUID not available. Please wait for connection.");
+        throw new Error("WebSocket connection UUID not available. Please wait for connection");
       }
       const orderData = {
         uuid: wsUuid,
@@ -369,7 +368,7 @@ export function NewOrderModal({
       let escrowAddress = data as string;
 
       if (!escrowAddress) {
-        throw new Error("Failed to create escrow wallet. Please try again.");
+        throw new Error("Failed to create escrow wallet. Please try again");
       }
 
       const trimmedEscrow = escrowAddress.trim();
@@ -421,7 +420,7 @@ export function NewOrderModal({
       const finalUuid = wsUuid;
 
       if (!finalUuid) {
-        throw new Error("Order UUID not available. Please wait for WebSocket connection.");
+        throw new Error("Order UUID not available. Please wait for WebSocket connection");
       }
       if (!escrowWallet) {
         throw new Error("Missing escrow wallet address");
@@ -439,13 +438,13 @@ export function NewOrderModal({
           const taoAmount = getTaoForSubmit();
           if (taoAmount > 0) {
             console.log(`[PlaceOrder] Transferring ${taoAmount} TAO to escrow ${finalEscrow}`);
-            const txResult = await sendTao(finalEscrow, taoAmount);
-            if (!txResult) {
-              // Transfer failed or was cancelled — use the hook's error for the specific reason
-              const reason = transferError || "TAO transfer to escrow failed or was cancelled.";
+            const taoOutcome = await sendTao(finalEscrow, taoAmount);
+            if (!taoOutcome.result) {
+              const reason = taoOutcome.error || "TAO transfer to escrow failed or was cancelled";
               resetTransfer();
               throw new Error(reason);
             }
+            const txResult = taoOutcome.result;
             console.log(`[PlaceOrder] TAO transfer confirmed: ${txResult.txHash}`);
           }
         } else if (formData.type === 1) {
@@ -461,19 +460,20 @@ export function NewOrderModal({
 
             // Step 1b: Hotkey exists — proceed with on-chain transfer
             console.log(`[PlaceOrder] Transferring ${alphaAmount} Alpha (netuid ${netuid}) to escrow ${finalEscrow}`);
-            const txResult = await sendAlpha(finalEscrow, alphaAmount, netuid);
-            if (!txResult) {
-              const reason = transferError || "Alpha transfer failed.";
+            const alphaOutcome = await sendAlpha(finalEscrow, alphaAmount, netuid);
+            if (!alphaOutcome.result) {
+              const reason = alphaOutcome.error || "Alpha transfer failed";
               resetTransfer();
               throw new Error(reason);
             }
-            console.log(`[PlaceOrder] Alpha transfer confirmed: ${txResult.txHash}`);
+            console.log(`[PlaceOrder] Alpha transfer confirmed: ${alphaOutcome.result.txHash}`);
           }
         }
       }
 
       // --- Step 2: Submit order to backend ---
       // Use price data from WebSocket if available, otherwise backend will calculate
+      console.log(`[PlaceOrder] Price data:`, priceData);
       const taoValue = priceData?.tao ?? 0.0;
       const alphaValue = priceData?.alpha ?? 0.0;
       const priceValue = priceData?.price && priceData.price > 0 ? priceData.price : 0.0;
@@ -500,7 +500,7 @@ export function NewOrderModal({
       };
       const backendUrl = apiUrl || API_URL;
       const response = await postJson(`${backendUrl}/rec`, orderData);
-
+      console.log(`[PlaceOrder] Order data:`, orderData);
       if (!response.ok) {
         throw new Error(await extractResponseError(response));
       }
@@ -562,7 +562,7 @@ export function NewOrderModal({
         const walletAddress = selectedAccount?.address || originWallet || "";
 
         if (!wsUuid) {
-          throw new Error("WebSocket connection UUID not available. Please wait for connection.");
+          throw new Error("WebSocket connection UUID not available. Please wait for connection");
         }
         if (!escrowWallet) {
           throw new Error("Missing escrow wallet address");
@@ -694,6 +694,7 @@ export function NewOrderModal({
                     const pool = poolData[formData.asset!];
                     if (!pool) return null;
                     const price = priceForConversion;
+                    console.log(`[NewOrder] Pool price:`, price);
                     let slippage = 0;
                     if (formData.type === 1) {
                       // Sell order: user sends Alpha
@@ -712,6 +713,7 @@ export function NewOrderModal({
                       const cost = alpha * spotPrice;
                       const received = pool.tao_in * alpha / (pool.alpha_in + alpha);
                       if (cost > 0) slippage = (cost - received) / cost * 100;
+                      console.log(`[NewOrder] Slippage:`, slippage);
                     } else if (formData.type === 2) {
                       // Buy order: user sends TAO
                       let tao = 0;

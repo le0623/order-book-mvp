@@ -6,7 +6,7 @@ export async function postJson(url: string, body: unknown): Promise<Response> {
   }).catch((error: Error) => {
     if (error.message === "Failed to fetch") {
       throw new Error(
-        "Cannot connect to server. This may be due to network issues or the server being unavailable."
+        "Cannot connect to server. This may be due to network issues or the server being unavailable"
       );
     }
     throw error;

@@ -48,7 +48,6 @@ export function FillOrderModal({
     sendAlpha,
     status: transferStatus,
     statusMessage: transferStatusMessage,
-    error: transferError,
     isTransferring,
     reset: resetTransfer,
   } = useBittensorTransfer();
@@ -255,7 +254,7 @@ export function FillOrderModal({
       const walletAddress = selectedAccount?.address || "";
 
       if (!wsUuid) {
-        throw new Error("WebSocket connection UUID not available. Please wait for connection.");
+        throw new Error("WebSocket connection UUID not available. Please wait for connection");
       }
 
       const orderData = {
@@ -306,7 +305,7 @@ export function FillOrderModal({
       }
 
       if (!escrowAddress) {
-        throw new Error("Failed to create escrow wallet. Please try again.");
+        throw new Error("Failed to create escrow wallet. Please try again");
       }
 
       // Store the pending escrow to match against WebSocket messages
@@ -352,11 +351,13 @@ export function FillOrderModal({
           const taoAmount = getTaoForSubmit();
           if (taoAmount > 0) {
             console.log(`[FillOrder] Transferring ${taoAmount} TAO to escrow ${escrowWallet}`);
-            const txResult = await sendTao(escrowWallet, taoAmount);
-            if (!txResult) {
-              throw new Error("TAO transfer to escrow failed or was cancelled. Order not filled.");
+            const taoOutcome = await sendTao(escrowWallet, taoAmount);
+            if (!taoOutcome.result) {
+              const reason = taoOutcome.error || "TAO transfer to escrow failed or was cancelled";
+              resetTransfer();
+              throw new Error(reason);
             }
-            console.log(`[FillOrder] TAO transfer confirmed: ${txResult.txHash}`);
+            console.log(`[FillOrder] TAO transfer confirmed: ${taoOutcome.result.txHash}`);
           }
         } else if (fixedValues.type === 1) {
           // Fill is Sell: transfer Alpha
@@ -365,17 +366,17 @@ export function FillOrderModal({
             // Check hotkey exists before attempting transfer
             const hotkey = await resolveHotkey(selectedAccount.address, fixedValues.asset);
             if (!hotkey) {
-              throw new Error("No hotkey.");
+              throw new Error("No hotkey");
             }
 
             console.log(`[FillOrder] Transferring ${alphaAmount} Alpha (netuid ${fixedValues.asset}) to escrow ${escrowWallet}`);
-            const txResult = await sendAlpha(escrowWallet, alphaAmount, fixedValues.asset);
-            if (!txResult) {
-              const reason = transferError || "Alpha transfer failed.";
+            const alphaOutcome = await sendAlpha(escrowWallet, alphaAmount, fixedValues.asset);
+            if (!alphaOutcome.result) {
+              const reason = alphaOutcome.error || "Alpha transfer failed";
               resetTransfer();
               throw new Error(reason);
             }
-            console.log(`[FillOrder] Alpha transfer confirmed: ${txResult.txHash}`);
+            console.log(`[FillOrder] Alpha transfer confirmed: ${alphaOutcome.result.txHash}`);
           }
         }
       }
@@ -422,7 +423,7 @@ export function FillOrderModal({
       resetTransfer();
     } catch (err) {
       console.error("Error filling order:", err);
-      setError(err instanceof Error ? err.message : "Failed to fill order. Please try again.");
+      setError(err instanceof Error ? err.message : "Failed to fill order. Please try again");
     } finally {
       setLoading(false);
     }
@@ -473,11 +474,7 @@ export function FillOrderModal({
             <span>{transferStatusMessage || "Processing on-chain transfer..."}</span>
           </div>
         )}
-        {transferError && !isTransferring && (
-          <div className="p-3 rounded-md bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-sm">
-            {transferError}
-          </div>
-        )}
+        {/* Transfer errors are now shown via the unified error display above */}
         {transferStatus === "finalized" && !isTransferring && (
           <div className="p-3 rounded-md bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 text-sm">
             Transfer confirmed on-chain. Submitting fill order...
