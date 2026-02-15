@@ -667,6 +667,22 @@ export function FillOrderModal({
                 {fixedValues.price > 0 ? fixedValues.price.toFixed(6) : "0.00"}
               </p>
             </div>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
+                TAO
+              </span>
+              <p className="font-mono text-sm mt-1">
+                {fixedValues.tao > 0 ? fixedValues.tao.toFixed(4) : "0.00"}
+              </p>
+            </div>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
+                Alpha
+              </span>
+              <p className="font-mono text-sm mt-1">
+                {fixedValues.alpha > 0 ? fixedValues.alpha.toFixed(2) : "0.00"}
+              </p>
+            </div>
           </div>
 
           
