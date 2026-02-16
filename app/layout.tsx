@@ -1,7 +1,9 @@
 import type { Metadata } from "next"
 import { Inter, Press_Start_2P } from "next/font/google"
+import { GeistPixelCircle } from "geist/font/pixel"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import ContextProvider from '@/context'
 
 const inter = Inter({ subsets: ["latin"] })
@@ -23,10 +25,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${inter.className} ${pressStart2P.variable}`} suppressHydrationWarning>
+      <body className={`${inter.className} ${pressStart2P.variable} ${GeistPixelCircle.variable}`} suppressHydrationWarning>
         <ContextProvider>
           <ThemeProvider defaultTheme="dark">
-            {children}
+            <TooltipProvider delayDuration={200}>
+              {children}
+            </TooltipProvider>
           </ThemeProvider>
         </ContextProvider>
       </body>

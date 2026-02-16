@@ -24,6 +24,8 @@ import {
 import { getWebSocketBookUrl, getWebSocketPriceUrl, getWebSocketTapUrl, API_URL } from "../lib/config";
 import { parseWsMessage } from "../lib/websocket-utils";
 import { parseRecResponse, postJson, extractResponseError } from "../lib/api-utils";
+import { LoadingScreen } from "../components/loading-screen";
+import { PixelSymbolsBackground } from "../components/pixel-symbols-background";
 
 const WS_URL = getWebSocketBookUrl();
 const WS_PRICE_URL = getWebSocketPriceUrl();
@@ -43,6 +45,8 @@ export default function Home() {
   const [showWalletConnectDialog, setShowWalletConnectDialog] = useState(false);
   const [ofm, setOfm] = useState<[number, number, number]>([10, 0.01, 0.001]); // [open_max, open_min, fill_min]
   const [recPopupMessage, setRecPopupMessage] = useState<string>("");
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  const [showLoading, setShowLoading] = useState(true);
 
   useEffect(() => {
     setMounted(true);
@@ -399,6 +403,7 @@ export default function Home() {
 
         if (!response.ok) {
           console.error("Failed to fetch initial orders:", response.statusText);
+          setInitialDataLoaded(true);
           return;
         }
 
@@ -408,6 +413,7 @@ export default function Home() {
 
         if (!Array.isArray(ordersArray)) {
           console.error("Invalid orders data format");
+          setInitialDataLoaded(true);
           return;
         }
 
@@ -419,6 +425,8 @@ export default function Home() {
         }
       } catch (error) {
         console.error("Error fetching initial orders:", error);
+      } finally {
+        setInitialDataLoaded(true);
       }
     };
 
@@ -569,7 +577,17 @@ export default function Home() {
   }, [orders, openOrders, showMyOrdersOnly, selectedAccount?.address]);
 
   return (
-    <main className="min-h-screen bg-white dark:bg-background">
+    <>
+      {showLoading && (
+        <LoadingScreen
+          minDisplayTime={2400}
+          isReady={initialDataLoaded && mounted}
+          onComplete={() => setShowLoading(false)}
+        />
+      )}
+    {/* 8-bit pixel symbols floating background */}
+    <PixelSymbolsBackground />
+    <main className="min-h-screen relative z-10">
       <div className="container mx-auto px-4 max-w-7xl pt-4">
         <header className="mb-6 border-b border-slate-200 dark:border-border/40 sticky top-0 z-50 bg-white dark:bg-background h-[105.2px] pt-8 pb-6 flex items-center">
           <div className="flex items-center justify-between w-full">
@@ -697,6 +715,7 @@ export default function Home() {
         </Dialog>
       </div>
     </main>
+    </>
   );
 }
 

@@ -46,7 +46,197 @@ import { parseWsMessage } from "@/lib/websocket-utils";
 import { postJson, extractResponseError, readResponseBody, parseRecResponse } from "@/lib/api-utils";
 import { useBittensorTransfer } from "@/hooks/useBittensorTransfer";
 import { resolveHotkey } from "@/lib/bittensor";
+import { SUBNET_NAMES, getSubnetLabel } from "@/lib/subnet-names";
+import { Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
+
+/**
+ * Searchable asset (subnet) selector dropdown.
+ * Shows netuid and subnet name, supports filtering by text search.
+ */
+function AssetSelector({
+  value,
+  onChange,
+  disabled = false,
+  httpPrices = {},
+}: {
+  value?: number;
+  onChange: (netuid: number | undefined) => void;
+  disabled?: boolean;
+  httpPrices?: Record<number, number>;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState("");
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Build the list of available subnets from httpPrices + SUBNET_NAMES
+  const subnetOptions = React.useMemo(() => {
+    const netuids = new Set<number>();
+    // Reason: Combine netuids from live price data and static subnet names
+    Object.keys(httpPrices).forEach((k) => {
+      const n = Number(k);
+      if (n > 0) netuids.add(n);
+    });
+    Object.keys(SUBNET_NAMES).forEach((k) => {
+      const n = Number(k);
+      if (n > 0) netuids.add(n);
+    });
+    return Array.from(netuids)
+      .sort((a, b) => a - b)
+      .map((netuid) => ({
+        netuid,
+        label: getSubnetLabel(netuid),
+        name: SUBNET_NAMES[netuid] || "",
+      }));
+  }, [httpPrices]);
+
+  const filteredOptions = React.useMemo(() => {
+    if (!search.trim()) return subnetOptions;
+    const q = search.toLowerCase().trim();
+    return subnetOptions.filter(
+      (opt) =>
+        String(opt.netuid).includes(q) ||
+        opt.label.toLowerCase().includes(q) ||
+        opt.name.toLowerCase().includes(q)
+    );
+  }, [search, subnetOptions]);
+
+  const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
+  const listRef = React.useRef<HTMLDivElement>(null);
+
+  // Focus search input when popover opens
+  React.useEffect(() => {
+    if (open) {
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+      setHighlightedIndex(-1);
+    } else {
+      setSearch("");
+      setHighlightedIndex(-1);
+    }
+  }, [open]);
+
+  // Reset highlight when filtered list changes
+  React.useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [filteredOptions.length]);
+
+  // Scroll highlighted item into view
+  React.useEffect(() => {
+    if (highlightedIndex < 0 || !listRef.current) return;
+    const items = listRef.current.querySelectorAll("button");
+    items[highlightedIndex]?.scrollIntoView({ block: "nearest" });
+  }, [highlightedIndex]);
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex((prev) =>
+        prev < filteredOptions.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((prev) =>
+        prev > 0 ? prev - 1 : filteredOptions.length - 1
+      );
+    } else if (e.key === "Enter" && highlightedIndex >= 0) {
+      e.preventDefault();
+      const opt = filteredOptions[highlightedIndex];
+      if (opt) {
+        onChange(opt.netuid);
+        setOpen(false);
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(false);
+    }
+  };
+
+  const displayLabel = value !== undefined ? getSubnetLabel(value) : null;
+
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor="asset">Asset (NETUID)</Label>
+      <Popover open={open} onOpenChange={disabled ? undefined : setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            id="asset"
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            disabled={disabled}
+            className={cn(
+              "w-full justify-between font-normal focus:ring-1 focus:ring-blue-500/30 focus:ring-offset-0 focus:border-blue-500/40",
+              !value && "text-muted-foreground opacity-60"
+            )}
+          >
+            {displayLabel || "Select asset..."}
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-[--radix-popover-trigger-width] p-0 bg-background border-border/60"
+          align="start"
+          sideOffset={4}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <div className="p-2 border-b border-border/40">
+            <Input
+              ref={searchInputRef}
+              placeholder="Search by name or netuid..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className="h-8 text-sm focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40"
+            />
+          </div>
+          <div
+            ref={listRef}
+            className="max-h-[260px] overflow-y-auto overscroll-contain"
+            onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+          >
+            {filteredOptions.length === 0 ? (
+              <div className="py-4 text-center text-sm text-muted-foreground">
+                No subnets found
+              </div>
+            ) : (
+              filteredOptions.map((opt, idx) => (
+                <button
+                  key={opt.netuid}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.netuid);
+                    setOpen(false);
+                  }}
+                  onMouseEnter={() => setHighlightedIndex(idx)}
+                  className={cn(
+                    "w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between",
+                    value === opt.netuid && "bg-muted/60 font-medium",
+                    highlightedIndex === idx
+                      ? "bg-muted"
+                      : "hover:bg-muted"
+                  )}
+                >
+                  <span>{opt.label}</span>
+                  {value === opt.netuid && (
+                    <CheckIcon className="h-3.5 w-3.5 text-emerald-500" />
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
 
 interface NewOrderModalProps {
   open: boolean;
@@ -407,6 +597,10 @@ export function NewOrderModal({
     }
   };
 
+  /** Check if an error message indicates the user deliberately cancelled the transaction. */
+  const isUserCancellation = (msg: string) =>
+    /cancel/i.test(msg) || /rejected/i.test(msg) || /denied/i.test(msg);
+
   const handleFinalPlaceOrder = async () => {
     try {
       setLoading(true);
@@ -442,6 +636,10 @@ export function NewOrderModal({
             if (!taoOutcome.result) {
               const reason = taoOutcome.error || "TAO transfer to escrow failed or was cancelled";
               resetTransfer();
+              if (isUserCancellation(reason)) {
+                console.log("[PlaceOrder] TAO transfer cancelled by user");
+                return;
+              }
               throw new Error(reason);
             }
             const txResult = taoOutcome.result;
@@ -464,6 +662,10 @@ export function NewOrderModal({
             if (!alphaOutcome.result) {
               const reason = alphaOutcome.error || "Alpha transfer failed";
               resetTransfer();
+              if (isUserCancellation(reason)) {
+                console.log("[PlaceOrder] Alpha transfer cancelled by user");
+                return;
+              }
               throw new Error(reason);
             }
             console.log(`[PlaceOrder] Alpha transfer confirmed: ${alphaOutcome.result.txHash}`);
@@ -755,7 +957,7 @@ export function NewOrderModal({
                 aria-label="Switch between TAO and Alpha"
                 title="Switch unit (TAO ↔ Alpha)"
               >
-                <span className="text-xs">τ/α</span>
+                <span className="text-xs">{transferInputMode === "tao" ? "τ/α" : "α/τ"}</span>
               </button>
             </div>
             <div className="relative flex items-center">
@@ -812,84 +1014,45 @@ export function NewOrderModal({
 
           {/* order type */}
           <div className="grid gap-2">
-            <Label htmlFor="type">Order Type</Label>
-            <Select
-              value={formData.type === undefined ? undefined : String(formData.type)}
-              onValueChange={(value) =>
-                setFormData({ ...formData, type: parseInt(value) })
-              }
-              disabled={escrowGenerated && !isInReviewMode}
-            >
-              <SelectTrigger
-                id="type"
-                className="focus:ring-1 focus:ring-blue-500/50 focus:ring-offset-0 focus:border-blue-500/70 [&[data-placeholder]>span]:opacity-60 [&[data-placeholder]>span]:text-muted-foreground"
-              >
-                <SelectValue placeholder="Select order type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1" className="opacity-60">Sell</SelectItem>
-                <SelectItem value="2" className="opacity-60">Buy</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-
-
-          <div className="grid gap-2">
-            <Label htmlFor="asset">Asset (NETUID)</Label>
-            <div className="relative flex items-center">
-              <Input
-                id="asset"
-                type="number"
-                min="1"
-                value={formData.asset === undefined ? "" : formData.asset}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    asset: e.target.value === "" ? undefined : parseInt(e.target.value) || undefined,
-                  })
-                }
+            <Label>Order Type</Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setFormData({ ...formData, type: 2 })}
                 disabled={escrowGenerated && !isInReviewMode}
-                placeholder="Enter asset"
-                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-              <div className="absolute right-1 flex flex-col gap-0.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!escrowGenerated || isInReviewMode) {
-                      setFormData({
-                        ...formData,
-                        asset: Math.max(1, (formData.asset ?? 0) + 1),
-                      });
-                    }
-                  }}
-                  disabled={escrowGenerated && !isInReviewMode}
-                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Increase asset"
-                >
-                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!escrowGenerated || isInReviewMode) {
-                      const currentAsset = formData.asset ?? 1;
-                      setFormData({
-                        ...formData,
-                        asset: currentAsset > 1 ? currentAsset - 1 : undefined,
-                      });
-                    }
-                  }}
-                  disabled={escrowGenerated && !isInReviewMode}
-                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Decrease asset"
-                >
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                </button>
-              </div>
+                className={`flex-1 font-semibold transition-all ${
+                  formData.type === 2
+                    ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500 hover:border-emerald-600 shadow-[0_2px_8px_0_rgba(16,185,129,0.3)]"
+                    : "hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 dark:hover:border-emerald-700"
+                }`}
+              >
+                Buy
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setFormData({ ...formData, type: 1 })}
+                disabled={escrowGenerated && !isInReviewMode}
+                className={`flex-1 font-semibold transition-all ${
+                  formData.type === 1
+                    ? "bg-rose-500 hover:bg-rose-600 text-white border-rose-500 hover:border-rose-600 shadow-[0_2px_8px_0_rgba(244,63,94,0.3)]"
+                    : "hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 dark:hover:bg-rose-950/30 dark:hover:text-rose-400 dark:hover:border-rose-700"
+                }`}
+              >
+                Sell
+              </Button>
             </div>
           </div>
+
+
+
+          <AssetSelector
+            value={formData.asset}
+            onChange={(netuid) => setFormData({ ...formData, asset: netuid })}
+            disabled={escrowGenerated && !isInReviewMode}
+            httpPrices={httpPrices}
+          />
           <div className="grid gap-2">
             <Label htmlFor="stp">Stop Price (TAO)</Label>
             <div className="relative flex items-center">
@@ -1072,6 +1235,14 @@ export function NewOrderModal({
             >
               Public order (visible to everyone)
             </Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help opacity-60 hover:opacity-100 transition-opacity" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[260px]">
+                <p>When unchecked, this order is <strong>private</strong> — it will only be visible to you through the &quot;My Orders&quot; filter. Other users will not see it in the order book.</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
@@ -1082,13 +1253,14 @@ export function NewOrderModal({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={loading}
+                className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/30 dark:hover:text-red-300"
               >
                 Cancel
               </Button>
               <Button
-                variant="outline"
                 onClick={handleNext}
                 disabled={loading}
+                className="bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.4)]"
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Escrow
@@ -1100,6 +1272,7 @@ export function NewOrderModal({
                 variant="outline"
                 onClick={isInReviewMode ? handleCancel : handleBack}
                 disabled={loading || isTransferring}
+                className={isInReviewMode ? "border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/30 dark:hover:text-red-300" : ""}
               >
                 {isInReviewMode ? "Cancel" : "Back"}
               </Button>

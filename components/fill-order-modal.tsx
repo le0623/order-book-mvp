@@ -652,7 +652,7 @@ export function FillOrderModal({
                 aria-label="Switch between TAO and Alpha"
                 title="Switch unit (TAO ↔ Alpha)"
               >
-                <span className="text-xs">τ/α</span>
+                <span className="text-xs">{transferInputMode === "tao" ? "τ/α" : "α/τ"}</span>
               </button>
             </div>
             <div className="relative flex items-center">
@@ -772,13 +772,18 @@ export function FillOrderModal({
         <DialogFooter>
           {!escrowGenerated ? (
             <>
-              <Button variant="outline" onClick={handleClose} disabled={loading}>
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                disabled={loading}
+                className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/30 dark:hover:text-red-300"
+              >
                 Cancel
               </Button>
               <Button
                 onClick={handleFillOrder}
                 disabled={loading}
-                variant="outline"
+                className="bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.4)]"
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Escrow
@@ -790,6 +795,7 @@ export function FillOrderModal({
                 variant="outline"
                 onClick={isInReviewMode ? handleCancel : handleBack}
                 disabled={loading || isTransferring}
+                className={isInReviewMode ? "border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/30 dark:hover:text-red-300" : ""}
               >
                 {isInReviewMode ? "Cancel" : "Back"}
               </Button>

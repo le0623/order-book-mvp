@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, Column } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Copy, CheckIcon } from "lucide-react";
+import { ExternalLink, Copy, CheckIcon, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Order,
   formatWalletAddress,
@@ -99,6 +99,38 @@ export const formatPrice = (num: number) => {
   }).format(num);
 };
 
+/**
+ * Reusable sortable header component for table columns.
+ * Shows sort direction indicator and handles click-to-sort.
+ */
+function SortableHeader<TData>({
+  column,
+  label,
+  className = "",
+}: {
+  column: Column<TData, unknown>;
+  label: string;
+  className?: string;
+}) {
+  const sorted = column.getIsSorted();
+  return (
+    <button
+      type="button"
+      className={`flex items-center gap-1 hover:text-foreground transition-colors select-none ${className}`}
+      onClick={() => column.toggleSorting(sorted === "asc")}
+    >
+      <span>{label}</span>
+      {sorted === "asc" ? (
+        <ArrowUp className="h-3 w-3" />
+      ) : sorted === "desc" ? (
+        <ArrowDown className="h-3 w-3" />
+      ) : (
+        <ArrowUpDown className="h-3 w-3 opacity-40" />
+      )}
+    </button>
+  );
+}
+
 function EscrowCell({ escrowAddress }: { escrowAddress: string }) {
   const [copied, setCopied] = React.useState(false);
   const taostatsUrl = `https://taostats.io/account/${escrowAddress}`;
@@ -151,7 +183,11 @@ export const columns = (
 ): ColumnDef<Order>[] => [
   {
     accessorKey: "date",
-    header: () => <div className="pl-4">Date</div>,
+    header: ({ column }) => (
+      <div className="pl-4">
+        <SortableHeader column={column} label="Date" />
+      </div>
+    ),
     cell: ({ row }) => (
       <div
         className="font-mono whitespace-nowrap pl-4"
@@ -165,7 +201,7 @@ export const columns = (
   },
   {
     accessorKey: "escrow",
-    header: "Escrow",
+    header: ({ column }) => <SortableHeader column={column} label="Escrow" />,
     cell: ({ row }) => {
       const escrowAddress = row.getValue("escrow") as string;
       return <EscrowCell escrowAddress={escrowAddress} />;
@@ -175,7 +211,7 @@ export const columns = (
   },
   {
     accessorKey: "type",
-    header: "Order",
+    header: ({ column }) => <SortableHeader column={column} label="Order" />,
     cell: ({ row }) => {
       const orderType = getOrderType(row.getValue("type"));
       return (
@@ -195,9 +231,9 @@ export const columns = (
   },
   {
     accessorKey: "asset",
-      header: () => (
+      header: ({ column }) => (
         <div className="flex justify-end">
-          <span>Asset</span>
+          <SortableHeader column={column} label="Asset" />
         </div>
       ),
     cell: ({ row }) => {
@@ -228,9 +264,9 @@ export const columns = (
   {
     accessorKey: "bid",
     id: "tao",
-    header: () => (
+    header: ({ column }) => (
       <div className="flex justify-end">
-        <span>Tao</span>
+        <SortableHeader column={column} label="Tao" />
       </div>
     ),
     cell: ({ row }) => {
@@ -244,15 +280,20 @@ export const columns = (
         </div>
       );
     },
+    sortingFn: (rowA, rowB) => {
+      const a = rowA.original.tao > 0 ? rowA.original.tao : rowA.original.bid;
+      const b = rowB.original.tao > 0 ? rowB.original.tao : rowB.original.bid;
+      return (a || 0) - (b || 0);
+    },
     size: 70,
     minSize: 70,
   },
   {
     accessorKey: "ask",
     id: "alpha",
-    header: () => (
+    header: ({ column }) => (
       <div className="flex justify-end">
-        <span>Alpha</span>
+        <SortableHeader column={column} label="Alpha" />
       </div>
     ),
     cell: ({ row }) => {
@@ -266,14 +307,19 @@ export const columns = (
         </div>
       );
     },
+    sortingFn: (rowA, rowB) => {
+      const a = rowA.original.alpha > 0 ? rowA.original.alpha : rowA.original.ask;
+      const b = rowB.original.alpha > 0 ? rowB.original.alpha : rowB.original.ask;
+      return (a || 0) - (b || 0);
+    },
     size: 70,
     minSize: 70,
   },
   {
     accessorKey: "stp",
-    header: () => (
+    header: ({ column }) => (
         <div className="flex justify-end pr-4">
-        <span>Price</span>
+        <SortableHeader column={column} label="Price" />
       </div>
     ),
     cell: ({ row }) => {
@@ -291,14 +337,27 @@ export const columns = (
         </div>
       );
     },
+    sortingFn: (rowA, rowB) => {
+      const getPrice = (row: typeof rowA) => {
+        const asset = row.original.asset;
+        const livePrice = prices[asset];
+        const orderPrice = row.original.price;
+        return orderPrice && orderPrice > 0
+          ? orderPrice
+          : livePrice !== undefined && livePrice > 0
+            ? livePrice
+            : row.original.stp;
+      };
+      return (getPrice(rowA) || 0) - (getPrice(rowB) || 0);
+    },
     size: 90,
     minSize: 90,
   },
   {
     accessorKey: "status",
-    header: () => (
+    header: ({ column }) => (
       <div className="flex justify-center pr-4">
-        <span>Status</span>
+        <SortableHeader column={column} label="Status" />
       </div>
     ),
     cell: ({ row }) => {
