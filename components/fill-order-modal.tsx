@@ -660,7 +660,7 @@ export function FillOrderModal({
                 id="transfer-amount"
                 type="number"
                 min="0"
-                step="0.001"
+                step="1"
                 value={(transferInputMode === "tao" ? transferTao : transferAlpha) ?? ""}
                 onChange={(e) => {
                   const value = e.target.value.trim();
@@ -682,7 +682,7 @@ export function FillOrderModal({
                   onClick={() => {
                     if (!escrowGenerated || isInReviewMode) {
                       const current = (transferInputMode === "tao" ? transferTao : transferAlpha) ?? 0;
-                      const newVal = Number((current + 0.001).toFixed(3));
+                      const newVal = current + 1;
                       if (transferInputMode === "tao") {
                         setTransferTao(newVal);
                       } else {
@@ -701,7 +701,7 @@ export function FillOrderModal({
                   onClick={() => {
                     if (!escrowGenerated || isInReviewMode) {
                       const current = (transferInputMode === "tao" ? transferTao : transferAlpha) ?? 0;
-                      const newValue = Math.max(0, Number((current - 0.001).toFixed(3)));
+                      const newValue = Math.max(0, current - 1);
                       if (transferInputMode === "tao") {
                         setTransferTao(newValue > 0 ? newValue : undefined);
                       } else {
