@@ -232,7 +232,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                             Modify
                           </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
                           <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                               Modify Order
@@ -416,7 +416,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                           variant="outline"
                           size="sm"
                           onClick={() => setIsCloseConfirmOpen(true)}
-                          className="dark:!bg-[#293641] h-9 gap-2 text-slate-900 dark:text-foreground"
+                          className="dark:!bg-[#293641]/50 h-9 gap-2 text-slate-900 dark:text-foreground"
                           disabled
                         >
                           <span className="text-base leading-none">✗</span>
@@ -432,7 +432,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                   <Button
                     variant="outline"
                     size="sm"
-                      className="dark:!bg-[#293641] h-9 gap-2 text-slate-900 dark:text-foreground"
+                    className="dark:!bg-[#293641]/50 h-9 gap-2 text-slate-900 dark:text-foreground"
                     onClick={() => setIsCloseConfirmOpen(true)}
                   >
                     <span className="text-base leading-none">✗</span>
