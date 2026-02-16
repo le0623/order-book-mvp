@@ -692,28 +692,23 @@ export function NewOrderModal({
                   )}
                   {formData.asset != null && poolData[formData.asset] && (() => {
                     const pool = poolData[formData.asset!];
-                    if (!pool) return null;
-                    const price = priceForConversion;
-                    console.log(`[NewOrder] Pool price:`, price);
+                    if (!pool || pool.alpha_in <= 0 || pool.tao_in <= 0) return null;
+                    // Use pool's own spot price for slippage so the reference matches the AMM (avoids negative slippage from order-book/WS price mismatch)
+                    const poolSpotPrice = pool.tao_in / pool.alpha_in;
                     let slippage = 0;
                     if (formData.type === 1) {
                       // Sell order: user sends Alpha
-                      // Get alpha from direct input or convert from TAO input
                       let alpha = 0;
                       if (transferInputMode === "alpha") {
                         alpha = formData.alpha ?? 0;
                       } else {
-                        // User entered TAO — convert to alpha using pool spot price
                         const taoInput = formData.tao ?? 0;
-                        const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
-                        if (spotPrice > 0) alpha = taoInput / spotPrice;
+                        if (poolSpotPrice > 0) alpha = taoInput / poolSpotPrice;
                       }
                       if (alpha <= 0) return null;
-                      const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
-                      const cost = alpha * spotPrice;
+                      const cost = alpha * poolSpotPrice;
                       const received = pool.tao_in * alpha / (pool.alpha_in + alpha);
                       if (cost > 0) slippage = (cost - received) / cost * 100;
-                      console.log(`[NewOrder] Slippage:`, slippage);
                     } else if (formData.type === 2) {
                       // Buy order: user sends TAO
                       let tao = 0;
@@ -721,17 +716,15 @@ export function NewOrderModal({
                         tao = formData.tao ?? 0;
                       } else {
                         const alphaInput = formData.alpha ?? 0;
-                        const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
-                        if (spotPrice > 0) tao = alphaInput * spotPrice;
+                        if (poolSpotPrice > 0) tao = alphaInput * poolSpotPrice;
                       }
                       if (tao <= 0) return null;
-                      const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
                       const receivedAlpha = pool.alpha_in * tao / (pool.tao_in + tao);
-                      const received = receivedAlpha * spotPrice;
+                      const received = receivedAlpha * poolSpotPrice;
                       if (tao > 0) slippage = (tao - received) / tao * 100;
                     }
                     if (slippage <= 0) return null;
-                    return <> Slippage savings {slippage.toFixed(4)}%</>;
+                    return <> Slippage saved {slippage.toFixed(4)}%</>;
                   })()}
                 </p>
               )}

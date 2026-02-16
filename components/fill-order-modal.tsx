@@ -522,8 +522,9 @@ export function FillOrderModal({
                   )}
                   {poolData[fixedValues.asset] && (() => {
                     const pool = poolData[fixedValues.asset];
-                    if (!pool) return null;
-                    const price = priceForConversion;
+                    if (!pool || pool.alpha_in <= 0 || pool.tao_in <= 0) return null;
+                    // Use pool's own spot price for slippage so the reference matches the AMM (avoids negative slippage from order-book/WS price mismatch)
+                    const poolSpotPrice = pool.tao_in / pool.alpha_in;
                     let slippage = 0;
                     if (fixedValues.type === 1) {
                       let alpha = 0;
@@ -531,12 +532,10 @@ export function FillOrderModal({
                         alpha = transferAlpha ?? 0;
                       } else {
                         const taoInput = transferTao ?? 0;
-                        const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
-                        if (spotPrice > 0) alpha = taoInput / spotPrice;
+                        if (poolSpotPrice > 0) alpha = taoInput / poolSpotPrice;
                       }
                       if (alpha <= 0) return null;
-                      const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
-                      const cost = alpha * spotPrice;
+                      const cost = alpha * poolSpotPrice;
                       const received = pool.tao_in * alpha / (pool.alpha_in + alpha);
                       if (cost > 0) slippage = (cost - received) / cost * 100;
                     } else if (fixedValues.type === 2) {
@@ -545,17 +544,15 @@ export function FillOrderModal({
                         tao = transferTao ?? 0;
                       } else {
                         const alphaInput = transferAlpha ?? 0;
-                        const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
-                        if (spotPrice > 0) tao = alphaInput * spotPrice;
+                        if (poolSpotPrice > 0) tao = alphaInput * poolSpotPrice;
                       }
                       if (tao <= 0) return null;
-                      const spotPrice = price > 0 ? price : (pool.tao_in / pool.alpha_in);
                       const receivedAlpha = pool.alpha_in * tao / (pool.tao_in + tao);
-                      const received = receivedAlpha * spotPrice;
+                      const received = receivedAlpha * poolSpotPrice;
                       if (tao > 0) slippage = (tao - received) / tao * 100;
                     }
                     if (slippage <= 0) return null;
-                    return <> Slippage savings {slippage.toFixed(4)}%</>;
+                    return <> Slippage saved {slippage.toFixed(4)}%</>;
                   })()}
                 </p>
               )}
