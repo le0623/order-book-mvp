@@ -260,22 +260,22 @@ export function FillOrderModal({
 
       const orderData = {
         uuid: wsUuid,
-        origin: order.escrow, // Parent order's escrow — tells backend this is a fill, not a new order
+        origin: order.escrow, // Parent order's escrow — tells backend this is a fill
         escrow: "",
         wallet: walletAddress,
         asset: fixedValues.asset,
         type: fixedValues.type,
-        ask: fixedValues.alpha,
-        bid: fixedValues.tao,
-        stp: fixedValues.price,
-        lmt: fixedValues.price,
-        gtd: "gtc",
-        partial: false,
-        public: false,
+        ask: Number(order.ask || 0),
+        bid: Number(order.bid || 0),
+        stp: Number(order.stp || 0),
+        lmt: Number(order.lmt || 0),
+        gtd: order.gtd || "gtc",
+        partial: !!order.partial,
+        public: !!order.public,
         tao: getTaoForSubmit(),
         alpha: getAlphaForSubmit(),
         price: 0.0,
-        status: -1, // -1 = Init status (triggers escrow generation in backend)
+        status: -1,
       };
 
       console.log("Fill Order: Creating escrow with UUID:", wsUuid);
@@ -358,18 +358,18 @@ export function FillOrderModal({
 
         const orderData = {
           uuid: wsUuid,
-          origin: order.escrow, // Parent order's escrow — tells backend this is a fill, not a new order
+          origin: order.escrow, // Parent order's escrow — tells backend this is a fill
           escrow: escrowWallet.trim(),
           wallet: walletAddress,
           asset: fixedValues.asset,
           type: fixedValues.type,
-          ask: fixedValues.alpha,
-          bid: fixedValues.tao,
-          stp: fixedValues.price,
-          lmt: fixedValues.price,
-          gtd: "gtc",
-          partial: false,
-          public: false,
+          ask: Number(order.ask || 0),
+          bid: Number(order.bid || 0),
+          stp: Number(order.stp || 0),
+          lmt: Number(order.lmt || 0),
+          gtd: order.gtd || "gtc",
+          partial: !!order.partial,
+          public: !!order.public,
           tao: getTaoForSubmit(),
           alpha: getAlphaForSubmit(),
           price: 0.0,
@@ -459,16 +459,16 @@ export function FillOrderModal({
         wallet: walletAddress,
         asset: fixedValues.asset,
         type: fixedValues.type,
-        ask: fixedValues.alpha,
-        bid: fixedValues.tao,
-        stp: fixedValues.price,
-        lmt: fixedValues.price,
-        gtd: "gtc",
-        partial: false,
-        public: false,
+        ask: Number(order.ask || 0),
+        bid: Number(order.bid || 0),
+        stp: Number(order.stp || 0),
+        lmt: Number(order.lmt || 0),
+        gtd: order.gtd || "gtc",
+        partial: !!order.partial,
+        public: !!order.public,
         tao: getTaoForSubmit(),
         alpha: getAlphaForSubmit(),
-        price: 0.0, // auto fill
+        price: 0.0,
         status: 2,
       };
       console.log(`[FillOrder] Filling order with data:`, fillOrderData);
@@ -766,7 +766,7 @@ export function FillOrderModal({
             </div>
           </div>
 
-          
+
         </div>
 
         <DialogFooter>

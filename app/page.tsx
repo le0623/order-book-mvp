@@ -543,7 +543,7 @@ export default function Home() {
     let filteredOrders = openOrders;
     if (showMyOrdersOnly && selectedAccount?.address) {
       filteredOrders = orders.filter(
-        (order) => order.origin === selectedAccount.address
+        (order) => order.wallet === selectedAccount.address
       );
     }
 

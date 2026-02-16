@@ -220,9 +220,10 @@ export function DataTable<TData, TValue>({
   const filteredData = React.useMemo(() => {
     if (isSearchActive) {
       const allFilledOrders = Object.values(filledOrdersMap).flat() as any[];
-      const searchOrders = allOrdersForSearch.length > 0
-        ? allOrdersForSearch
-        : [...data, ...allFilledOrders];
+      const searchOrders = [
+        ...(allOrdersForSearch.length > 0 ? allOrdersForSearch : data),
+        ...allFilledOrders,
+      ];
 
       const uniqueOrdersMap = new Map<string, any>();
       searchOrders.forEach((order: any) => {
