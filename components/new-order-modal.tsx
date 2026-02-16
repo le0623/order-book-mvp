@@ -247,7 +247,7 @@ export function NewOrderModal({
         setTimeout(() => {
           setError("");
         }, 300);
-      }, 6000);
+      }, 5000);
 
       return () => {
         clearTimeout(fadeOutTimer);

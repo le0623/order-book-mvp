@@ -500,7 +500,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
             className="px-4 pb-5 pt-1 rounded-lg bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/50 space-y-4"
           >
             <legend className="flex items-center gap-2 flex-wrap !mt-0.5">
-              <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
+              <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 pl-1">
                 Wallet
               </div>
               <code className="font-mono text-sm text-slate-900 dark:text-foreground break-all">

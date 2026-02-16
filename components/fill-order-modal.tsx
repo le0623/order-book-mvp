@@ -56,6 +56,7 @@ export function FillOrderModal({
   const [orderUuid, setOrderUuid] = React.useState<string>("");
   const [wsUuid, setWsUuid] = React.useState<string>(""); // WebSocket connection UUID from backend
   const [escrowGenerated, setEscrowGenerated] = React.useState(false);
+  const [isInReviewMode, setIsInReviewMode] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string>("");
   const [errorVisible, setErrorVisible] = React.useState(false);
@@ -137,7 +138,7 @@ export function FillOrderModal({
         setTimeout(() => {
           setError("");
         }, 300);
-      }, 6000);
+      }, 5000);
 
       return () => {
         clearTimeout(fadeOutTimer);
@@ -323,6 +324,75 @@ export function FillOrderModal({
     }
   };
 
+  const handleBack = () => {
+    if (escrowGenerated && !isInReviewMode) {
+      setIsInReviewMode(true);
+    } else if (escrowGenerated && isInReviewMode) {
+      setIsInReviewMode(false);
+      setEscrowGenerated(false);
+      setEscrowWallet("");
+      setOrderUuid("");
+      pendingEscrowRef.current = "";
+    }
+  };
+
+  const handleCancel = () => {
+    onOpenChange(false);
+    handleClose();
+  };
+
+  const handleReviewOrder = async () => {
+    if (isInReviewMode) {
+      try {
+        setLoading(true);
+        setError("");
+
+        const walletAddress = selectedAccount?.address || "";
+
+        if (!wsUuid) {
+          throw new Error("WebSocket connection UUID not available. Please wait for connection");
+        }
+        if (!escrowWallet) {
+          throw new Error("Missing escrow wallet address");
+        }
+
+        const orderData = {
+          uuid: wsUuid,
+          origin: escrowWallet.trim(),
+          escrow: escrowWallet.trim(),
+          wallet: walletAddress,
+          asset: fixedValues.asset,
+          type: fixedValues.type,
+          ask: fixedValues.alpha,
+          bid: fixedValues.tao,
+          stp: fixedValues.price,
+          lmt: fixedValues.price,
+          gtd: "gtc",
+          partial: false,
+          public: false,
+          tao: getTaoForSubmit(),
+          alpha: getAlphaForSubmit(),
+          price: 0.0,
+          status: -1,
+        };
+
+        const backendUrl = apiUrl || API_URL;
+        const response = await postJson(`${backendUrl}/rec`, orderData);
+
+        if (!response.ok) {
+          throw new Error(await extractResponseError(response));
+        }
+
+        setIsInReviewMode(false);
+      } catch (err) {
+        console.error("Error updating fill order:", err);
+        setError(err instanceof Error ? err.message : "Failed to update order");
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const handleFillOrder = async () => {
     if (!escrowGenerated) {
       await handleCreateEscrow();
@@ -366,7 +436,7 @@ export function FillOrderModal({
             // Check hotkey exists before attempting transfer
             const hotkey = await resolveHotkey(selectedAccount.address, fixedValues.asset);
             if (!hotkey) {
-              throw new Error("No hotkey");
+              throw new Error("No hotkey for this subnet. You need Alpha staked on this subnet (via a hotkey) to fill this order");
             }
 
             console.log(`[FillOrder] Transferring ${alphaAmount} Alpha (netuid ${fixedValues.asset}) to escrow ${escrowWallet}`);
@@ -437,6 +507,7 @@ export function FillOrderModal({
       setOrderUuid("");
       setWsUuid("");
       setEscrowGenerated(false);
+      setIsInReviewMode(false);
       setError("");
       setLiveParentPrice(null);
       setTransferAlpha(undefined);
@@ -565,7 +636,7 @@ export function FillOrderModal({
               <button
                 type="button"
                 onClick={() => {
-                  if (escrowGenerated) return;
+                  if (escrowGenerated && !isInReviewMode) return;
                   if (transferInputMode === "tao") {
                     const v = transferTao ?? transferAlpha;
                     setTransferAlpha(v);
@@ -576,7 +647,7 @@ export function FillOrderModal({
                     setTransferInputMode("tao");
                   }
                 }}
-                disabled={escrowGenerated}
+                disabled={escrowGenerated && !isInReviewMode}
                 className="h-[1.5rem] w-[2rem] flex items-center rounded-md justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
                 aria-label="Switch between TAO and Alpha"
                 title="Switch unit (TAO ↔ Alpha)"
@@ -601,7 +672,7 @@ export function FillOrderModal({
                     setTransferAlpha(v);
                   }
                 }}
-                disabled={escrowGenerated}
+                disabled={escrowGenerated && !isInReviewMode}
                 placeholder={transferInputMode === "tao" ? "Enter TAO amount" : "Enter Alpha amount"}
                 className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
@@ -609,7 +680,7 @@ export function FillOrderModal({
                 <button
                   type="button"
                   onClick={() => {
-                    if (!escrowGenerated) {
+                    if (!escrowGenerated || isInReviewMode) {
                       const current = (transferInputMode === "tao" ? transferTao : transferAlpha) ?? 0;
                       const newVal = Number((current + 0.001).toFixed(3));
                       if (transferInputMode === "tao") {
@@ -619,7 +690,7 @@ export function FillOrderModal({
                       }
                     }
                   }}
-                  disabled={escrowGenerated}
+                  disabled={escrowGenerated && !isInReviewMode}
                   className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   aria-label={transferInputMode === "tao" ? "Increase TAO amount" : "Increase alpha amount"}
                 >
@@ -628,7 +699,7 @@ export function FillOrderModal({
                 <button
                   type="button"
                   onClick={() => {
-                    if (!escrowGenerated) {
+                    if (!escrowGenerated || isInReviewMode) {
                       const current = (transferInputMode === "tao" ? transferTao : transferAlpha) ?? 0;
                       const newValue = Math.max(0, Number((current - 0.001).toFixed(3)));
                       if (transferInputMode === "tao") {
@@ -638,7 +709,7 @@ export function FillOrderModal({
                       }
                     }
                   }}
-                  disabled={escrowGenerated}
+                  disabled={escrowGenerated && !isInReviewMode}
                   className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   aria-label={transferInputMode === "tao" ? "Decrease TAO amount" : "Decrease alpha amount"}
                 >
@@ -699,25 +770,40 @@ export function FillOrderModal({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={loading || isTransferring}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleFillOrder}
-            disabled={loading || isTransferring}
-            variant="outline"
-          >
-            {(loading || isTransferring) ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {isTransferring ? "Transferring..." : escrowGenerated ? "Filling..." : "Creating Escrow..."}
-              </>
-            ) : escrowGenerated ? (
-              "Fill Order"
-            ) : (
-              "Create Escrow"
-            )}
-          </Button>
+          {!escrowGenerated ? (
+            <>
+              <Button variant="outline" onClick={handleClose} disabled={loading}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleFillOrder}
+                disabled={loading}
+                variant="outline"
+              >
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Create Escrow
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={isInReviewMode ? handleCancel : handleBack}
+                disabled={loading || isTransferring}
+              >
+                {isInReviewMode ? "Cancel" : "Back"}
+              </Button>
+              <Button
+                variant={isInReviewMode ? "outline" : undefined}
+                onClick={isInReviewMode ? handleReviewOrder : handleFillOrder}
+                disabled={loading || isTransferring}
+                className={isInReviewMode ? "" : "bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.4)]"}
+              >
+                {(loading || isTransferring) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isInReviewMode ? "Review Order" : isTransferring ? "Transferring..." : "Fill Order"}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
