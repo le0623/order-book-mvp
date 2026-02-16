@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Copy, CheckIcon, ChevronUp, ChevronDown } from "lucide-react";
-import { Order } from "@/lib/types";
+import { Order, getOrderType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useWallet } from "@/context/wallet-context";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -647,38 +647,51 @@ export function FillOrderModal({
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4 pt-2">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
-                Asset
-              </span>
-              <p className="font-mono text-sm mt-1">
-                {fixedValues.asset === 0 ? "—" : `SN${fixedValues.asset}`}
-              </p>
+          <div className="grid gap-4 pt-2">
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
+                  Order
+                </span>
+                <p className="font-mono text-sm mt-1">
+                  {getOrderType(fixedValues.type)}
+                </p>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
+                  Asset
+                </span>
+                <p className="font-mono text-sm mt-1">
+                  {fixedValues.asset === 0 ? "—" : `SN${fixedValues.asset}`}
+                </p>
+              </div>
+              <div />
             </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
-                Price
-              </span>
-              <p className="font-mono text-sm mt-1">
-                {fixedValues.price > 0 ? fixedValues.price.toFixed(6) : "0.00"}
-              </p>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
-                TAO
-              </span>
-              <p className="font-mono text-sm mt-1">
-                {fixedValues.tao > 0 ? fixedValues.tao.toFixed(4) : "0.00"}
-              </p>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
-                Alpha
-              </span>
-              <p className="font-mono text-sm mt-1">
-                {fixedValues.alpha > 0 ? fixedValues.alpha.toFixed(2) : "0.00"}
-              </p>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
+                  TAO
+                </span>
+                <p className="font-mono text-sm mt-1">
+                  {fixedValues.tao > 0 ? fixedValues.tao.toFixed(4) : "0.00"}
+                </p>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
+                  Alpha
+                </span>
+                <p className="font-mono text-sm mt-1">
+                  {fixedValues.alpha > 0 ? fixedValues.alpha.toFixed(2) : "0.00"}
+                </p>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80">
+                  Price
+                </span>
+                <p className="font-mono text-sm mt-1">
+                  {fixedValues.price > 0 ? fixedValues.price.toFixed(6) : "0.00"}
+                </p>
+              </div>
             </div>
           </div>
 

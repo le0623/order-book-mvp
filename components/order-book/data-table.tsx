@@ -562,7 +562,7 @@ export function DataTable<TData, TValue>({
                           {headerGroup.headers.map((header) => (
                             <TableHeadCell
                               key={header.id}
-                              className="text-sm font-semibold normal-case"
+                              className="text-[0.82rem] font-semibold uppercase"
                               style={{ width: header.getSize() }}
                             >
                               {header.isPlaceholder
@@ -649,7 +649,7 @@ export function DataTable<TData, TValue>({
                     {headerGroup.headers.map((header) => (
                       <TableHeadCell
                         key={header.id}
-                        className="text-sm font-semibold normal-case"
+                        className="text-[0.82rem] font-semibold uppercase"
                         style={{ width: header.getSize() }}
                       >
                         {header.isPlaceholder

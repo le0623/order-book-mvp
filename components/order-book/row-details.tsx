@@ -499,10 +499,10 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
             ref={paneRef as React.RefObject<HTMLFieldSetElement>}
             className="px-4 pb-5 pt-1 rounded-lg bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/50 space-y-4"
           >
-            <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
-              Wallet
-            </legend>
-            <div className="flex items-center !mt-0.5 gap-1.5">
+            <legend className="flex items-center gap-2 flex-wrap !mt-0.5">
+              <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
+                Wallet
+              </div>
               <code className="font-mono text-sm text-slate-900 dark:text-foreground break-all">
                 {order.wallet.length > 8 ? `${order.wallet.slice(0, 4)}...${order.wallet.slice(-4)}` : order.wallet}
               </code>
@@ -525,12 +525,12 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                 href={`https://taostats.io/account/${order.wallet}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 opacity-60 hover:opacity-90"
+                className="mr-1 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 opacity-60 hover:opacity-90"
                 title={`View on Taostats: ${order.wallet}`}
               >
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
-            </div>
+            </legend> 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 !mt-1">
               <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
                 <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
