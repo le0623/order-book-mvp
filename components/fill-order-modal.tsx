@@ -21,7 +21,7 @@ import { WebSocketMessage } from "@/lib/websocket-types";
 import { getWebSocketBookUrl, API_URL } from "@/lib/config";
 import { ConnectButton } from "@/components/walletkit/connect";
 import { parseWsMessage } from "@/lib/websocket-utils";
-import { postJson, extractResponseError, readResponseBody } from "@/lib/api-utils";
+import { postJson, extractResponseError, readResponseBody, parseRecResponse } from "@/lib/api-utils";
 import { useBittensorTransfer } from "@/hooks/useBittensorTransfer";
 import { resolveHotkey } from "@/lib/bittensor";
 
@@ -70,6 +70,7 @@ export function FillOrderModal({
     price: number;
   } | null>(null);
   const [poolData, setPoolData] = React.useState<Record<number, { tao_in: number; alpha_in: number }>>({});
+  const [recPopupMessage, setRecPopupMessage] = React.useState<string>("");
 
   const pendingEscrowRef = React.useRef<string>("");
 
@@ -479,6 +480,18 @@ export function FillOrderModal({
         throw new Error(await extractResponseError(response));
       }
 
+      // Parse /rec response format: ['msg', tao, alpha, price]
+      try {
+        const responseBody = await readResponseBody(response);
+        const responseText = typeof responseBody === "string" ? responseBody : JSON.stringify(responseBody);
+        const recResult = parseRecResponse(responseText);
+        if (recResult?.message) {
+          setRecPopupMessage(recResult.message);
+        }
+      } catch (e) {
+        console.warn("Could not extract data from fill response:", e);
+      }
+
       onOrderFilled?.();
       onOpenChange(false);
       setEscrowWallet("");
@@ -806,6 +819,21 @@ export function FillOrderModal({
           )}
         </DialogFooter>
       </DialogContent>
+
+      {/* Popup for /rec response messages */}
+      <Dialog open={!!recPopupMessage} onOpenChange={(isOpen) => { if (!isOpen) setRecPopupMessage(""); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Notice</DialogTitle>
+            <DialogDescription>{recPopupMessage}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setRecPopupMessage("")} variant="outline">
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
