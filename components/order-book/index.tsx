@@ -44,7 +44,7 @@ export function OrderBook({
   // Memoize renderSubComponent so the table doesn't get a new function reference each render
   const renderSubComponent = React.useCallback(({ row }: { row: any }) => {
     const order = row.original;
-    const filledOrders = filledOrdersMap[order.uuid] || [];
+    const filledOrders = filledOrdersMap[order.escrow] || [];
     return (
       <OrderBookRowDetails
         key={`${order.uuid}-${order.status}-${order.stp}-${order.public}`}
