@@ -481,29 +481,36 @@ export function FillOrderModal({
       }
 
       // Parse /rec response format: ['msg', tao, alpha, price]
+      let recMessage = "";
       try {
         const responseBody = await readResponseBody(response);
         const responseText = typeof responseBody === "string" ? responseBody : JSON.stringify(responseBody);
         const recResult = parseRecResponse(responseText);
         if (recResult?.message) {
-          setRecPopupMessage(recResult.message);
+          recMessage = recResult.message;
         }
       } catch (e) {
         console.warn("Could not extract data from fill response:", e);
       }
 
-      onOrderFilled?.();
-      onOpenChange(false);
-      setEscrowWallet("");
-      setOriginWallet("");
-      setOrderUuid("");
-      setWsUuid("");
-      setEscrowGenerated(false);
-      setError("");
-      setTransferAlpha(undefined);
-      setTransferTao(undefined);
-      pendingEscrowRef.current = "";
-      resetTransfer();
+      if (recMessage) {
+        // Backend returned a message (e.g. stop price error) — show it and keep modal open
+        setError(recMessage);
+      } else {
+        // Success — close modal and reset
+        onOrderFilled?.();
+        onOpenChange(false);
+        setEscrowWallet("");
+        setOriginWallet("");
+        setOrderUuid("");
+        setWsUuid("");
+        setEscrowGenerated(false);
+        setError("");
+        setTransferAlpha(undefined);
+        setTransferTao(undefined);
+        pendingEscrowRef.current = "";
+        resetTransfer();
+      }
     } catch (err) {
       console.error("Error filling order:", err);
       setError(err instanceof Error ? err.message : "Failed to fill order. Please try again");

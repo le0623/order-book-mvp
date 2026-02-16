@@ -506,6 +506,7 @@ export function NewOrderModal({
       }
 
       // Parse /rec response format: ['msg', tao, alpha, price]
+      let recMessage = "";
       try {
         const responseBody = await readResponseBody(response);
         const responseText = typeof responseBody === "string" ? responseBody : JSON.stringify(responseBody);
@@ -515,16 +516,22 @@ export function NewOrderModal({
             setPriceData({ tao: recResult.tao, alpha: recResult.alpha, price: recResult.price });
           }
           if (recResult.message) {
-            setRecPopupMessage(recResult.message);
+            recMessage = recResult.message;
           }
         }
       } catch (e) {
         console.warn("Could not extract data from response:", e);
       }
 
-      onOrderPlaced?.();
-      onOpenChange(false);
-      resetForm();
+      if (recMessage) {
+        // Backend returned a message — show it and keep modal open
+        setError(recMessage);
+      } else {
+        // Success — close modal and reset
+        onOrderPlaced?.();
+        onOpenChange(false);
+        resetForm();
+      }
     } catch (err) {
       console.error("Error placing order:", err);
       setError(err instanceof Error ? err.message : "Failed to place order");
