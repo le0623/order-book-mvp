@@ -552,7 +552,7 @@ export function FillOrderModal({
                       if (tao > 0) slippage = (tao - received) / tao * 100;
                     }
                     if (slippage <= 0) return null;
-                    return <> Slippage saved {slippage.toFixed(4)}%</>;
+                    return <> {slippage.toFixed(4)}% Slippage saved</>;
                   })()}
                 </p>
               )}
