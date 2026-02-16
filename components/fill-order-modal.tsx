@@ -548,7 +548,7 @@ export function FillOrderModal({
         {/* Transfer errors are now shown via the unified error display above */}
         {transferStatus === "finalized" && !isTransferring && (
           <div className="p-3 rounded-md bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 text-sm">
-            Transfer confirmed on-chain. Submitting fill order...
+            Transfer confirmed on-chain. Filling order...
           </div>
         )}
 
@@ -623,7 +623,7 @@ export function FillOrderModal({
                       if (tao > 0) slippage = (tao - received) / tao * 100;
                     }
                     if (slippage <= 0) return null;
-                    return <> {slippage.toFixed(4)}% Slippage saved</>;
+                    return <> {slippage.toFixed(4)}% slippage saved</>;
                   })()}
                 </p>
               )}
