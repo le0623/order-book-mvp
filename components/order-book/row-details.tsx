@@ -225,7 +225,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-9 gap-2 bg-slate-100 text-slate-900 dark:bg-muted dark:text-foreground hover:bg-slate-200 dark:hover:bg-muted/90"
+                            className="h-9 gap-2 bg-white dark:!bg-[#293641] text-slate-900 dark:text-foreground"
                             disabled={!isOwner}
                           >
                             <Edit2 className="h-3.5 w-3.5" />
@@ -236,7 +236,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                           <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                               Modify Order
-                              <span className="font-mono text-muted-foreground text-sm font-normal">
+                              <span className="font-mono text-muted-foreground text-sm font-normal opacity-60">
                                 Escrow {formatWalletAddress(order.escrow)}
                               </span>
                             </DialogTitle>
@@ -265,7 +265,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                                     className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     aria-label="Increase stop price"
                                   >
-                                    <ChevronUp className="h-3 w-3 text-muted-foreground"/>
+                                    <ChevronUp className="h-3 w-3 text-muted-foreground" />
                                   </button>
                                   <button
                                     type="button"
@@ -336,10 +336,10 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                                   </Popover>
                                 )}
                               </div>
-                                <p className="text-sm text-muted-foreground opacity-60">
-                                  GTC = Good Till Cancel (order stays active until you cancel it)
-                                </p>
-                              </div>
+                              <p className="text-sm text-muted-foreground opacity-60">
+                                GTC = Good Till Cancel (order stays active until you cancel it)
+                              </p>
+                            </div>
                             <div className="flex items-center space-x-2">
                               <Checkbox
                                 id="public"
@@ -415,8 +415,8 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-9 gap-2 bg-slate-100 text-slate-900 dark:bg-muted dark:text-foreground hover:bg-slate-200 dark:hover:bg-muted/90"
                           onClick={() => setIsCloseConfirmOpen(true)}
+                          className="dark:!bg-[#293641] h-9 gap-2 text-slate-900 dark:text-foreground"
                           disabled
                         >
                           <span className="text-base leading-none">✗</span>
@@ -432,7 +432,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-9 gap-2 bg-slate-100 text-slate-900 dark:bg-muted dark:text-foreground hover:bg-slate-200 dark:hover:bg-muted/90"
+                      className="dark:!bg-[#293641] h-9 gap-2 text-slate-900 dark:text-foreground"
                     onClick={() => setIsCloseConfirmOpen(true)}
                   >
                     <span className="text-base leading-none">✗</span>
@@ -449,12 +449,12 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                       Close Order
-                      <span className="font-mono text-muted-foreground text-sm font-normal">
+                      <span className="font-mono text-muted-foreground text-sm font-normal opacity-60">
                         Escrow {formatWalletAddress(order.escrow)}
                       </span>
                     </DialogTitle>
                     <DialogDescription className="text-sm text-muted-foreground opacity-60">
-                      Are you sure you want to close this order? Wallet will be refunded.
+                      Are you sure you want to close this order? Wallet will be refunded
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter className="gap-2 sm:gap-0">
