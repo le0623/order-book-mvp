@@ -81,7 +81,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
   apiUrl,
   walletAddress,
 }: OrderBookRowDetailsProps) {
-  const isOwner = !!(walletAddress && order.origin === walletAddress);
+  const isOwner = !!(walletAddress && order.wallet === walletAddress);
   const [copiedWalletId, setCopiedWalletId] = React.useState(false);
   const [copiedEscrowId, setCopiedEscrowId] = React.useState(false);
   const [copiedFilledEscrowIds, setCopiedFilledEscrowIds] = React.useState<
@@ -476,18 +476,12 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                     size="sm"
                     className="h-9 gap-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.4)]"
                     onClick={() => setIsFillOrderModalOpen(true)}
-                    disabled={isOwner}
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Fill Order
                   </Button>
                 </div>
               </TooltipTrigger>
-              {isOwner && (
-                <TooltipContent>
-                  <p>You cannot fill your own order</p>
-                </TooltipContent>
-              )}
             </Tooltip>
           </TooltipProvider>
         )}

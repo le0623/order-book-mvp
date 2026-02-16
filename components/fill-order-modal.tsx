@@ -260,7 +260,7 @@ export function FillOrderModal({
 
       const orderData = {
         uuid: wsUuid,
-        origin: "",
+        origin: order.escrow, // Parent order's escrow — tells backend this is a fill, not a new order
         escrow: "",
         wallet: walletAddress,
         asset: fixedValues.asset,
@@ -269,12 +269,12 @@ export function FillOrderModal({
         bid: fixedValues.tao,
         stp: fixedValues.price,
         lmt: fixedValues.price,
-        gtd: "gtc", // No GTD for filled orders
-        partial: false, // No partial for filled orders
-        public: false, // No public flag for filled orders
+        gtd: "gtc",
+        partial: false,
+        public: false,
         tao: getTaoForSubmit(),
         alpha: getAlphaForSubmit(),
-        price: 0.0, // auto fill
+        price: 0.0,
         status: -1, // -1 = Init status (triggers escrow generation in backend)
       };
 
@@ -358,7 +358,7 @@ export function FillOrderModal({
 
         const orderData = {
           uuid: wsUuid,
-          origin: escrowWallet.trim(),
+          origin: order.escrow, // Parent order's escrow — tells backend this is a fill, not a new order
           escrow: escrowWallet.trim(),
           wallet: walletAddress,
           asset: fixedValues.asset,
@@ -471,7 +471,7 @@ export function FillOrderModal({
         price: 0.0, // auto fill
         status: 2,
       };
-
+      console.log(`[FillOrder] Filling order with data:`, fillOrderData);
       const backendUrl = apiUrl || API_URL;
       const response = await postJson(`${backendUrl}/rec`, fillOrderData);
 
