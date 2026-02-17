@@ -744,8 +744,9 @@ export function DataTable<TData, TValue>({
           onClick={() => {
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
-          className="fixed bottom-8 right-8 z-50 h-12 w-12 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:shadow-[0_6px_28px_rgba(37,99,235,0.5)] transition-all duration-200"
+          variant="outline"
           size="icon"
+          className="fixed bottom-8 right-8 z-50 h-12 w-12 rounded-full bg-white hover:bg-slate-50 border-slate-200 text-slate-600 dark:bg-background/80 dark:hover:bg-muted dark:border-border/60 dark:text-foreground"
           aria-label="Scroll to top"
         >
           <ArrowUp className="h-5 w-5" />

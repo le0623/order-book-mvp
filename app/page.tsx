@@ -291,7 +291,8 @@ export default function Home() {
     setPrices((prev) => ({ ...prev, ...pending }));
   }, []);
 
-  const handlePriceMessage = useCallback((message: unknown) => {
+  const handlePriceMessage = useCallback((message: unknown) => { 
+    console.log("[Home] ws/price raw:", message);
     try {
       const priceData = parseWsMessage<Record<string, unknown>>(message);
       if (!priceData || typeof priceData !== "object") return;
@@ -608,7 +609,7 @@ export default function Home() {
                 size="sm"
                 onClick={handleMyOrdersClick}
                 className={`h-9 gap-2 ${showMyOrdersOnly
-                  ? "bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white hover:text-white font-semibold border-blue-500/50 shadow-[0_4px_14px_0_rgba(37,99,235,0.3)]"
+                  ? "bg-slate-100 dark:bg-muted border-slate-300 dark:border-border font-medium hover:bg-slate-200 dark:hover:bg-muted/80"
                   : ""
                   }`}
               >
@@ -618,7 +619,7 @@ export default function Home() {
                     alt="My Orders"
                     width={32}
                     height={32}
-                    className={`w-[1.375rem] h-[1.375rem] ${showMyOrdersOnly ? "brightness-0 invert" : ""}`}
+                    className="w-[1.375rem] h-[1.375rem]"
                   />
                 ) : (
                   <Image
