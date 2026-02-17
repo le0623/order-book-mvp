@@ -21,7 +21,7 @@ import { WebSocketMessage } from "@/lib/websocket-types";
 import { getWebSocketBookUrl, API_URL } from "@/lib/config";
 import { ConnectButton } from "@/components/walletkit/connect";
 import { parseWsMessage } from "@/lib/websocket-utils";
-import { postJson, extractResponseError, readResponseBody } from "@/lib/api-utils";
+import { postJson, extractResponseError, readResponseBody, parseRecResponse } from "@/lib/api-utils";
 import { useBittensorTransfer } from "@/hooks/useBittensorTransfer";
 import { resolveHotkey } from "@/lib/bittensor";
 
@@ -32,6 +32,7 @@ interface FillOrderModalProps {
   prices?: Record<number, number>; // netuid -> price mapping for live prices
   apiUrl?: string;
   onOrderFilled?: () => void;
+  onRecMessage?: (message: string) => void; // e.g. status 3 / order closed — show in standalone page popup
 }
 
 export function FillOrderModal({
@@ -41,6 +42,7 @@ export function FillOrderModal({
   prices = {},
   apiUrl,
   onOrderFilled,
+  onRecMessage,
 }: FillOrderModalProps) {
   const { selectedAccount, isConnected } = useWallet();
   const {
@@ -182,6 +184,23 @@ export function FillOrderModal({
     return 0;
   };
 
+  // Max fill = take all remaining from parent order (from order book / ws tap)
+  const handleMaxFill = React.useCallback(() => {
+    if (order.type === 1) {
+      // Parent Sell: remaining is Alpha — grab all Alpha
+      const alpha = fixedValues.alpha > 0 ? fixedValues.alpha : undefined;
+      setTransferAlpha(alpha);
+      setTransferInputMode("alpha");
+      if (alpha != null) setTransferTao(undefined);
+    } else {
+      // Parent Buy: remaining is TAO — grab all TAO
+      const tao = fixedValues.tao > 0 ? fixedValues.tao : undefined;
+      setTransferTao(tao);
+      setTransferInputMode("tao");
+      if (tao != null) setTransferAlpha(undefined);
+    }
+  }, [order.type, fixedValues.alpha, fixedValues.tao]);
+
   React.useEffect(() => {
     if (!open) {
       setEscrowWallet("");
@@ -260,22 +279,22 @@ export function FillOrderModal({
 
       const orderData = {
         uuid: wsUuid,
-        origin: "",
+        origin: order.escrow, // Parent order's escrow — tells backend this is a fill
         escrow: "",
         wallet: walletAddress,
         asset: fixedValues.asset,
         type: fixedValues.type,
-        ask: fixedValues.alpha,
-        bid: fixedValues.tao,
-        stp: fixedValues.price,
-        lmt: fixedValues.price,
-        gtd: "gtc", // No GTD for filled orders
-        partial: false, // No partial for filled orders
-        public: false, // No public flag for filled orders
+        ask: Number(order.ask || 0),
+        bid: Number(order.bid || 0),
+        stp: Number(order.stp || 0),
+        lmt: Number(order.lmt || 0),
+        gtd: order.gtd || "gtc",
+        partial: !!order.partial,
+        public: !!order.public,
         tao: getTaoForSubmit(),
         alpha: getAlphaForSubmit(),
-        price: 0.0, // auto fill
-        status: -1, // -1 = Init status (triggers escrow generation in backend)
+        price: 0.0,
+        status: -1,
       };
 
       console.log("Fill Order: Creating escrow with UUID:", wsUuid);
@@ -358,18 +377,18 @@ export function FillOrderModal({
 
         const orderData = {
           uuid: wsUuid,
-          origin: escrowWallet.trim(),
+          origin: order.escrow, // Parent order's escrow — tells backend this is a fill
           escrow: escrowWallet.trim(),
           wallet: walletAddress,
           asset: fixedValues.asset,
           type: fixedValues.type,
-          ask: fixedValues.alpha,
-          bid: fixedValues.tao,
-          stp: fixedValues.price,
-          lmt: fixedValues.price,
-          gtd: "gtc",
-          partial: false,
-          public: false,
+          ask: Number(order.ask || 0),
+          bid: Number(order.bid || 0),
+          stp: Number(order.stp || 0),
+          lmt: Number(order.lmt || 0),
+          gtd: order.gtd || "gtc",
+          partial: !!order.partial,
+          public: !!order.public,
           tao: getTaoForSubmit(),
           alpha: getAlphaForSubmit(),
           price: 0.0,
@@ -459,19 +478,19 @@ export function FillOrderModal({
         wallet: walletAddress,
         asset: fixedValues.asset,
         type: fixedValues.type,
-        ask: fixedValues.alpha,
-        bid: fixedValues.tao,
-        stp: fixedValues.price,
-        lmt: fixedValues.price,
-        gtd: "gtc",
-        partial: false,
-        public: false,
+        ask: Number(order.ask || 0),
+        bid: Number(order.bid || 0),
+        stp: Number(order.stp || 0),
+        lmt: Number(order.lmt || 0),
+        gtd: order.gtd || "gtc",
+        partial: !!order.partial,
+        public: !!order.public,
         tao: getTaoForSubmit(),
         alpha: getAlphaForSubmit(),
-        price: 0.0, // auto fill
+        price: 0.0,
         status: 2,
       };
-
+      console.log(`[FillOrder] Filling order with data:`, fillOrderData);
       const backendUrl = apiUrl || API_URL;
       const response = await postJson(`${backendUrl}/rec`, fillOrderData);
 
@@ -479,18 +498,58 @@ export function FillOrderModal({
         throw new Error(await extractResponseError(response));
       }
 
-      onOrderFilled?.();
-      onOpenChange(false);
-      setEscrowWallet("");
-      setOriginWallet("");
-      setOrderUuid("");
-      setWsUuid("");
-      setEscrowGenerated(false);
-      setError("");
-      setTransferAlpha(undefined);
-      setTransferTao(undefined);
-      pendingEscrowRef.current = "";
-      resetTransfer();
+      // Parse /rec response format: ['msg', tao, alpha, price] or [..., status]
+      let recMessage = "";
+      let recStatus: number | undefined;
+      try {
+        const responseBody = await readResponseBody(response);
+        const responseText = typeof responseBody === "string" ? responseBody : JSON.stringify(responseBody);
+        const recResult = parseRecResponse(responseText);
+        if (recResult) {
+          recStatus = recResult.status;
+          if (recResult.message) {
+            recMessage = recResult.message;
+          }
+        }
+      } catch (e) {
+        console.warn("Could not extract data from fill response:", e);
+      }
+
+      if (recMessage) {
+        if (recStatus === 3) {
+          // Status 3 (order closed) — close modal and show standalone popup
+          onOrderFilled?.();
+          onOpenChange(false);
+          setEscrowWallet("");
+          setOriginWallet("");
+          setOrderUuid("");
+          setWsUuid("");
+          setEscrowGenerated(false);
+          setError("");
+          setTransferAlpha(undefined);
+          setTransferTao(undefined);
+          pendingEscrowRef.current = "";
+          resetTransfer();
+          onRecMessage?.(recMessage);
+        } else {
+          // Other message — show in modal (original style)
+          setError(recMessage);
+        }
+      } else {
+        // Success — close modal and reset
+        onOrderFilled?.();
+        onOpenChange(false);
+        setEscrowWallet("");
+        setOriginWallet("");
+        setOrderUuid("");
+        setWsUuid("");
+        setEscrowGenerated(false);
+        setError("");
+        setTransferAlpha(undefined);
+        setTransferTao(undefined);
+        pendingEscrowRef.current = "";
+        resetTransfer();
+      }
     } catch (err) {
       console.error("Error filling order:", err);
       setError(err instanceof Error ? err.message : "Failed to fill order. Please try again");
@@ -629,30 +688,42 @@ export function FillOrderModal({
               )}
           </div>
           <div className="grid gap-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="transfer-amount">
-                {transferInputMode === "tao" ? "Order Size in TAO" : "Order Size in Alpha"}
-              </Label>
+            <div className="flex justify-between">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="transfer-amount">
+                  {transferInputMode === "tao" ? "Order Size in TAO" : "Order Size in Alpha"}
+                </Label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (escrowGenerated && !isInReviewMode) return;
+                    if (transferInputMode === "tao") {
+                      const v = transferTao ?? transferAlpha;
+                      setTransferAlpha(v);
+                      setTransferInputMode("alpha");
+                    } else {
+                      const v = transferAlpha ?? transferTao;
+                      setTransferTao(v);
+                      setTransferInputMode("tao");
+                    }
+                  }}
+                  disabled={escrowGenerated && !isInReviewMode}
+                  className="h-[1.5rem] w-[2rem] flex items-center rounded-md justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                  aria-label="Switch between TAO and Alpha"
+                  title="Switch unit (TAO ↔ Alpha)"
+                >
+                  <span className="text-xs">τ/α</span>
+                </button>
+              </div>
               <button
                 type="button"
-                onClick={() => {
-                  if (escrowGenerated && !isInReviewMode) return;
-                  if (transferInputMode === "tao") {
-                    const v = transferTao ?? transferAlpha;
-                    setTransferAlpha(v);
-                    setTransferInputMode("alpha");
-                  } else {
-                    const v = transferAlpha ?? transferTao;
-                    setTransferTao(v);
-                    setTransferInputMode("tao");
-                  }
-                }}
-                disabled={escrowGenerated && !isInReviewMode}
-                className="h-[1.5rem] w-[2rem] flex items-center rounded-md justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
-                aria-label="Switch between TAO and Alpha"
-                title="Switch unit (TAO ↔ Alpha)"
+                onClick={handleMaxFill}
+                disabled={(escrowGenerated && !isInReviewMode) || (order.type === 1 ? fixedValues.alpha <= 0 : fixedValues.tao <= 0)}
+                className="h-[1.5rem] px-[0.35rem] flex items-center rounded-md justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0 text-xs"
+                aria-label="Fill entire parent order (all remaining)"
+                title={order.type === 1 ? "Fill all remaining Alpha from order" : "Fill all remaining TAO from order"}
               >
-                <span className="text-xs">{transferInputMode === "tao" ? "τ/α" : "α/τ"}</span>
+                Max Fill
               </button>
             </div>
             <div className="relative flex items-center">
@@ -660,7 +731,7 @@ export function FillOrderModal({
                 id="transfer-amount"
                 type="number"
                 min="0"
-                step="0.001"
+                step="1"
                 value={(transferInputMode === "tao" ? transferTao : transferAlpha) ?? ""}
                 onChange={(e) => {
                   const value = e.target.value.trim();
@@ -682,7 +753,7 @@ export function FillOrderModal({
                   onClick={() => {
                     if (!escrowGenerated || isInReviewMode) {
                       const current = (transferInputMode === "tao" ? transferTao : transferAlpha) ?? 0;
-                      const newVal = Number((current + 0.001).toFixed(3));
+                      const newVal = current + 1;
                       if (transferInputMode === "tao") {
                         setTransferTao(newVal);
                       } else {
@@ -701,7 +772,7 @@ export function FillOrderModal({
                   onClick={() => {
                     if (!escrowGenerated || isInReviewMode) {
                       const current = (transferInputMode === "tao" ? transferTao : transferAlpha) ?? 0;
-                      const newValue = Math.max(0, Number((current - 0.001).toFixed(3)));
+                      const newValue = Math.max(0, current - 1);
                       if (transferInputMode === "tao") {
                         setTransferTao(newValue > 0 ? newValue : undefined);
                       } else {
@@ -766,7 +837,7 @@ export function FillOrderModal({
             </div>
           </div>
 
-          
+
         </div>
 
         <DialogFooter>

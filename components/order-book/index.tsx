@@ -15,6 +15,7 @@ interface OrderBookProps {
   onUpdateOrder?: (id: string, updates: Partial<Order>) => void;
   onCancelOrder?: (id: string) => void;
   onFillOrder?: () => void;
+  onRecMessage?: (message: string) => void;
   onNewOrder?: () => void;
   apiUrl?: string;
   allOrdersForSearch?: Order[];
@@ -31,6 +32,7 @@ export function OrderBook({
   onUpdateOrder,
   onCancelOrder,
   onFillOrder,
+  onRecMessage,
   onNewOrder,
   apiUrl,
   allOrdersForSearch = [],
@@ -44,7 +46,7 @@ export function OrderBook({
   // Memoize renderSubComponent so the table doesn't get a new function reference each render
   const renderSubComponent = React.useCallback(({ row }: { row: any }) => {
     const order = row.original;
-    const filledOrders = filledOrdersMap[order.uuid] || [];
+    const filledOrders = filledOrdersMap[order.escrow] || [];
     return (
       <OrderBookRowDetails
         key={`${order.uuid}-${order.status}-${order.stp}-${order.public}`}
@@ -55,11 +57,12 @@ export function OrderBook({
         onUpdateOrder={onUpdateOrder}
         onCancelOrder={onCancelOrder}
         onFillOrder={onFillOrder}
+        onRecMessage={onRecMessage}
         apiUrl={apiUrl}
         walletAddress={walletAddress}
       />
     );
-  }, [filledOrdersMap, prices, newlyAddedOrderIds, onUpdateOrder, onCancelOrder, onFillOrder, apiUrl, walletAddress]);
+  }, [filledOrdersMap, prices, newlyAddedOrderIds, onUpdateOrder, onCancelOrder, onFillOrder, onRecMessage, apiUrl, walletAddress]);
 
   return (
     <DataTable

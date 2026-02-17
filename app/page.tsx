@@ -56,6 +56,7 @@ export default function Home() {
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
   const [showLoading, setShowLoading] = useState(true);
   const headerRef = useRef<HTMLElement | null>(null);
+  const [subnetNames, setSubnetNames] = useState<Record<number, string>>({});
 
   useEffect(() => {
     setMounted(true);
@@ -320,25 +321,38 @@ export default function Home() {
   }, []);
 
   const handlePriceMessage = useCallback((message: unknown) => {
+    console.log("[Home] ws/price response:", message);
     try {
       const priceData = parseWsMessage<Record<string, unknown>>(message);
       if (!priceData || typeof priceData !== "object") return;
+      console.log("[Home] ws/price parsed:", priceData);
 
-      for (const [key, value] of Object.entries(priceData)) {
-        const netuid = Number(key);
-        let price: number;
-        if (typeof value === "object" && value !== null && "price" in value) {
-          price = Number((value as { price: unknown }).price);
-        } else if (typeof value === "number") {
-          price = value;
-        } else {
-          continue;
-        }
-
-        if (!isNaN(netuid) && !isNaN(price) && price > 0) {
-          pendingPricesRef.current[netuid] = price;
+      // Format: { subnet_name: { "0": "root", ... }, price: { "0": 1.0, ... }, tao_in, alpha_in }
+      const priceObj = priceData.price;
+      if (priceObj && typeof priceObj === "object" && !Array.isArray(priceObj)) {
+        for (const [key, value] of Object.entries(priceObj)) {
+          const netuid = Number(key);
+          const price = Number(value);
+          if (!isNaN(netuid) && !isNaN(price) && price > 0) {
+            pendingPricesRef.current[netuid] = price;
+          }
         }
       }
+
+      const nameObj = priceData.subnet_name;
+      if (nameObj && typeof nameObj === "object" && !Array.isArray(nameObj)) {
+        const next: Record<number, string> = {};
+        for (const [key, value] of Object.entries(nameObj)) {
+          const netuid = Number(key);
+          if (!isNaN(netuid) && typeof value === "string") {
+            next[netuid] = value;
+          }
+        }
+        if (Object.keys(next).length > 0) {
+          setSubnetNames((prev) => ({ ...prev, ...next }));
+        }
+      }
+
       // Throttle: schedule a flush if not already pending
       if (!priceFlushTimerRef.current) {
         priceFlushTimerRef.current = setTimeout(() => {
@@ -575,7 +589,7 @@ export default function Home() {
     let filteredOrders = openOrders;
     if (showMyOrdersOnly && selectedAccount?.address) {
       filteredOrders = orders.filter(
-        (order) => order.origin === selectedAccount.address
+        (order) => order.wallet === selectedAccount.address
       );
     }
 
@@ -651,7 +665,7 @@ export default function Home() {
                 size="sm"
                 onClick={handleMyOrdersClick}
                 className={`h-9 gap-2 ${showMyOrdersOnly
-                  ? "bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white hover:text-white font-semibold border-blue-500/50 shadow-[0_4px_14px_0_rgba(37,99,235,0.3)]"
+                  ? "bg-slate-100 dark:bg-muted border-slate-300 dark:border-border font-medium hover:bg-slate-200 dark:hover:bg-muted/80"
                   : ""
                   }`}
               >
@@ -661,7 +675,7 @@ export default function Home() {
                     alt="My Orders"
                     width={32}
                     height={32}
-                    className={`w-[1.375rem] h-[1.375rem] ${showMyOrdersOnly ? "brightness-0 invert" : ""}`}
+                    className="w-[1.375rem] h-[1.375rem]"
                   />
                 ) : (
                   <Image
@@ -742,6 +756,7 @@ export default function Home() {
           onUpdateOrder={handleUpdateOrder}
           onCancelOrder={handleCancelOrder}
           onFillOrder={undefined}
+          onRecMessage={setRecPopupMessage}
           onNewOrder={() => setNewOrderModalOpen(true)}
           apiUrl={API_URL}
           showMyOrdersOnly={showMyOrdersOnly}
@@ -752,9 +767,11 @@ export default function Home() {
         <NewOrderModal
           open={newOrderModalOpen}
           onOpenChange={setNewOrderModalOpen}
+          onRecMessage={setRecPopupMessage}
           apiUrl={API_URL}
           prices={prices}
           ofm={ofm}
+          subnetNames={subnetNames}
         />
 
         <Dialog open={showWalletConnectDialog} onOpenChange={setShowWalletConnectDialog}>
@@ -778,11 +795,11 @@ export default function Home() {
 
         <WalletModal open={walletModalOpen} onOpenChange={closeWalletModal} />
 
-        {/* Popup for /rec response messages */}
+        {/* Standalone popup for /rec messages (e.g. status 3 / order closed) */}
         <Dialog open={!!recPopupMessage} onOpenChange={(open) => { if (!open) setRecPopupMessage(""); }}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Notice</DialogTitle>
+              <DialogTitle>Order closed</DialogTitle>
               <DialogDescription>{recPopupMessage}</DialogDescription>
             </DialogHeader>
             <DialogFooter>

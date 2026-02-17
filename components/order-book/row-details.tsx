@@ -33,6 +33,7 @@ import {
   formatDateOnly,
   formatPrice,
   formatNumber,
+  formatTao,
 } from "./columns";
 import { FillOrderModal } from "../fill-order-modal";
 import { getOrderType, formatWalletAddress } from "@/lib/types";
@@ -66,6 +67,7 @@ interface OrderBookRowDetailsProps {
   onUpdateOrder?: (uuid: string, updates: Partial<Order>) => void;
   onCancelOrder?: (uuid: string) => void;
   onFillOrder?: () => void;
+  onRecMessage?: (message: string) => void;
   apiUrl?: string;
   walletAddress?: string;
 }
@@ -78,10 +80,11 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
   onUpdateOrder,
   onCancelOrder,
   onFillOrder,
+  onRecMessage,
   apiUrl,
   walletAddress,
 }: OrderBookRowDetailsProps) {
-  const isOwner = !!(walletAddress && order.origin === walletAddress);
+  const isOwner = !!(walletAddress && order.wallet === walletAddress);
   const [copiedWalletId, setCopiedWalletId] = React.useState(false);
   const [copiedEscrowId, setCopiedEscrowId] = React.useState(false);
   const [copiedFilledEscrowIds, setCopiedFilledEscrowIds] = React.useState<
@@ -224,20 +227,21 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-9 gap-2"
+                            className="h-9 gap-2 bg-white dark:!bg-[#293641] text-slate-900 dark:text-foreground hover:bg-slate-50 dark:hover:!bg-accent hover:shadow-md transition-all"
                             disabled={!isOwner}
                           >
                             <Edit2 className="h-3.5 w-3.5" />
                             Modify
                           </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
                           <DialogHeader>
-                            <DialogTitle>Modify Order</DialogTitle>
-                            <DialogDescription>
-                              Update order settings for Escrow{" "}
-                              {formatWalletAddress(order.escrow)}
-                            </DialogDescription>
+                            <DialogTitle className="flex items-center gap-2">
+                              Modify Order
+                              <span className="font-mono text-muted-foreground text-sm font-normal opacity-60">
+                                Escrow {formatWalletAddress(order.escrow)}
+                              </span>
+                            </DialogTitle>
                           </DialogHeader>
                           <div className="grid gap-4 py-4">
                             <div className="space-y-2">
@@ -281,9 +285,6 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                                   </button>
                                 </div>
                               </div>
-                              <p className="text-xs text-muted-foreground">
-                                Stop price for this order
-                              </p>
                             </div>
                             <div className="space-y-2">
                               <Label>Good Till Date (GTD)</Label>
@@ -337,9 +338,8 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                                   </Popover>
                                 )}
                               </div>
-                              <p className="text-xs text-muted-foreground">
-                                GTC = Good Till Cancel (order stays active until you
-                                cancel it)
+                              <p className="text-sm text-muted-foreground opacity-60">
+                                GTC = Good Till Cancel (order stays active until you cancel it)
                               </p>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -354,7 +354,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                                 htmlFor="public"
                                 className="text-sm font-normal cursor-pointer"
                               >
-                                Public Order
+                                Public order (visible to everyone)
                               </Label>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -369,7 +369,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                                 htmlFor="partial"
                                 className="text-sm font-normal cursor-pointer"
                               >
-                                Partial Order
+                                Allow partial fills
                               </Label>
                             </div>
                           </div>
@@ -389,45 +389,58 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                               Cancel
                             </Button>
                             <Button
+                              variant="outline"
                               onClick={handleSaveEdit}
-                              className="h-10 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.25)]"
+                              className="h-10"
                             >
-                              Save Changes
+                              Modify Order
                             </Button>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Only the order creator can modify this order</p>
-                  </TooltipContent>
+                  {!isOwner && (
+                    <TooltipContent>
+                      <p>Only the order creator can modify this order</p>
+                    </TooltipContent>
+                  )}
                 </Tooltip>
               </TooltipProvider>
 
 
               <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-block">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-9 gap-2"
-                        onClick={() => setIsCloseConfirmOpen(true)}
-                        disabled={!isOwner}
-                      >
-                        <span className="text-base leading-none">✗</span>
-                        Close Order
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  {!isOwner && (
+                {!isOwner ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-block">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsCloseConfirmOpen(true)}
+                          className="dark:!bg-[#293641] h-9 gap-2 text-slate-900 dark:text-foreground hover:bg-slate-50 dark:hover:!bg-accent hover:shadow-md transition-all"
+                          disabled
+                        >
+                          <span className="text-base leading-none">✗</span>
+                          Close Order
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
                     <TooltipContent>
                       <p>Only the order creator can close this order</p>
                     </TooltipContent>
-                  )}
-                </Tooltip>
+                  </Tooltip>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="dark:!bg-[#293641] h-9 gap-2 text-slate-900 dark:text-foreground hover:bg-slate-50 dark:hover:!bg-accent hover:shadow-md transition-all"
+                    onClick={() => setIsCloseConfirmOpen(true)}
+                  >
+                    <span className="text-base leading-none">✗</span>
+                    Close Order
+                  </Button>
+                )}
               </TooltipProvider>
 
               <Dialog
@@ -436,10 +449,14 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
               >
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Close Order</DialogTitle>
-                    <DialogDescription>
-                      Are you sure you want to close this order? This action
-                      cannot be undone.
+                    <DialogTitle className="flex items-center gap-2">
+                      Close Order
+                      <span className="font-mono text-muted-foreground text-sm font-normal opacity-60">
+                        Escrow {formatWalletAddress(order.escrow)}
+                      </span>
+                    </DialogTitle>
+                    <DialogDescription className="text-sm text-muted-foreground">
+                      Are you sure you want to close this order? Wallet will be refunded
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter className="gap-2 sm:gap-0">
@@ -451,7 +468,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                       Cancel
                     </Button>
                     <Button
-                      variant="destructive"
+                      variant="outline"
                       className="h-10"
                       onClick={() => {
                         onCancelOrder?.(order.uuid);
@@ -476,18 +493,12 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                     size="sm"
                     className="h-9 gap-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.4)]"
                     onClick={() => setIsFillOrderModalOpen(true)}
-                    disabled={isOwner}
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Fill Order
                   </Button>
                 </div>
               </TooltipTrigger>
-              {isOwner && (
-                <TooltipContent>
-                  <p>You cannot fill your own order</p>
-                </TooltipContent>
-              )}
             </Tooltip>
           </TooltipProvider>
         )}
@@ -530,7 +541,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
               >
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
-            </legend> 
+            </legend>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 !mt-1">
               <fieldset className="flex flex-col justify-center gap-1.5 px-3 pb-[0.6rem] pt-[0.2rem] mt-[0.2rem] rounded-md bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-border/40">
                 <legend className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-muted-foreground/80 px-1">
@@ -733,7 +744,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                           className="pr-3 pt-3 pb-3 pl-[0.5rem] text-right font-mono text-sm"
                           style={{ width: 70 }}
                         >
-                          {formatNumber(order.bid || 0)}
+                          {formatTao(order.bid || 0)}
                         </td>
                         <td
                           className="py-3 pr-2 pl-[2rem] text-right font-mono text-sm"
@@ -742,10 +753,10 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                           {formatNumber(order.ask || 0)}
                         </td>
                         <td
-                          className="pr-3 pt-3 pb-3 pl-[1.5rem] font-mono text-sm"
+                          className="pr-4 pt-3 pb-3 pl-[1.5rem] font-mono text-sm"
                           style={{ width: 90 }}
                         >
-                          <div className="flex justify-center pr-4">
+                          <div className="flex justify-end">
                             {formatPrice(filledOrder.stp || 0)}
                           </div>
                         </td>
@@ -777,6 +788,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
         prices={prices}
         apiUrl={apiUrl}
         onOrderFilled={onFillOrder}
+        onRecMessage={onRecMessage}
       />
     </div>
   );

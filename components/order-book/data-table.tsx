@@ -106,6 +106,14 @@ export function DataTable<TData, TValue>({
   React.useEffect(() => {
     if (isSearchActive) {
       setColumnFilters((prev) => prev.filter((filter) => filter.id !== "status"));
+      // Collapse any expanded row when showing search results
+      setExpanded({});
+      expandedIdsRef.current = new Set();
+    } else if (showMyOrdersOnly) {
+      // My Orders: show all statuses (no status filter)
+      setColumnFilters((prev) => prev.filter((filter) => filter.id !== "status"));
+      setExpanded({});
+      expandedIdsRef.current = new Set();
     } else {
       setColumnFilters((prev) => {
         const hasStatusFilter = prev.some((filter) => filter.id === "status");
@@ -117,7 +125,7 @@ export function DataTable<TData, TValue>({
         );
       });
     }
-  }, [isSearchActive]);
+  }, [isSearchActive, showMyOrdersOnly]);
 
   React.useEffect(() => {
     const checkMobileView = () => {
@@ -219,9 +227,10 @@ export function DataTable<TData, TValue>({
   const filteredData = React.useMemo(() => {
     if (isSearchActive) {
       const allFilledOrders = Object.values(filledOrdersMap).flat() as any[];
-      const searchOrders = allOrdersForSearch.length > 0
-        ? allOrdersForSearch
-        : [...data, ...allFilledOrders];
+      const searchOrders = [
+        ...(allOrdersForSearch.length > 0 ? allOrdersForSearch : data),
+        ...allFilledOrders,
+      ];
 
       const uniqueOrdersMap = new Map<string, any>();
       searchOrders.forEach((order: any) => {
@@ -263,8 +272,11 @@ export function DataTable<TData, TValue>({
       });
     }
 
-    // Include rows that match normal filter OR are currently expanded
-    // Use the ref to avoid re-filtering on every expand/collapse
+    // My Orders: show all statuses (0, 1, 2, 3); column filter will restrict
+    if (showMyOrdersOnly) {
+      return data;
+    }
+    // Order Book: include rows that match open book OR are currently expanded
     const currentExpandedIds = expandedIdsRef.current;
     const filtered = data.filter((order: any) => {
       const orderId = `${order.uuid}-${order.status}-${order.escrow || ""}`;
@@ -275,6 +287,7 @@ export function DataTable<TData, TValue>({
   }, [
     data,
     isSearchActive,
+    showMyOrdersOnly,
     searchAddress,
     searchOrderType,
     searchAssetId,
@@ -515,7 +528,7 @@ export function DataTable<TData, TValue>({
                     size="sm"
                   >
                     <Plus className="h-4 w-4" />
-                    New Order
+                    Open Order
                   </Button>
                 )
               )}
@@ -707,8 +720,9 @@ export function DataTable<TData, TValue>({
           onClick={() => {
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
-          className="fixed bottom-8 right-8 z-50 h-12 w-12 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:shadow-[0_6px_28px_rgba(37,99,235,0.5)] transition-all duration-200"
+          variant="outline"
           size="icon"
+          className="fixed bottom-8 right-8 z-50 h-12 w-12 rounded-full bg-white hover:bg-slate-50 border-slate-200 text-slate-600 dark:bg-background/80 dark:hover:bg-muted dark:border-border/60 dark:text-foreground"
           aria-label="Scroll to top"
         >
           <ArrowUp className="h-5 w-5" />

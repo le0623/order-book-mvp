@@ -243,18 +243,22 @@ interface NewOrderModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOrderPlaced?: () => void;
+  onRecMessage?: (message: string) => void; // e.g. status 3 / order closed — show in standalone page popup
   apiUrl?: string;
   prices?: Record<number, number>;
   ofm?: [number, number, number]; // [open_max, open_min, fill_min]
+  subnetNames?: Record<number, string>; // netuid -> subnet name from ws/price
 }
 
 export function NewOrderModal({
   open,
   onOpenChange,
   onOrderPlaced,
+  onRecMessage,
   apiUrl,
   prices = {},
   ofm = [10, 0.01, 0.001],
+  subnetNames = {},
 }: NewOrderModalProps) {
   const { selectedAccount, isConnected } = useWallet();
   const {
@@ -300,7 +304,7 @@ export function NewOrderModal({
   const [httpPrices, setHttpPrices] = React.useState<Record<number, number>>({});
   const [poolData, setPoolData] = React.useState<Record<number, { tao_in: number; alpha_in: number }>>({});
 
-  const [recPopupMessage, setRecPopupMessage] = React.useState<string>("");
+  const [assetInputEditing, setAssetInputEditing] = React.useState<string | null>(null);
   const pendingEscrowRef = React.useRef<string>("");
 
   const WS_URL = React.useMemo(() => {
@@ -472,7 +476,7 @@ export function NewOrderModal({
     setCopiedEscrow(false);
     setPriceData(null);
     setTransferInputMode("tao");
-    setRecPopupMessage("");
+    setAssetInputEditing(null);
     pendingEscrowRef.current = "";
     resetTransfer();
   };
@@ -535,10 +539,10 @@ export function NewOrderModal({
         wallet: walletAddress,
         asset: Number(formData.asset),
         type: Number(formData.type),
-        ask: Number(formData.type === 1 ? (formData.stp ?? 0) : 0.0),
-        bid: Number(formData.type === 2 ? (formData.stp ?? 0) : 0.0),
+        ask: 0,
+        bid: 0,
         stp: Number(formData.stp ?? 0),
-        lmt: Number(formData.stp ?? 0),
+        lmt: 0,
         gtd:
           formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
         partial: formData.partial ? true : false,
@@ -690,10 +694,10 @@ export function NewOrderModal({
         asset: Number(formData.asset),
         alpha: formData.type === 1 ? Number(getAlphaForSubmit()) : (alphaValue || 0.0),
         type: Number(formData.type),
-        ask: Number(formData.type === 1 ? (formData.stp ?? 0) : 0.0),
-        bid: Number(formData.type === 2 ? (formData.stp ?? 0) : 0.0),
+        ask: 0,
+        bid: 0,
         stp: Number(formData.stp ?? 0),
-        lmt: Number(formData.stp ?? 0),
+        lmt: 0,
         gtd:
           formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
         partial: formData.partial ? true : false,
@@ -709,26 +713,43 @@ export function NewOrderModal({
         throw new Error(await extractResponseError(response));
       }
 
-      // Parse /rec response format: ['msg', tao, alpha, price]
+      // Parse /rec response format: ['msg', tao, alpha, price] or [..., status]
+      let recMessage = "";
+      let recStatus: number | undefined;
       try {
         const responseBody = await readResponseBody(response);
         const responseText = typeof responseBody === "string" ? responseBody : JSON.stringify(responseBody);
         const recResult = parseRecResponse(responseText);
         if (recResult) {
+          recStatus = recResult.status;
           if (recResult.price > 0) {
             setPriceData({ tao: recResult.tao, alpha: recResult.alpha, price: recResult.price });
           }
           if (recResult.message) {
-            setRecPopupMessage(recResult.message);
+            recMessage = recResult.message;
           }
         }
       } catch (e) {
         console.warn("Could not extract data from response:", e);
       }
 
-      onOrderPlaced?.();
-      onOpenChange(false);
-      resetForm();
+      if (recMessage) {
+        if (recStatus === 3) {
+          // Status 3 (order closed) — close modal and show standalone popup
+          onOrderPlaced?.();
+          onOpenChange(false);
+          resetForm();
+          onRecMessage?.(recMessage);
+        } else {
+          // Other message — show in modal (original style)
+          setError(recMessage);
+        }
+      } else {
+        // Success — close modal and reset
+        onOrderPlaced?.();
+        onOpenChange(false);
+        resetForm();
+      }
     } catch (err) {
       console.error("Error placing order:", err);
       setError(err instanceof Error ? err.message : "Failed to place order");
@@ -780,10 +801,10 @@ export function NewOrderModal({
           asset: Number(formData.asset),
           alpha: formData.type === 1 ? Number(getAlphaForSubmit()) : 0.0,
           type: Number(formData.type),
-          ask: Number(formData.type === 1 ? formData.stp : 0.0),
-          bid: Number(formData.type === 2 ? formData.stp : 0.0),
-          stp: Number(formData.stp),
-          lmt: Number(formData.stp),
+          ask: 0,
+          bid: 0,
+          stp: Number(formData.stp ?? 0),
+          lmt: 0,
           gtd: formData.gtd === "gtc" ? "gtc" : selectedDate?.toISOString() || "gtc",
           partial: formData.partial ? true : false,
           public: formData.public ? true : false,
@@ -824,7 +845,7 @@ export function NewOrderModal({
       <DialogContent className="sm:max-w-[516px] max-w-[calc(100vw-2rem)] w-[calc(100vw-2rem)] sm:w-[516px] bg-card dark:bg-background border-border/60">
         <DialogHeader className="flex flex-row justify-start gap-2 items-center mt-[-10px]">
           <div className="mt-[3px]">
-            <DialogTitle>New Order</DialogTitle>
+            <DialogTitle>Open Order</DialogTitle>
           </div>
           <ConnectButton />
         </DialogHeader>
@@ -928,7 +949,7 @@ export function NewOrderModal({
                       if (tao > 0) slippage = (tao - received) / tao * 100;
                     }
                     if (slippage <= 0) return null;
-                  return <> {slippage.toFixed(4)}% slippage saved</>;
+                    return <> {slippage.toFixed(4)}% slippage saved</>;
                   })()}
                 </p>
               )}
@@ -1023,29 +1044,103 @@ export function NewOrderModal({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setFormData({ ...formData, type: 2 })}
+                className={`flex-1 h-10 font-medium ${formData.type === 1
+                  ? "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:border-rose-800 dark:hover:text-rose-400"
+                  : "text-muted-foreground bg-background hover:bg-muted/50"
+                  }`}
+                onClick={() => setFormData({ ...formData, type: 1 })}
                 disabled={escrowGenerated && !isInReviewMode}
-                className={`flex-1 font-semibold transition-all ${
-                  formData.type === 2
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-700"
-                    : ""
-                }`}
               >
-                Buy
+                Sell
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setFormData({ ...formData, type: 1 })}
+                className={`flex-1 h-10 font-medium ${formData.type === 2
+                  ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600 dark:hover:bg-emerald-950/30 dark:hover:border-emerald-800 dark:hover:text-emerald-400"
+                  : "text-muted-foreground bg-background hover:bg-muted/50"
+                  }`}
+                onClick={() => setFormData({ ...formData, type: 2 })}
                 disabled={escrowGenerated && !isInReviewMode}
-                className={`flex-1 font-semibold transition-all ${
-                  formData.type === 1
-                    ? "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-700"
-                    : ""
-                }`}
               >
-                Sell
+                Buy
               </Button>
+            </div>
+          </div>
+
+
+
+          <div className="grid gap-2">
+            <Label htmlFor="asset">Asset (NETUID)</Label>
+            <div className="relative flex items-center">
+              <Input
+                id="asset"
+                type="text"
+                value={
+                  assetInputEditing !== null
+                    ? assetInputEditing
+                    : formData.asset != null
+                      ? (subnetNames[formData.asset]
+                        ? `${formData.asset} - ${subnetNames[formData.asset]}`
+                        : String(formData.asset))
+                      : ""
+                }
+                onFocus={() =>
+                  setAssetInputEditing(formData.asset != null ? String(formData.asset) : "")
+                }
+                onBlur={() => {
+                  const raw = (assetInputEditing ?? "").trim();
+                  if (raw === "") {
+                    setFormData((prev) => ({ ...prev, asset: undefined }));
+                  } else {
+                    const n = parseInt(raw, 10);
+                    setFormData((prev) => ({
+                      ...prev,
+                      asset: Number.isNaN(n) ? undefined : n,
+                    }));
+                  }
+                  setAssetInputEditing(null);
+                }}
+                onChange={(e) => setAssetInputEditing(e.target.value)}
+                disabled={escrowGenerated && !isInReviewMode}
+                placeholder="Enter asset"
+                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10"
+              />
+              <div className="absolute right-1 flex flex-col gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!escrowGenerated || isInReviewMode) {
+                      setFormData({
+                        ...formData,
+                        asset: Math.max(1, (formData.asset ?? 0) + 1),
+                      });
+                    }
+                  }}
+                  disabled={escrowGenerated && !isInReviewMode}
+                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Increase asset"
+                >
+                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!escrowGenerated || isInReviewMode) {
+                      const currentAsset = formData.asset ?? 1;
+                      setFormData({
+                        ...formData,
+                        asset: currentAsset > 1 ? currentAsset - 1 : undefined,
+                      });
+                    }
+                  }}
+                  disabled={escrowGenerated && !isInReviewMode}
+                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Decrease asset"
+                >
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1338,21 +1433,6 @@ export function NewOrderModal({
           </div>
         )}
       </DialogContent>
-
-      {/* Popup for /rec response messages */}
-      <Dialog open={!!recPopupMessage} onOpenChange={(isOpen) => { if (!isOpen) setRecPopupMessage(""); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Notice</DialogTitle>
-            <DialogDescription>{recPopupMessage}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setRecPopupMessage("")} variant="outline">
-              OK
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Dialog>
   );
 }

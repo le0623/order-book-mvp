@@ -20,7 +20,7 @@ const getStatusColor = (status: number): string => {
     case 2:
       return "text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800";
     case 3:
-      return "text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800";
+      return "text-gray-600 dark:text-gray-400 border-gray-200 dark:border-border";
     case 4:
       return "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800";
     case 5:

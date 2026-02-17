@@ -48,24 +48,22 @@ export async function readResponseBody(response: Response): Promise<unknown> {
   return await response.text();
 }
 
-/**
- * Parse backend /rec response string: "['msg', tao, alpha, price]"
- * Python's str() uses single quotes; we replace for JSON parsing.
- */
 export function parseRecResponse(
   responseText: string
-): { message: string; tao: number; alpha: number; price: number } | null {
+): { message: string; tao: number; alpha: number; price: number; status?: number } | null {
   try {
     const trimmed = responseText.trim();
     if (!trimmed.startsWith("[")) return null;
     const jsonStr = trimmed.replace(/'/g, '"');
     const parsed = JSON.parse(jsonStr);
     if (Array.isArray(parsed) && parsed.length >= 4) {
+      const status = parsed.length >= 5 ? Number(parsed[4]) : undefined;
       return {
         message: String(parsed[0] || ""),
         tao: Number(parsed[1]) || 0,
         alpha: Number(parsed[2]) || 0,
         price: Number(parsed[3]) || 0,
+        ...(Number.isInteger(status) ? { status } : {}),
       };
     }
   } catch {
