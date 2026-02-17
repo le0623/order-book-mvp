@@ -12,8 +12,11 @@ const pressStart2P = Press_Start_2P({
 })
 
 export const metadata: Metadata = {
-  title: "HODL",
+  title: "HODL Exchange",
   description: "",
+  icons: {
+    icon: "/favicon.ico",
+  },
 }
 
 export default function RootLayout({

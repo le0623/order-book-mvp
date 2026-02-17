@@ -627,7 +627,7 @@ export function NewOrderModal({
       <DialogContent className="sm:max-w-[516px] max-w-[calc(100vw-2rem)] w-[calc(100vw-2rem)] sm:w-[516px] bg-card dark:bg-background border-border/60">
         <DialogHeader className="flex flex-row justify-start gap-2 items-center mt-[-10px]">
           <div className="mt-[3px]">
-            <DialogTitle>New Order</DialogTitle>
+            <DialogTitle>Open Order</DialogTitle>
           </div>
           <ConnectButton />
         </DialogHeader>
@@ -819,25 +819,35 @@ export function NewOrderModal({
 
           {/* order type */}
           <div className="grid gap-2">
-            <Label htmlFor="type">Order Type</Label>
-            <Select
-              value={formData.type === undefined ? undefined : String(formData.type)}
-              onValueChange={(value) =>
-                setFormData({ ...formData, type: parseInt(value) })
-              }
-              disabled={escrowGenerated && !isInReviewMode}
-            >
-              <SelectTrigger
-                id="type"
-                className="focus:ring-1 focus:ring-blue-500/50 focus:ring-offset-0 focus:border-blue-500/70 [&[data-placeholder]>span]:opacity-60 [&[data-placeholder]>span]:text-muted-foreground"
+            <Label>Order Type</Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className={`flex-1 h-10 font-medium ${
+                  formData.type === 1
+                    ? "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
+                    : "text-muted-foreground bg-background hover:bg-muted/50"
+                }`}
+                onClick={() => setFormData({ ...formData, type: 1 })}
+                disabled={escrowGenerated && !isInReviewMode}
               >
-                <SelectValue placeholder="Select order type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1" className="opacity-60">Sell</SelectItem>
-                <SelectItem value="2" className="opacity-60">Buy</SelectItem>
-              </SelectContent>
-            </Select>
+                Sell
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className={`flex-1 h-10 font-medium ${
+                  formData.type === 2
+                    ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
+                    : "text-muted-foreground bg-background hover:bg-muted/50"
+                }`}
+                onClick={() => setFormData({ ...formData, type: 2 })}
+                disabled={escrowGenerated && !isInReviewMode}
+              >
+                Buy
+              </Button>
+            </div>
           </div>
 
 

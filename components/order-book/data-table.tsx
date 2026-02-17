@@ -540,7 +540,7 @@ export function DataTable<TData, TValue>({
                     size="sm"
                   >
                     <Plus className="h-4 w-4" />
-                    New Order
+                    Open Order
                   </Button>
                 )
               )}
