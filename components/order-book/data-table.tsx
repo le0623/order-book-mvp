@@ -114,17 +114,22 @@ export function DataTable<TData, TValue>({
       setExpanded({});
       expandedIdsRef.current = new Set();
     } else {
+      const statusValues = showMyOrdersOnly ? [0, 1, 2, 3] : [0, 1];
       setColumnFilters((prev) => {
         const hasStatusFilter = prev.some((filter) => filter.id === "status");
         if (!hasStatusFilter) {
-          return [...prev, { id: "status", value: [0, 1] }];
+          return [...prev, { id: "status", value: statusValues }];
         }
         return prev.map((filter) =>
-          filter.id === "status" ? { id: "status", value: [0, 1] } : filter
+          filter.id === "status" ? { id: "status", value: statusValues } : filter
         );
       });
+      if (showMyOrdersOnly) {
+        setExpanded({});
+        expandedIdsRef.current = new Set();
+      }
     }
-  }, [isSearchActive]);
+  }, [isSearchActive, showMyOrdersOnly]);
 
   React.useEffect(() => {
     const checkMobileView = () => {
@@ -268,8 +273,11 @@ export function DataTable<TData, TValue>({
       });
     }
 
-    // Include rows that match normal filter OR are currently expanded
-    // Use the ref to avoid re-filtering on every expand/collapse
+    // My Orders: show all statuses (0, 1, 2, 3); column filter will restrict
+    if (showMyOrdersOnly) {
+      return data;
+    }
+    // Order Book: include rows that match open book OR are currently expanded
     const currentExpandedIds = expandedIdsRef.current;
     const filtered = data.filter((order: any) => {
       const orderId = `${order.uuid}-${order.status}-${order.escrow || ""}`;
@@ -280,6 +288,7 @@ export function DataTable<TData, TValue>({
   }, [
     data,
     isSearchActive,
+    showMyOrdersOnly,
     searchAddress,
     searchOrderType,
     searchAssetId,
