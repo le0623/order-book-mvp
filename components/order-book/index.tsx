@@ -15,6 +15,7 @@ interface OrderBookProps {
   onUpdateOrder?: (id: string, updates: Partial<Order>) => void;
   onCancelOrder?: (id: string) => void;
   onFillOrder?: () => void;
+  onRecMessage?: (message: string) => void;
   onNewOrder?: () => void;
   apiUrl?: string;
   allOrdersForSearch?: Order[];
@@ -31,6 +32,7 @@ export function OrderBook({
   onUpdateOrder,
   onCancelOrder,
   onFillOrder,
+  onRecMessage,
   onNewOrder,
   apiUrl,
   allOrdersForSearch = [],
@@ -55,11 +57,12 @@ export function OrderBook({
         onUpdateOrder={onUpdateOrder}
         onCancelOrder={onCancelOrder}
         onFillOrder={onFillOrder}
+        onRecMessage={onRecMessage}
         apiUrl={apiUrl}
         walletAddress={walletAddress}
       />
     );
-  }, [filledOrdersMap, prices, newlyAddedOrderIds, onUpdateOrder, onCancelOrder, onFillOrder, apiUrl, walletAddress]);
+  }, [filledOrdersMap, prices, newlyAddedOrderIds, onUpdateOrder, onCancelOrder, onFillOrder, onRecMessage, apiUrl, walletAddress]);
 
   return (
     <DataTable

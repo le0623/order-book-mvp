@@ -659,6 +659,7 @@ export default function Home() {
           onUpdateOrder={handleUpdateOrder}
           onCancelOrder={handleCancelOrder}
           onFillOrder={undefined}
+          onRecMessage={setRecPopupMessage}
           onNewOrder={() => setNewOrderModalOpen(true)}
           apiUrl={API_URL}
           showMyOrdersOnly={showMyOrdersOnly}
@@ -669,6 +670,7 @@ export default function Home() {
         <NewOrderModal
           open={newOrderModalOpen}
           onOpenChange={setNewOrderModalOpen}
+          onRecMessage={setRecPopupMessage}
           apiUrl={API_URL}
           prices={prices}
           ofm={ofm}
@@ -696,11 +698,11 @@ export default function Home() {
 
         <WalletModal open={walletModalOpen} onOpenChange={closeWalletModal} />
 
-        {/* Popup for /rec response messages */}
+        {/* Standalone popup for /rec messages (e.g. status 3 / order closed) */}
         <Dialog open={!!recPopupMessage} onOpenChange={(open) => { if (!open) setRecPopupMessage(""); }}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Notice</DialogTitle>
+              <DialogTitle>Order closed</DialogTitle>
               <DialogDescription>{recPopupMessage}</DialogDescription>
             </DialogHeader>
             <DialogFooter>

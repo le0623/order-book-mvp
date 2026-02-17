@@ -67,6 +67,7 @@ interface OrderBookRowDetailsProps {
   onUpdateOrder?: (uuid: string, updates: Partial<Order>) => void;
   onCancelOrder?: (uuid: string) => void;
   onFillOrder?: () => void;
+  onRecMessage?: (message: string) => void;
   apiUrl?: string;
   walletAddress?: string;
 }
@@ -79,6 +80,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
   onUpdateOrder,
   onCancelOrder,
   onFillOrder,
+  onRecMessage,
   apiUrl,
   walletAddress,
 }: OrderBookRowDetailsProps) {
@@ -786,6 +788,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
         prices={prices}
         apiUrl={apiUrl}
         onOrderFilled={onFillOrder}
+        onRecMessage={onRecMessage}
       />
     </div>
   );

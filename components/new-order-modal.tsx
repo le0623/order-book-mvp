@@ -52,6 +52,7 @@ interface NewOrderModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOrderPlaced?: () => void;
+  onRecMessage?: (message: string) => void; // e.g. status 3 / order closed — show in standalone page popup
   apiUrl?: string;
   prices?: Record<number, number>;
   ofm?: [number, number, number]; // [open_max, open_min, fill_min]
@@ -62,6 +63,7 @@ export function NewOrderModal({
   open,
   onOpenChange,
   onOrderPlaced,
+  onRecMessage,
   apiUrl,
   prices = {},
   ofm = [10, 0.01, 0.001],
@@ -110,7 +112,6 @@ export function NewOrderModal({
   const [httpPrices, setHttpPrices] = React.useState<Record<number, number>>({});
   const [poolData, setPoolData] = React.useState<Record<number, { tao_in: number; alpha_in: number }>>({});
 
-  const [recPopupMessage, setRecPopupMessage] = React.useState<string>("");
   const [maxFillLoading, setMaxFillLoading] = React.useState(false);
   const [assetInputEditing, setAssetInputEditing] = React.useState<string | null>(null);
   const pendingEscrowRef = React.useRef<string>("");
@@ -284,7 +285,6 @@ export function NewOrderModal({
     setCopiedEscrow(false);
     setPriceData(null);
     setTransferInputMode("tao");
-    setRecPopupMessage("");
     setAssetInputEditing(null);
     pendingEscrowRef.current = "";
     resetTransfer();
@@ -529,13 +529,15 @@ export function NewOrderModal({
         throw new Error(await extractResponseError(response));
       }
 
-      // Parse /rec response format: ['msg', tao, alpha, price]
+      // Parse /rec response format: ['msg', tao, alpha, price] or [..., status]
       let recMessage = "";
+      let recStatus: number | undefined;
       try {
         const responseBody = await readResponseBody(response);
         const responseText = typeof responseBody === "string" ? responseBody : JSON.stringify(responseBody);
         const recResult = parseRecResponse(responseText);
         if (recResult) {
+          recStatus = recResult.status;
           if (recResult.price > 0) {
             setPriceData({ tao: recResult.tao, alpha: recResult.alpha, price: recResult.price });
           }
@@ -548,8 +550,16 @@ export function NewOrderModal({
       }
 
       if (recMessage) {
-        // Backend returned a message — show it and keep modal open
-        setError(recMessage);
+        if (recStatus === 3) {
+          // Status 3 (order closed) — close modal and show standalone popup
+          onOrderPlaced?.();
+          onOpenChange(false);
+          resetForm();
+          onRecMessage?.(recMessage);
+        } else {
+          // Other message — show in modal (original style)
+          setError(recMessage);
+        }
       } else {
         // Success — close modal and reset
         onOrderPlaced?.();
@@ -1220,21 +1230,6 @@ export function NewOrderModal({
           </div>
         )}
       </DialogContent>
-
-      {/* Popup for /rec response messages */}
-      <Dialog open={!!recPopupMessage} onOpenChange={(isOpen) => { if (!isOpen) setRecPopupMessage(""); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Notice</DialogTitle>
-            <DialogDescription>{recPopupMessage}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setRecPopupMessage("")} variant="outline">
-              OK
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Dialog>
   );
 }

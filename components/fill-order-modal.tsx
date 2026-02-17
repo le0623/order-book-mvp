@@ -32,6 +32,7 @@ interface FillOrderModalProps {
   prices?: Record<number, number>; // netuid -> price mapping for live prices
   apiUrl?: string;
   onOrderFilled?: () => void;
+  onRecMessage?: (message: string) => void; // e.g. status 3 / order closed — show in standalone page popup
 }
 
 export function FillOrderModal({
@@ -41,6 +42,7 @@ export function FillOrderModal({
   prices = {},
   apiUrl,
   onOrderFilled,
+  onRecMessage,
 }: FillOrderModalProps) {
   const { selectedAccount, isConnected } = useWallet();
   const {
@@ -70,7 +72,6 @@ export function FillOrderModal({
     price: number;
   } | null>(null);
   const [poolData, setPoolData] = React.useState<Record<number, { tao_in: number; alpha_in: number }>>({});
-  const [recPopupMessage, setRecPopupMessage] = React.useState<string>("");
   const [maxFillLoading, setMaxFillLoading] = React.useState(false);
 
   const pendingEscrowRef = React.useRef<string>("");
@@ -499,22 +500,43 @@ export function FillOrderModal({
         throw new Error(await extractResponseError(response));
       }
 
-      // Parse /rec response format: ['msg', tao, alpha, price]
+      // Parse /rec response format: ['msg', tao, alpha, price] or [..., status]
       let recMessage = "";
+      let recStatus: number | undefined;
       try {
         const responseBody = await readResponseBody(response);
         const responseText = typeof responseBody === "string" ? responseBody : JSON.stringify(responseBody);
         const recResult = parseRecResponse(responseText);
-        if (recResult?.message) {
-          recMessage = recResult.message;
+        if (recResult) {
+          recStatus = recResult.status;
+          if (recResult.message) {
+            recMessage = recResult.message;
+          }
         }
       } catch (e) {
         console.warn("Could not extract data from fill response:", e);
       }
 
       if (recMessage) {
-        // Backend returned a message (e.g. stop price error) — show it and keep modal open
-        setError(recMessage);
+        if (recStatus === 3) {
+          // Status 3 (order closed) — close modal and show standalone popup
+          onOrderFilled?.();
+          onOpenChange(false);
+          setEscrowWallet("");
+          setOriginWallet("");
+          setOrderUuid("");
+          setWsUuid("");
+          setEscrowGenerated(false);
+          setError("");
+          setTransferAlpha(undefined);
+          setTransferTao(undefined);
+          pendingEscrowRef.current = "";
+          resetTransfer();
+          onRecMessage?.(recMessage);
+        } else {
+          // Other message — show in modal (original style)
+          setError(recMessage);
+        }
       } else {
         // Success — close modal and reset
         onOrderFilled?.();
@@ -857,21 +879,6 @@ export function FillOrderModal({
           )}
         </DialogFooter>
       </DialogContent>
-
-      {/* Popup for /rec response messages */}
-      <Dialog open={!!recPopupMessage} onOpenChange={(isOpen) => { if (!isOpen) setRecPopupMessage(""); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Notice</DialogTitle>
-            <DialogDescription>{recPopupMessage}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setRecPopupMessage("")} variant="outline">
-              OK
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Dialog>
   );
 }
