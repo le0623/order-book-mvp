@@ -725,7 +725,7 @@ export function FillOrderModal({
                 aria-label="Set max fill amount from wallet balance"
                 title={`Max ${transferInputMode === "tao" ? "TAO" : "Alpha"} from wallet`}
               >
-                {maxFillLoading ? "…" : "Max fill"}
+                {maxFillLoading ? "…" : "Max Fill"}
               </button>
             </div>
             <div className="relative flex items-center">
