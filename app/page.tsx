@@ -528,12 +528,12 @@ export default function Home() {
 
   const { openOrders, filledOrdersMap } = useMemo(() => {
     const open: Order[] = [];
-    const filled: Record<string, Order[]> = {}; // Parent UUID -> filled orders array
+    const filled: Record<string, Order[]> = {}; // Parent UUID -> filled + closed orders array
 
     orders.forEach((order) => {
       if (order.status === 1 && order.public === true) {
         open.push(order);
-      } else if (order.status === 2) {
+      } else if (order.status === 2 || order.status === 3) {
         const parentUuid = order.origin || order.uuid;
         if (!filled[parentUuid]) {
           filled[parentUuid] = [];

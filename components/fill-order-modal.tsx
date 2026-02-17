@@ -221,9 +221,9 @@ export function FillOrderModal({
 
   React.useEffect(() => {
     if (open) {
-      setTransferInputMode(fixedValues.type === 2 ? "tao" : "alpha");
+      setTransferInputMode(order.type === 1 ? "alpha" : "tao");
     }
-  }, [open, fixedValues.type]);
+  }, [open, order.type]);
 
   // Fetch pool data (tao_in, alpha_in) for slippage when modal opens
   React.useEffect(() => {
@@ -586,6 +586,12 @@ export function FillOrderModal({
           <ConnectButton />
         </DialogHeader>
 
+        {order.status === 3 && (
+          <div className="p-3 rounded-md bg-slate-50 dark:bg-muted/50 border border-slate-200 dark:border-border text-slate-700 dark:text-foreground text-sm">
+            Order closed. Wallet refunded.
+          </div>
+        )}
+
         {error && (
           <div
             className={`p-3 rounded-md bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-sm transition-all duration-300 ease-in-out ${errorVisible
@@ -841,7 +847,11 @@ export function FillOrderModal({
         </div>
 
         <DialogFooter>
-          {!escrowGenerated ? (
+          {order.status === 3 ? (
+            <Button variant="outline" onClick={handleClose}>
+              Close
+            </Button>
+          ) : !escrowGenerated ? (
             <>
               <Button variant="outline" onClick={handleClose} disabled={loading}>
                 Cancel

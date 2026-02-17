@@ -1014,7 +1014,7 @@ export function NewOrderModal({
                 </button>
               </div>
             </div>
-            {escrowGenerated && (
+            {formData.asset != null && (
               <p className="text-sm text-muted-foreground opacity-60">
                 Market Price: {priceForConversion > 0 ? priceForConversion.toFixed(4) : "—"}
               </p>
