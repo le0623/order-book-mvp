@@ -43,6 +43,7 @@ export default function Home() {
   const [showWalletConnectDialog, setShowWalletConnectDialog] = useState(false);
   const [ofm, setOfm] = useState<[number, number, number]>([10, 0.01, 0.001]); // [open_max, open_min, fill_min]
   const [recPopupMessage, setRecPopupMessage] = useState<string>("");
+  const [subnetNames, setSubnetNames] = useState<Record<number, string>>({});
 
   useEffect(() => {
     setMounted(true);
@@ -291,27 +292,39 @@ export default function Home() {
     setPrices((prev) => ({ ...prev, ...pending }));
   }, []);
 
-  const handlePriceMessage = useCallback((message: unknown) => { 
-    console.log("[Home] ws/price raw:", message);
+  const handlePriceMessage = useCallback((message: unknown) => {
+    console.log("[Home] ws/price response:", message);
     try {
       const priceData = parseWsMessage<Record<string, unknown>>(message);
       if (!priceData || typeof priceData !== "object") return;
+      console.log("[Home] ws/price parsed:", priceData);
 
-      for (const [key, value] of Object.entries(priceData)) {
-        const netuid = Number(key);
-        let price: number;
-        if (typeof value === "object" && value !== null && "price" in value) {
-          price = Number((value as { price: unknown }).price);
-        } else if (typeof value === "number") {
-          price = value;
-        } else {
-          continue;
-        }
-
-        if (!isNaN(netuid) && !isNaN(price) && price > 0) {
-          pendingPricesRef.current[netuid] = price;
+      // Format: { subnet_name: { "0": "root", ... }, price: { "0": 1.0, ... }, tao_in, alpha_in }
+      const priceObj = priceData.price;
+      if (priceObj && typeof priceObj === "object" && !Array.isArray(priceObj)) {
+        for (const [key, value] of Object.entries(priceObj)) {
+          const netuid = Number(key);
+          const price = Number(value);
+          if (!isNaN(netuid) && !isNaN(price) && price > 0) {
+            pendingPricesRef.current[netuid] = price;
+          }
         }
       }
+
+      const nameObj = priceData.subnet_name;
+      if (nameObj && typeof nameObj === "object" && !Array.isArray(nameObj)) {
+        const next: Record<number, string> = {};
+        for (const [key, value] of Object.entries(nameObj)) {
+          const netuid = Number(key);
+          if (!isNaN(netuid) && typeof value === "string") {
+            next[netuid] = value;
+          }
+        }
+        if (Object.keys(next).length > 0) {
+          setSubnetNames((prev) => ({ ...prev, ...next }));
+        }
+      }
+
       // Throttle: schedule a flush if not already pending
       if (!priceFlushTimerRef.current) {
         priceFlushTimerRef.current = setTimeout(() => {
@@ -659,6 +672,7 @@ export default function Home() {
           apiUrl={API_URL}
           prices={prices}
           ofm={ofm}
+          subnetNames={subnetNames}
         />
 
         <Dialog open={showWalletConnectDialog} onOpenChange={setShowWalletConnectDialog}>

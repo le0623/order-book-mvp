@@ -55,6 +55,7 @@ interface NewOrderModalProps {
   apiUrl?: string;
   prices?: Record<number, number>;
   ofm?: [number, number, number]; // [open_max, open_min, fill_min]
+  subnetNames?: Record<number, string>; // netuid -> subnet name from ws/price
 }
 
 export function NewOrderModal({
@@ -64,6 +65,7 @@ export function NewOrderModal({
   apiUrl,
   prices = {},
   ofm = [10, 0.01, 0.001],
+  subnetNames = {},
 }: NewOrderModalProps) {
   const { selectedAccount, isConnected } = useWallet();
   const {
@@ -110,6 +112,7 @@ export function NewOrderModal({
 
   const [recPopupMessage, setRecPopupMessage] = React.useState<string>("");
   const [maxFillLoading, setMaxFillLoading] = React.useState(false);
+  const [assetInputEditing, setAssetInputEditing] = React.useState<string | null>(null);
   const pendingEscrowRef = React.useRef<string>("");
 
   const WS_URL = React.useMemo(() => {
@@ -282,6 +285,7 @@ export function NewOrderModal({
     setPriceData(null);
     setTransferInputMode("tao");
     setRecPopupMessage("");
+    setAssetInputEditing(null);
     pendingEscrowRef.current = "";
     resetTransfer();
   };
@@ -857,8 +861,8 @@ export function NewOrderModal({
                 type="button"
                 variant="outline"
                 className={`flex-1 h-10 font-medium ${formData.type === 1
-                    ? "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:border-rose-800 dark:hover:text-rose-400"
-                    : "text-muted-foreground bg-background hover:bg-muted/50"
+                  ? "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:border-rose-800 dark:hover:text-rose-400"
+                  : "text-muted-foreground bg-background hover:bg-muted/50"
                   }`}
                 onClick={() => setFormData({ ...formData, type: 1 })}
                 disabled={escrowGenerated && !isInReviewMode}
@@ -869,8 +873,8 @@ export function NewOrderModal({
                 type="button"
                 variant="outline"
                 className={`flex-1 h-10 font-medium ${formData.type === 2
-                    ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600 dark:hover:bg-emerald-950/30 dark:hover:border-emerald-800 dark:hover:text-emerald-400"
-                    : "text-muted-foreground bg-background hover:bg-muted/50"
+                  ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600 dark:hover:bg-emerald-950/30 dark:hover:border-emerald-800 dark:hover:text-emerald-400"
+                  : "text-muted-foreground bg-background hover:bg-muted/50"
                   }`}
                 onClick={() => setFormData({ ...formData, type: 2 })}
                 disabled={escrowGenerated && !isInReviewMode}
@@ -887,18 +891,36 @@ export function NewOrderModal({
             <div className="relative flex items-center">
               <Input
                 id="asset"
-                type="number"
-                min="1"
-                value={formData.asset === undefined ? "" : formData.asset}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    asset: e.target.value === "" ? undefined : parseInt(e.target.value) || undefined,
-                  })
+                type="text"
+                value={
+                  assetInputEditing !== null
+                    ? assetInputEditing
+                    : formData.asset != null
+                      ? (subnetNames[formData.asset]
+                          ? `${formData.asset} - ${subnetNames[formData.asset]}`
+                          : String(formData.asset))
+                      : ""
                 }
+                onFocus={() =>
+                  setAssetInputEditing(formData.asset != null ? String(formData.asset) : "")
+                }
+                onBlur={() => {
+                  const raw = (assetInputEditing ?? "").trim();
+                  if (raw === "") {
+                    setFormData((prev) => ({ ...prev, asset: undefined }));
+                  } else {
+                    const n = parseInt(raw, 10);
+                    setFormData((prev) => ({
+                      ...prev,
+                      asset: Number.isNaN(n) ? undefined : n,
+                    }));
+                  }
+                  setAssetInputEditing(null);
+                }}
+                onChange={(e) => setAssetInputEditing(e.target.value)}
                 disabled={escrowGenerated && !isInReviewMode}
                 placeholder="Enter asset"
-                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10"
               />
               <div className="absolute right-1 flex flex-col gap-0.5">
                 <button
