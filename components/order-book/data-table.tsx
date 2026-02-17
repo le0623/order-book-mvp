@@ -110,6 +110,9 @@ export function DataTable<TData, TValue>({
   React.useEffect(() => {
     if (isSearchActive) {
       setColumnFilters((prev) => prev.filter((filter) => filter.id !== "status"));
+      // Collapse any expanded row when showing search results
+      setExpanded({});
+      expandedIdsRef.current = new Set();
     } else {
       setColumnFilters((prev) => {
         const hasStatusFilter = prev.some((filter) => filter.id === "status");

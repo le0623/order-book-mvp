@@ -1014,6 +1014,11 @@ export function NewOrderModal({
                 </button>
               </div>
             </div>
+            {escrowGenerated && (
+              <p className="text-sm text-muted-foreground opacity-60">
+                Market Price: {priceForConversion > 0 ? priceForConversion.toFixed(4) : "—"}
+              </p>
+            )}
           </div>
 
           <div className="grid gap-2">
