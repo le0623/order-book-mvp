@@ -113,21 +113,21 @@ export function DataTable<TData, TValue>({
       // Collapse any expanded row when showing search results
       setExpanded({});
       expandedIdsRef.current = new Set();
+    } else if (showMyOrdersOnly) {
+      // My Orders: show all statuses (no status filter)
+      setColumnFilters((prev) => prev.filter((filter) => filter.id !== "status"));
+      setExpanded({});
+      expandedIdsRef.current = new Set();
     } else {
-      const statusValues = showMyOrdersOnly ? [0, 1, 2, 3] : [0, 1];
       setColumnFilters((prev) => {
         const hasStatusFilter = prev.some((filter) => filter.id === "status");
         if (!hasStatusFilter) {
-          return [...prev, { id: "status", value: statusValues }];
+          return [...prev, { id: "status", value: [0, 1] }];
         }
         return prev.map((filter) =>
-          filter.id === "status" ? { id: "status", value: statusValues } : filter
+          filter.id === "status" ? { id: "status", value: [0, 1] } : filter
         );
       });
-      if (showMyOrdersOnly) {
-        setExpanded({});
-        expandedIdsRef.current = new Set();
-      }
     }
   }, [isSearchActive, showMyOrdersOnly]);
 
