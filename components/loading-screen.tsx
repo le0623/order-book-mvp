@@ -7,19 +7,15 @@ import Image from "next/image";
 // Sequential groups (arrays) stay in order but their position in the list is randomized.
 const SINGLE_MESSAGES = [
   "Accessing the Akashic Records...",
-  "Crunching magic numbers...",
+  "Computing magic numbers...",
   "Mining thermodynamics...",
   "Syncing man and machine...",
   "Ringing the monastery bells...",
   "Starlink upload requested...",
   "Consulting the oracle...",
-  "Warming up the blockchain...",
-  "Calibrating diamond hands...",
-  "Decoding ancient protocols...",
   "Aligning the satellites...",
   "Waking up the validators...",
   "Summoning subnet wizards...",
-  "Channeling Satoshi's spirit...",
   "Polishing the order book...",
   "Sharpening the algorithms...",
   "Tuning quantum frequencies...",
@@ -203,9 +199,14 @@ export function LoadingScreen({
           <h1 className="text-[22px] font-normal tracking-tight text-white font-[family-name:var(--font-pixel)] loading-title">
             HODL<span className="ml-2.5">Exchange</span>
           </h1>
-          <p className="text-[11px] font-medium tracking-[0.25em] uppercase text-blue-400/80 loading-subtitle">
+          <a
+            href="https://taomarketcap.com/subnets/118"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] font-medium tracking-[0.25em] uppercase text-blue-400/80 loading-subtitle hover:text-blue-300 transition-colors"
+          >
             Powered by Subnet 118
-          </p>
+          </a>
         </div>
 
         {/* Progress bar */}
@@ -218,18 +219,20 @@ export function LoadingScreen({
             <div className="loading-progress-shine" />
           </div>
           <div className="flex justify-between mt-2 items-center">
-            <span
-              key={isComplete ? "done" : messageIndex}
-              className={`text-[9px] font-[family-name:var(--font-pixel)] loading-message-cycle ${
-                isComplete
-                  ? "text-emerald-400/90"
-                  : "text-blue-400/60"
-              } ${!messagesReady && !isComplete ? "opacity-0" : ""}`}
-            >
-              {isComplete
-                ? completionMessage
-                : messages[messageIndex]}
-            </span>
+            {(messagesReady || isComplete) && (
+              <span
+                key={isComplete ? "done" : messageIndex}
+                className={`text-[9px] font-[family-name:var(--font-pixel)] loading-message-cycle ${
+                  isComplete
+                    ? "text-emerald-400/90"
+                    : "text-blue-400/60"
+                }`}
+              >
+                {isComplete
+                  ? completionMessage
+                  : messages[messageIndex]}
+              </span>
+            )}
             <span className="text-[9px] font-[family-name:var(--font-pixel)] text-blue-400/60">
               {Math.round(progress)}%
             </span>

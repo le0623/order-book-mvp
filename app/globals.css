@@ -694,3 +694,17 @@ button[name="next-month"] {
   color: rgb(245 158 11); /* amber-500 */
   animation: status-dot-glow 1.5s ease-in-out infinite;
 }
+
+/* ============================================================
+   Mini Spinner — iOS / SwiftUI Activity Indicator
+   ============================================================ */
+
+.mini-spinner {
+  animation: mini-spinner-step 0.8s steps(8, end) infinite;
+}
+
+@keyframes mini-spinner-step {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -29,6 +29,7 @@ import { PixelSymbolsBackground } from "../components/pixel-symbols-background";
 import { useTMCSubnets } from "../hooks/useTMCSubnets";
 import { useTaoPrice } from "../contexts/taoPrice";
 import { useBlockHeight } from "../hooks/useBlockHeight";
+import { MiniSpinner } from "../components/ui/mini-spinner";
 
 const WS_URL = getWebSocketBookUrl();
 const WS_PRICE_URL = getWebSocketPriceUrl();
@@ -651,9 +652,14 @@ export default function Home() {
                   </h1>
                 </div>
                 <div className="flex items-center gap-3">
-                  <p className="text-muted-foreground text-[15px] font-medium tracking-tight leading-[0.75rem] font-[family-name:var(--font-geist-pixel-square)]">
+                  <a
+                    href="https://taomarketcap.com/subnets/118"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground text-[15px] font-medium tracking-tight leading-[0.75rem] font-[family-name:var(--font-geist-pixel-square)] hover:text-foreground transition-colors"
+                  >
                     Powered by Subnet 118
-                  </p>
+                  </a>
                 </div>
               </div>
             </div>
@@ -695,32 +701,49 @@ export default function Home() {
           {/* Stats ticker strip */}
           <div className="flex items-center gap-6 pb-3 border-b border-slate-200 dark:border-border/40 overflow-x-auto scrollbar-hide">
             {/* TAO Price */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-[12px] font-mono font-medium tracking-tight text-foreground tabular-nums">
-                {taoPriceLoading
-                  ? "τ —"
-                  : taoPrice !== null
+            <a
+              href="https://taomarketcap.com/subnets/0"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 shrink-0 hover:opacity-70 transition-opacity"
+            >
+              {taoPriceLoading ? (
+                <>
+                  <span className="text-[12px] font-mono font-medium tracking-tight text-foreground tabular-nums">τ</span>
+                  <MiniSpinner size={12} className="text-muted-foreground" />
+                </>
+              ) : (
+                <span className="text-[12px] font-mono font-medium tracking-tight text-foreground tabular-nums">
+                  {taoPrice !== null
                     ? `τ $${taoPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                     : "τ —"}
-              </span>
-            </div>
+                </span>
+              )}
+            </a>
 
             {/* Separator */}
             <div className="w-px h-3 bg-border/60 shrink-0" />
 
             {/* Block Height */}
-            <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="https://taomarketcap.com/blockchain/blocks"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 shrink-0 hover:opacity-70 transition-opacity"
+            >
               <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                 Block
               </span>
-              <span className="text-[12px] font-mono font-medium tracking-tight text-foreground tabular-nums">
-                {blockLoading
-                  ? "—"
-                  : blockHeight !== null
+              {blockLoading ? (
+                <MiniSpinner size={12} className="text-muted-foreground" />
+              ) : (
+                <span className="text-[12px] font-mono font-medium tracking-tight text-foreground tabular-nums">
+                  {blockHeight !== null
                     ? `#${blockHeight.toLocaleString()}`
                     : "—"}
-              </span>
-            </div>
+                </span>
+              )}
+            </a>
 
             {/* Separator */}
             <div className="w-px h-3 bg-border/60 shrink-0" />
