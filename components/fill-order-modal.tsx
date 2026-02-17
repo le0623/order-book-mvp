@@ -23,7 +23,7 @@ import { ConnectButton } from "@/components/walletkit/connect";
 import { parseWsMessage } from "@/lib/websocket-utils";
 import { postJson, extractResponseError, readResponseBody, parseRecResponse } from "@/lib/api-utils";
 import { useBittensorTransfer } from "@/hooks/useBittensorTransfer";
-import { resolveHotkey, fetchTaoBalance, fetchAlphaBalance } from "@/lib/bittensor";
+import { resolveHotkey } from "@/lib/bittensor";
 
 interface FillOrderModalProps {
   open: boolean;
@@ -72,7 +72,6 @@ export function FillOrderModal({
     price: number;
   } | null>(null);
   const [poolData, setPoolData] = React.useState<Record<number, { tao_in: number; alpha_in: number }>>({});
-  const [maxFillLoading, setMaxFillLoading] = React.useState(false);
 
   const pendingEscrowRef = React.useRef<string>("");
 
@@ -185,23 +184,22 @@ export function FillOrderModal({
     return 0;
   };
 
-  const handleMaxFill = React.useCallback(async () => {
-    if (!isConnected || !selectedAccount) return;
-    setMaxFillLoading(true);
-    try {
-      if (transferInputMode === "tao") {
-        const balance = await fetchTaoBalance(selectedAccount.address);
-        setTransferTao(balance > 0 ? balance : undefined);
-      } else {
-        const balance = await fetchAlphaBalance(selectedAccount.address, fixedValues.asset);
-        setTransferAlpha(balance > 0 ? balance : undefined);
-      }
-    } catch (err) {
-      console.warn("[FillOrder] Failed to fetch max balance:", err);
-    } finally {
-      setMaxFillLoading(false);
+  // Max fill = take all remaining from parent order (from order book / ws tap)
+  const handleMaxFill = React.useCallback(() => {
+    if (order.type === 1) {
+      // Parent Sell: remaining is Alpha — grab all Alpha
+      const alpha = fixedValues.alpha > 0 ? fixedValues.alpha : undefined;
+      setTransferAlpha(alpha);
+      setTransferInputMode("alpha");
+      if (alpha != null) setTransferTao(undefined);
+    } else {
+      // Parent Buy: remaining is TAO — grab all TAO
+      const tao = fixedValues.tao > 0 ? fixedValues.tao : undefined;
+      setTransferTao(tao);
+      setTransferInputMode("tao");
+      if (tao != null) setTransferAlpha(undefined);
     }
-  }, [isConnected, selectedAccount, transferInputMode, fixedValues.asset]);
+  }, [order.type, fixedValues.alpha, fixedValues.tao]);
 
   React.useEffect(() => {
     if (!open) {
@@ -720,12 +718,12 @@ export function FillOrderModal({
               <button
                 type="button"
                 onClick={handleMaxFill}
-                disabled={(escrowGenerated && !isInReviewMode) || !isConnected || maxFillLoading}
+                disabled={(escrowGenerated && !isInReviewMode) || (order.type === 1 ? fixedValues.alpha <= 0 : fixedValues.tao <= 0)}
                 className="h-[1.5rem] px-[0.35rem] flex items-center rounded-md justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0 text-xs"
-                aria-label="Set max fill amount from wallet balance"
-                title={`Max ${transferInputMode === "tao" ? "TAO" : "Alpha"} from wallet`}
+                aria-label="Fill entire parent order (all remaining)"
+                title={order.type === 1 ? "Fill all remaining Alpha from order" : "Fill all remaining TAO from order"}
               >
-                {maxFillLoading ? "…" : "Max Fill"}
+                Max fill
               </button>
             </div>
             <div className="relative flex items-center">
