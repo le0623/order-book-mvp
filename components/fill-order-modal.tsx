@@ -670,40 +670,40 @@ export function FillOrderModal({
           <div className="grid gap-2">
             <div className="flex justify-between">
               <div className="flex items-center gap-2">
-              <Label htmlFor="transfer-amount">
-                {transferInputMode === "tao" ? "Order Size in TAO" : "Order Size in Alpha"}
-              </Label>
-              <button
-                type="button"
-                onClick={() => {
-                  if (escrowGenerated && !isInReviewMode) return;
-                  if (transferInputMode === "tao") {
-                    const v = transferTao ?? transferAlpha;
-                    setTransferAlpha(v);
-                    setTransferInputMode("alpha");
-                  } else {
-                    const v = transferAlpha ?? transferTao;
-                    setTransferTao(v);
-                    setTransferInputMode("tao");
-                  }
-                }}
-                disabled={escrowGenerated && !isInReviewMode}
-                className="h-[1.5rem] w-[2rem] flex items-center rounded-md justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
-                aria-label="Switch between TAO and Alpha"
-                title="Switch unit (TAO ↔ Alpha)"
-              >
-                <span className="text-xs">τ/α</span>
-              </button>
+                <Label htmlFor="transfer-amount">
+                  {transferInputMode === "tao" ? "Order Size in TAO" : "Order Size in Alpha"}
+                </Label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (escrowGenerated && !isInReviewMode) return;
+                    if (transferInputMode === "tao") {
+                      const v = transferTao ?? transferAlpha;
+                      setTransferAlpha(v);
+                      setTransferInputMode("alpha");
+                    } else {
+                      const v = transferAlpha ?? transferTao;
+                      setTransferTao(v);
+                      setTransferInputMode("tao");
+                    }
+                  }}
+                  disabled={escrowGenerated && !isInReviewMode}
+                  className="h-[1.5rem] w-[2rem] flex items-center rounded-md justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                  aria-label="Switch between TAO and Alpha"
+                  title="Switch unit (TAO ↔ Alpha)"
+                >
+                  <span className="text-xs">τ/α</span>
+                </button>
               </div>
               <button
                 type="button"
                 onClick={handleMaxFill}
                 disabled={(escrowGenerated && !isInReviewMode) || !isConnected || maxFillLoading}
-                className="h-[1.5rem] px-[0.4rem] flex items-center rounded-md justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                className="h-[1.5rem] px-[0.35rem] flex items-center rounded-md justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0 text-xs"
                 aria-label="Set max fill amount from wallet balance"
                 title={`Max ${transferInputMode === "tao" ? "TAO" : "Alpha"} from wallet`}
               >
-                <span className="text-xs">{maxFillLoading ? "…" : "Max fill"}</span>
+                {maxFillLoading ? "…" : "Max fill"}
               </button>
             </div>
             <div className="relative flex items-center">
