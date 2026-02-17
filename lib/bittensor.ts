@@ -59,6 +59,35 @@ export async function disconnectApi(): Promise<void> {
 const RAO_PER_TAO = BigInt(1_000_000_000);
 
 /**
+ * Fetch the free (transferable) TAO balance for an SS58 address.
+ * Queries system.account on the Bittensor chain.
+ *
+ * @returns TAO balance as a number (e.g. 12.345)
+ */
+export async function fetchTaoBalance(ss58Address: string): Promise<number> {
+  const api = await getApi();
+  const { data } = await api.query.system.account(ss58Address) as unknown as {
+    data: { free: { toBigInt(): bigint } };
+  };
+  return raoToTao(data.free.toBigInt());
+}
+
+/**
+ * Fetch the Alpha (stake) balance for a coldkey on a specific subnet.
+ * Sums all stake entries on the given netuid from the /stake endpoint.
+ *
+ * @returns Alpha balance as a number (e.g. 5.25)
+ */
+export async function fetchAlphaBalance(
+  coldkeySs58: string,
+  netuid: number,
+): Promise<number> {
+  const stakes = await fetchStakeInfo(coldkeySs58);
+  const matching = stakes.filter((s) => s.netuid === netuid);
+  return matching.reduce((sum, s) => sum + s.stake, 0);
+}
+
+/**
  * Convert a TAO amount (as a number, e.g. 1.5) to rao (bigint).
  * Handles up to 9 decimal places of precision.
  */

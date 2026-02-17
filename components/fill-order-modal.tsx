@@ -23,7 +23,7 @@ import { ConnectButton } from "@/components/walletkit/connect";
 import { parseWsMessage } from "@/lib/websocket-utils";
 import { postJson, extractResponseError, readResponseBody, parseRecResponse } from "@/lib/api-utils";
 import { useBittensorTransfer } from "@/hooks/useBittensorTransfer";
-import { resolveHotkey } from "@/lib/bittensor";
+import { resolveHotkey, fetchTaoBalance, fetchAlphaBalance } from "@/lib/bittensor";
 
 interface FillOrderModalProps {
   open: boolean;
@@ -71,6 +71,7 @@ export function FillOrderModal({
   } | null>(null);
   const [poolData, setPoolData] = React.useState<Record<number, { tao_in: number; alpha_in: number }>>({});
   const [recPopupMessage, setRecPopupMessage] = React.useState<string>("");
+  const [maxFillLoading, setMaxFillLoading] = React.useState(false);
 
   const pendingEscrowRef = React.useRef<string>("");
 
@@ -182,6 +183,24 @@ export function FillOrderModal({
     if (priceForConversion > 0) return raw * priceForConversion;
     return 0;
   };
+
+  const handleMaxFill = React.useCallback(async () => {
+    if (!isConnected || !selectedAccount) return;
+    setMaxFillLoading(true);
+    try {
+      if (transferInputMode === "tao") {
+        const balance = await fetchTaoBalance(selectedAccount.address);
+        setTransferTao(balance > 0 ? balance : undefined);
+      } else {
+        const balance = await fetchAlphaBalance(selectedAccount.address, fixedValues.asset);
+        setTransferAlpha(balance > 0 ? balance : undefined);
+      }
+    } catch (err) {
+      console.warn("[FillOrder] Failed to fetch max balance:", err);
+    } finally {
+      setMaxFillLoading(false);
+    }
+  }, [isConnected, selectedAccount, transferInputMode, fixedValues.asset]);
 
   React.useEffect(() => {
     if (!open) {
@@ -649,7 +668,8 @@ export function FillOrderModal({
               )}
           </div>
           <div className="grid gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex justify-between">
+              <div className="flex items-center gap-2">
               <Label htmlFor="transfer-amount">
                 {transferInputMode === "tao" ? "Order Size in TAO" : "Order Size in Alpha"}
               </Label>
@@ -673,6 +693,17 @@ export function FillOrderModal({
                 title="Switch unit (TAO ↔ Alpha)"
               >
                 <span className="text-xs">τ/α</span>
+              </button>
+              </div>
+              <button
+                type="button"
+                onClick={handleMaxFill}
+                disabled={(escrowGenerated && !isInReviewMode) || !isConnected || maxFillLoading}
+                className="h-[1.5rem] px-[0.4rem] flex items-center rounded-md justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                aria-label="Set max fill amount from wallet balance"
+                title={`Max ${transferInputMode === "tao" ? "TAO" : "Alpha"} from wallet`}
+              >
+                <span className="text-xs">{maxFillLoading ? "…" : "Max fill"}</span>
               </button>
             </div>
             <div className="relative flex items-center">
