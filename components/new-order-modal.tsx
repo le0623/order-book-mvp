@@ -144,9 +144,11 @@ function AssetSelector({
       setHighlightedIndex((prev) =>
         prev > 0 ? prev - 1 : filteredOptions.length - 1
       );
-    } else if (e.key === "Enter" && highlightedIndex >= 0) {
+    } else if (e.key === "Enter") {
       e.preventDefault();
-      const opt = filteredOptions[highlightedIndex];
+      // Reason: If nothing is highlighted, default to the first filtered option so the user can just type and press Enter.
+      const idx = highlightedIndex >= 0 ? highlightedIndex : 0;
+      const opt = filteredOptions[idx];
       if (opt) {
         onChange(opt.netuid);
         setOpen(false);
@@ -304,7 +306,6 @@ export function NewOrderModal({
   const [httpPrices, setHttpPrices] = React.useState<Record<number, number>>({});
   const [poolData, setPoolData] = React.useState<Record<number, { tao_in: number; alpha_in: number }>>({});
 
-  const [assetInputEditing, setAssetInputEditing] = React.useState<string | null>(null);
   const pendingEscrowRef = React.useRef<string>("");
 
   const WS_URL = React.useMemo(() => {
@@ -476,7 +477,6 @@ export function NewOrderModal({
     setCopiedEscrow(false);
     setPriceData(null);
     setTransferInputMode("tao");
-    setAssetInputEditing(null);
     pendingEscrowRef.current = "";
     resetTransfer();
   };
@@ -1065,82 +1065,6 @@ export function NewOrderModal({
               >
                 Buy
               </Button>
-            </div>
-          </div>
-
-
-
-          <div className="grid gap-2">
-            <Label htmlFor="asset">Asset (NETUID)</Label>
-            <div className="relative flex items-center">
-              <Input
-                id="asset"
-                type="text"
-                value={
-                  assetInputEditing !== null
-                    ? assetInputEditing
-                    : formData.asset != null
-                      ? (subnetNames[formData.asset]
-                        ? `${formData.asset} - ${subnetNames[formData.asset]}`
-                        : String(formData.asset))
-                      : ""
-                }
-                onFocus={() =>
-                  setAssetInputEditing(formData.asset != null ? String(formData.asset) : "")
-                }
-                onBlur={() => {
-                  const raw = (assetInputEditing ?? "").trim();
-                  if (raw === "") {
-                    setFormData((prev) => ({ ...prev, asset: undefined }));
-                  } else {
-                    const n = parseInt(raw, 10);
-                    setFormData((prev) => ({
-                      ...prev,
-                      asset: Number.isNaN(n) ? undefined : n,
-                    }));
-                  }
-                  setAssetInputEditing(null);
-                }}
-                onChange={(e) => setAssetInputEditing(e.target.value)}
-                disabled={escrowGenerated && !isInReviewMode}
-                placeholder="Enter asset"
-                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10"
-              />
-              <div className="absolute right-1 flex flex-col gap-0.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!escrowGenerated || isInReviewMode) {
-                      setFormData({
-                        ...formData,
-                        asset: Math.max(1, (formData.asset ?? 0) + 1),
-                      });
-                    }
-                  }}
-                  disabled={escrowGenerated && !isInReviewMode}
-                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Increase asset"
-                >
-                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!escrowGenerated || isInReviewMode) {
-                      const currentAsset = formData.asset ?? 1;
-                      setFormData({
-                        ...formData,
-                        asset: currentAsset > 1 ? currentAsset - 1 : undefined,
-                      });
-                    }
-                  }}
-                  disabled={escrowGenerated && !isInReviewMode}
-                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Decrease asset"
-                >
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                </button>
-              </div>
             </div>
           </div>
 
