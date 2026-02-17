@@ -45,8 +45,9 @@ import { ConnectButton } from "@/components/walletkit/connect";
 import { parseWsMessage } from "@/lib/websocket-utils";
 import { postJson, extractResponseError, readResponseBody, parseRecResponse } from "@/lib/api-utils";
 import { useBittensorTransfer } from "@/hooks/useBittensorTransfer";
+import { useSubnetPrice } from "@/hooks/useSubnetPrice";
 import { resolveHotkey } from "@/lib/bittensor";
-import { SUBNET_NAMES, getSubnetLabel } from "@/lib/subnet-names";
+import { useTMCSubnets } from "@/hooks/useTMCSubnets";
 import { Info } from "lucide-react";
 import {
   Tooltip,
@@ -73,16 +74,16 @@ function AssetSelector({
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const { subnetNames, getLabel } = useTMCSubnets();
 
-  // Build the list of available subnets from httpPrices + SUBNET_NAMES
+  // Reason: Combine netuids from live price data and TMC subnet names
   const subnetOptions = React.useMemo(() => {
     const netuids = new Set<number>();
-    // Reason: Combine netuids from live price data and static subnet names
     Object.keys(httpPrices).forEach((k) => {
       const n = Number(k);
       if (n > 0) netuids.add(n);
     });
-    Object.keys(SUBNET_NAMES).forEach((k) => {
+    Object.keys(subnetNames).forEach((k) => {
       const n = Number(k);
       if (n > 0) netuids.add(n);
     });
@@ -90,10 +91,10 @@ function AssetSelector({
       .sort((a, b) => a - b)
       .map((netuid) => ({
         netuid,
-        label: getSubnetLabel(netuid),
-        name: SUBNET_NAMES[netuid] || "",
+        label: getLabel(netuid),
+        name: subnetNames[netuid] || "",
       }));
-  }, [httpPrices]);
+  }, [httpPrices, subnetNames, getLabel]);
 
   const filteredOptions = React.useMemo(() => {
     if (!search.trim()) return subnetOptions;
@@ -157,7 +158,7 @@ function AssetSelector({
     }
   };
 
-  const displayLabel = value !== undefined ? getSubnetLabel(value) : null;
+  const displayLabel = value !== undefined ? getLabel(value) : null;
 
   return (
     <div className="grid gap-2">
@@ -274,6 +275,7 @@ export function NewOrderModal({
     partial: true,
     public: true,
   });
+  const { price: chainPrice } = useSubnetPrice(formData.asset);
   const [escrowWallet, setEscrowWallet] = React.useState<string>("");
   const [originWallet, setOriginWallet] = React.useState<string>("");
   const [orderUuid, setOrderUuid] = React.useState<string>("");
@@ -964,12 +966,14 @@ export function NewOrderModal({
               <Input
                 id="transfer-amount"
                 type="number"
+                min="0"
                 step="1"
                 value={(transferInputMode === "tao" ? formData.tao : formData.alpha) ?? ""}
                 onChange={(e) => {
                   const value = e.target.value.trim();
                   const parsed = parseFloat(value);
-                  const v = value === "" ? undefined : (isNaN(parsed) ? undefined : parsed);
+                  // Reason: Clamp to 0 so negative order sizes are never accepted.
+                  const v = value === "" ? undefined : (isNaN(parsed) ? undefined : Math.max(0, parsed));
                   const field = transferInputMode === "tao" ? "tao" : "alpha";
                   setFormData((prev) => ({ ...prev, [field]: v }));
                 }}
@@ -1023,8 +1027,8 @@ export function NewOrderModal({
                 disabled={escrowGenerated && !isInReviewMode}
                 className={`flex-1 font-semibold transition-all ${
                   formData.type === 2
-                    ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500 hover:border-emerald-600 shadow-[0_2px_8px_0_rgba(16,185,129,0.3)]"
-                    : "hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 dark:hover:border-emerald-700"
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-700"
+                    : ""
                 }`}
               >
                 Buy
@@ -1036,8 +1040,8 @@ export function NewOrderModal({
                 disabled={escrowGenerated && !isInReviewMode}
                 className={`flex-1 font-semibold transition-all ${
                   formData.type === 1
-                    ? "bg-rose-500 hover:bg-rose-600 text-white border-rose-500 hover:border-rose-600 shadow-[0_2px_8px_0_rgba(244,63,94,0.3)]"
-                    : "hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 dark:hover:bg-rose-950/30 dark:hover:text-rose-400 dark:hover:border-rose-700"
+                    ? "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-700"
+                    : ""
                 }`}
               >
                 Sell
@@ -1054,7 +1058,17 @@ export function NewOrderModal({
             httpPrices={httpPrices}
           />
           <div className="grid gap-2">
-            <Label htmlFor="stp">Stop Price (TAO)</Label>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="stp">Stop Price (TAO)</Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help opacity-60 hover:opacity-100 transition-opacity" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[280px]">
+                  <p>Optional. For Buy orders, only stop prices above market have an effect. For Sell orders, only stop prices below market have an effect.</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <div className="relative flex items-center">
               <Input
                 id="stp"
@@ -1130,6 +1144,13 @@ export function NewOrderModal({
                 </button>
               </div>
             </div>
+            {/* Dynamic market-price hint: chain query → backend HTTP fallback */}
+            {formData.asset != null && formData.asset > 0 &&
+              (chainPrice > 0 || httpPrices[formData.asset] > 0) && (
+              <p className="text-sm text-muted-foreground opacity-60">
+                Current market: {(chainPrice > 0 ? chainPrice : httpPrices[formData.asset]).toFixed(4)} τ
+              </p>
+            )}
           </div>
 
           <div className="grid gap-2">
@@ -1253,7 +1274,6 @@ export function NewOrderModal({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={loading}
-                className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/30 dark:hover:text-red-300"
               >
                 Cancel
               </Button>
@@ -1272,7 +1292,6 @@ export function NewOrderModal({
                 variant="outline"
                 onClick={isInReviewMode ? handleCancel : handleBack}
                 disabled={loading || isTransferring}
-                className={isInReviewMode ? "border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/30 dark:hover:text-red-300" : ""}
               >
                 {isInReviewMode ? "Cancel" : "Back"}
               </Button>

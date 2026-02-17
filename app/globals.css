@@ -593,14 +593,20 @@ button[name="next-month"] {
   100% { left: 100%; }
 }
 
-/* Status text animation */
-.loading-status-text {
-  animation: loading-text-blink 1.5s ease-in-out infinite;
+/* Cycling message fade-in */
+.loading-message-cycle {
+  animation: loading-message-in 0.4s ease-out both;
 }
 
-@keyframes loading-text-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+@keyframes loading-message-in {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Bottom dots animation */
@@ -657,4 +663,34 @@ button[name="next-month"] {
   -moz-osx-font-smoothing: unset;
   font-smooth: never;
   will-change: transform, opacity;
+}
+
+/* ============================================================
+   Status Dot Indicator — Slow Aesthetic Glow
+   ============================================================ */
+
+@keyframes status-dot-glow {
+  0%, 100% {
+    box-shadow: 0 0 3px 0px currentColor;
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 8px 2px currentColor;
+    opacity: 0.8;
+  }
+}
+
+.status-dot-live {
+  color: rgb(16 185 129); /* emerald-500 */
+  animation: status-dot-glow 3s ease-in-out infinite;
+}
+
+.status-dot-offline {
+  color: rgb(239 68 68); /* red-500 */
+  animation: status-dot-glow 3s ease-in-out infinite;
+}
+
+.status-dot-connecting {
+  color: rgb(245 158 11); /* amber-500 */
+  animation: status-dot-glow 1.5s ease-in-out infinite;
 }

@@ -71,12 +71,16 @@ export const SUBNET_NAMES: Record<number, string> = {
  *
  * Args:
  *   netuid (number): The subnet network UID.
+ *   names (Record<number, string>): Optional dynamic names map (e.g. from TMC).
  *
  * Returns:
  *   string | undefined: The human-readable subnet name or undefined.
  */
-export function getSubnetName(netuid: number): string | undefined {
-  return SUBNET_NAMES[netuid];
+export function getSubnetName(
+  netuid: number,
+  names: Record<number, string> = SUBNET_NAMES
+): string | undefined {
+  return names[netuid];
 }
 
 /**
@@ -84,11 +88,15 @@ export function getSubnetName(netuid: number): string | undefined {
  *
  * Args:
  *   netuid (number): The subnet network UID.
+ *   names (Record<number, string>): Optional dynamic names map (e.g. from TMC).
  *
  * Returns:
  *   string: Formatted label for display.
  */
-export function getSubnetLabel(netuid: number): string {
-  const name = SUBNET_NAMES[netuid];
+export function getSubnetLabel(
+  netuid: number,
+  names: Record<number, string> = SUBNET_NAMES
+): string {
+  const name = names[netuid];
   return name ? `SN${netuid} — ${name}` : `SN${netuid}`;
 }
