@@ -723,7 +723,7 @@ export function FillOrderModal({
                 aria-label="Fill entire parent order (all remaining)"
                 title={order.type === 1 ? "Fill all remaining Alpha from order" : "Fill all remaining TAO from order"}
               >
-                Max fill
+                Max Fill
               </button>
             </div>
             <div className="relative flex items-center">
