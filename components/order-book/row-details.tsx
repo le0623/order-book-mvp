@@ -227,7 +227,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-9 gap-2 bg-white dark:!bg-[#293641] text-slate-900 dark:text-foreground hover:bg-slate-50 dark:hover:!bg-accent hover:shadow-md transition-all"
+                            className="h-9 gap-2 bg-white dark:!bg-[#293641] text-slate-900 dark:text-foreground hover:bg-slate-50 dark:hover:!bg-accent transition-all"
                             disabled={!isOwner}
                           >
                             <Edit2 className="h-3.5 w-3.5" />
@@ -418,7 +418,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                           variant="outline"
                           size="sm"
                           onClick={() => setIsCloseConfirmOpen(true)}
-                          className="dark:!bg-[#293641] h-9 gap-2 text-slate-900 dark:text-foreground hover:bg-slate-50 dark:hover:!bg-accent hover:shadow-md transition-all"
+                          className="dark:!bg-[#293641] h-9 gap-2 text-slate-900 dark:text-foreground hover:bg-slate-50 dark:hover:!bg-accent transition-all"
                           disabled
                         >
                           <span className="text-base leading-none">✗</span>
@@ -434,7 +434,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="dark:!bg-[#293641] h-9 gap-2 text-slate-900 dark:text-foreground hover:bg-slate-50 dark:hover:!bg-accent hover:shadow-md transition-all"
+                    className="dark:!bg-[#293641] h-9 gap-2 text-slate-900 dark:text-foreground hover:bg-slate-50 dark:hover:!bg-accent transition-all"
                     onClick={() => setIsCloseConfirmOpen(true)}
                   >
                     <span className="text-base leading-none">✗</span>
