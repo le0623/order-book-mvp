@@ -531,8 +531,8 @@ export function FillOrderModal({
           resetTransfer();
           onRecMessage?.(recMessage);
         } else {
-          // Other message — show in modal (original style)
           setError(recMessage);
+          setFillAttemptFailed(true);
         }
       } else {
         // Success — close modal and reset
