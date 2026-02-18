@@ -293,11 +293,9 @@ export default function Home() {
   }, []);
 
   const handlePriceMessage = useCallback((message: unknown) => {
-    console.log("[Home] ws/price response:", message);
     try {
       const priceData = parseWsMessage<Record<string, unknown>>(message);
       if (!priceData || typeof priceData !== "object") return;
-      console.log("[Home] ws/price parsed:", priceData);
 
       // Format: { subnet_name: { "0": "root", ... }, price: { "0": 1.0, ... }, tao_in, alpha_in }
       const priceObj = priceData.price;

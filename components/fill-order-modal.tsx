@@ -72,8 +72,13 @@ export function FillOrderModal({
     price: number;
   } | null>(null);
   const [poolData, setPoolData] = React.useState<Record<number, { tao_in: number; alpha_in: number }>>({});
+  const [fillAttemptFailed, setFillAttemptFailed] = React.useState(false);
 
   const pendingEscrowRef = React.useRef<string>("");
+
+  React.useEffect(() => {
+    if (open) setFillAttemptFailed(false);
+  }, [open]);
 
   const WS_URL = React.useMemo(() => {
     return getWebSocketBookUrl();
@@ -140,7 +145,7 @@ export function FillOrderModal({
         setTimeout(() => {
           setError("");
         }, 300);
-      }, 5000);
+      }, 15000);
 
       return () => {
         clearTimeout(fadeOutTimer);
@@ -224,7 +229,7 @@ export function FillOrderModal({
 
   React.useEffect(() => {
     if (open) {
-      setTransferInputMode(order.type === 1 ? "alpha" : "tao");
+      setTransferInputMode(order.type === 1 ? "tao" : "alpha");
     }
   }, [open, order.type]);
 
@@ -496,6 +501,7 @@ export function FillOrderModal({
       console.log(`[FillOrder] Filling order with data:`, fillOrderData);
       const backendUrl = apiUrl || API_URL;
       const response = await postJson(`${backendUrl}/rec`, fillOrderData);
+      console.log(`[FillOrder] Fill order response:`, response);
 
       if (!response.ok) {
         throw new Error(await extractResponseError(response));
@@ -556,6 +562,7 @@ export function FillOrderModal({
     } catch (err) {
       console.error("Error filling order:", err);
       setError(err instanceof Error ? err.message : "Failed to fill order. Please try again");
+      setFillAttemptFailed(true);
     } finally {
       setLoading(false);
     }
@@ -571,6 +578,7 @@ export function FillOrderModal({
       setEscrowGenerated(false);
       setIsInReviewMode(false);
       setError("");
+      setFillAttemptFailed(false);
       setLiveParentPrice(null);
       setTransferAlpha(undefined);
       setTransferTao(undefined);
@@ -850,7 +858,7 @@ export function FillOrderModal({
         </div>
 
         <DialogFooter>
-          {order.status === 3 ? (
+          {order.status === 3 || fillAttemptFailed ? (
             <Button variant="outline" onClick={handleClose}>
               Close
             </Button>

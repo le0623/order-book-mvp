@@ -742,20 +742,22 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                           className="pr-3 pt-3 pb-3 pl-[0.5rem] text-right font-mono text-sm"
                           style={{ width: 70 }}
                         >
-                          {formatTao(order.bid || 0)}
+                          {formatTao(Number(filledOrder.tao ?? 0))}
                         </td>
                         <td
                           className="py-3 pr-2 pl-[2rem] text-right font-mono text-sm"
                           style={{ width: 70 }}
                         >
-                          {formatNumber(order.ask || 0)}
+                          {formatNumber(Number(filledOrder.alpha ?? 0))}
                         </td>
                         <td
                           className="pr-4 pt-3 pb-3 pl-[1.5rem] font-mono text-sm"
                           style={{ width: 90 }}
                         >
                           <div className="flex justify-end">
-                            {formatPrice(filledOrder.stp || 0)}
+                            {filledOrder.price != null && Number(filledOrder.price) > 0
+                              ? formatPrice(Number(filledOrder.price))
+                              : formatPrice(filledOrder.stp || 0)}
                           </div>
                         </td>
 

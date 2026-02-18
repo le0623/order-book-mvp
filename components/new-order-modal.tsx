@@ -831,7 +831,7 @@ export function NewOrderModal({
             </div>
           </div>
 
-          {/* order type */}
+          {/* order type - same badge style as main order book */}
           <div className="grid gap-2">
             <Label>Order Type</Label>
             <div className="flex gap-2">
@@ -839,8 +839,8 @@ export function NewOrderModal({
                 type="button"
                 variant="outline"
                 className={`flex-1 h-10 font-medium ${formData.type === 1
-                  ? "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:border-rose-800 dark:hover:text-rose-400"
-                  : "text-muted-foreground bg-background hover:bg-muted/50"
+                  ? "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
+                  : "text-muted-foreground bg-background hover:bg-muted/50 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 dark:hover:bg-rose-950/30 dark:hover:border-rose-800 dark:hover:text-rose-400"
                   }`}
                 onClick={() => setFormData({ ...formData, type: 1 })}
                 disabled={escrowGenerated && !isInReviewMode}
@@ -851,8 +851,8 @@ export function NewOrderModal({
                 type="button"
                 variant="outline"
                 className={`flex-1 h-10 font-medium ${formData.type === 2
-                  ? "text-emerald-700 border-emerald-300 bg-emerald-200 dark:bg-emerald-950/60 dark:border-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 hover:border-emerald-300 hover:text-emerald-700 dark:hover:bg-emerald-950/60 dark:hover:border-emerald-700 dark:hover:text-emerald-300"
-                  : "text-muted-foreground bg-background hover:bg-muted/50"
+                  ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
+                  : "text-muted-foreground bg-background hover:bg-muted/50 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 dark:hover:border-emerald-800 dark:hover:text-emerald-400"
                   }`}
                 onClick={() => setFormData({ ...formData, type: 2 })}
                 disabled={escrowGenerated && !isInReviewMode}
