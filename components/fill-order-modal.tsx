@@ -140,16 +140,6 @@ export function FillOrderModal({
   React.useEffect(() => {
     if (error) {
       setErrorVisible(true);
-      const fadeOutTimer = setTimeout(() => {
-        setErrorVisible(false);
-        setTimeout(() => {
-          setError("");
-        }, 300);
-      }, 15000);
-
-      return () => {
-        clearTimeout(fadeOutTimer);
-      };
     } else {
       setErrorVisible(false);
     }
