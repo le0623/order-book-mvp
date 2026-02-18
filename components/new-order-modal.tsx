@@ -851,7 +851,7 @@ export function NewOrderModal({
                 type="button"
                 variant="outline"
                 className={`flex-1 h-10 font-medium ${formData.type === 2
-                  ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600 dark:hover:bg-emerald-950/30 dark:hover:border-emerald-800 dark:hover:text-emerald-400"
+                  ? "text-emerald-700 border-emerald-300 bg-emerald-200 dark:bg-emerald-950/60 dark:border-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 hover:border-emerald-300 hover:text-emerald-700 dark:hover:bg-emerald-950/60 dark:hover:border-emerald-700 dark:hover:text-emerald-300"
                   : "text-muted-foreground bg-background hover:bg-muted/50"
                   }`}
                 onClick={() => setFormData({ ...formData, type: 2 })}
@@ -1014,11 +1014,9 @@ export function NewOrderModal({
                 </button>
               </div>
             </div>
-            {formData.asset != null && (
-              <p className="text-sm text-muted-foreground opacity-60">
-                Market Price: {priceForConversion > 0 ? priceForConversion.toFixed(4) : "—"}
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground opacity-60">
+              Market Price {priceForConversion > 0 ? priceForConversion.toFixed(6) : "0.000000"}
+            </p>
           </div>
 
           <div className="grid gap-2">

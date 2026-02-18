@@ -184,22 +184,25 @@ export function FillOrderModal({
     return 0;
   };
 
-  // Max fill = take all remaining from parent order (from order book / ws tap)
+  // Max fill = take all remaining from parent, in the user's current unit (don't switch unit)
   const handleMaxFill = React.useCallback(() => {
-    if (order.type === 1) {
-      // Parent Sell: remaining is Alpha — grab all Alpha
-      const alpha = fixedValues.alpha > 0 ? fixedValues.alpha : undefined;
-      setTransferAlpha(alpha);
-      setTransferInputMode("alpha");
-      if (alpha != null) setTransferTao(undefined);
-    } else {
-      // Parent Buy: remaining is TAO — grab all TAO
-      const tao = fixedValues.tao > 0 ? fixedValues.tao : undefined;
+    const price = priceForConversion;
+    if (transferInputMode === "tao") {
+      const tao =
+        order.type === 1
+          ? (fixedValues.alpha > 0 && price > 0 ? fixedValues.alpha * price : undefined)
+          : (fixedValues.tao > 0 ? fixedValues.tao : undefined);
       setTransferTao(tao);
-      setTransferInputMode("tao");
-      if (tao != null) setTransferAlpha(undefined);
+      setTransferAlpha(undefined);
+    } else {
+      const alpha =
+        order.type === 1
+          ? (fixedValues.alpha > 0 ? fixedValues.alpha : undefined)
+          : (fixedValues.tao > 0 && price > 0 ? fixedValues.tao / price : undefined);
+      setTransferAlpha(alpha);
+      setTransferTao(undefined);
     }
-  }, [order.type, fixedValues.alpha, fixedValues.tao]);
+  }, [order.type, transferInputMode, fixedValues.alpha, fixedValues.tao, priceForConversion]);
 
   React.useEffect(() => {
     if (!open) {
