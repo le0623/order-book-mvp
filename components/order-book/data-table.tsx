@@ -733,9 +733,39 @@ export function DataTable<TData, TValue>({
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-end space-x-2 rounded-b-md bg-background dark:bg-background mb-12">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-b-md bg-background dark:bg-background mb-12">
         <div className="text-xs text-muted-foreground">
           Showing {table.getRowModel().rows.length} rows
+        </div>
+        <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+          <a
+            href="https://x.com/Subnet118"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground transition-colors"
+          >
+            X
+          </a>
+          <span aria-hidden>|</span>
+          <a
+            href="https://discord.gg/bittensor"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground transition-colors"
+          >
+            Discord
+          </a>
+          <span aria-hidden>|</span>
+          <a
+            href="https://subnet-118-dashboard.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground transition-colors"
+          >
+            Miners
+          </a>
+          <span aria-hidden>|</span>
+          <span>© Subnet 118</span>
         </div>
       </div>
 
