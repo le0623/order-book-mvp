@@ -3,6 +3,7 @@
 import React, { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WalletProvider } from './wallet-context'
+import { TaoPriceProvider } from '@/contexts/taoPrice'
 
 const queryClient = new QueryClient()
 
@@ -13,9 +14,11 @@ export default function ContextProvider({
 }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <WalletProvider>
-        {children}
-      </WalletProvider>
+      <TaoPriceProvider>
+        <WalletProvider>
+          {children}
+        </WalletProvider>
+      </TaoPriceProvider>
     </QueryClientProvider>
   )
 }

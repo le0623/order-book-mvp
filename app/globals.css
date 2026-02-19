@@ -81,6 +81,18 @@
     @apply border-border scroll-smooth;
   }
 
+  /* Hide scrollbars globally while keeping scroll functionality */
+  *,
+  *::before,
+  *::after {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+
+  *::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
@@ -375,4 +387,324 @@ button[name="next-month"] {
 .table-header-enhanced {
   @apply text-xs font-bold uppercase tracking-widest text-foreground/80;
   @apply border-b-2 border-primary/20;
+}
+
+/* ============================================================
+   Loading Screen - Gamified Fintech Aesthetic
+   ============================================================ */
+
+/* Scan lines overlay for retro CRT effect */
+.loading-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Subtle grid pattern */
+.loading-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 1;
+  animation: loading-grid-fade 3s ease-in-out infinite alternate;
+}
+
+@keyframes loading-grid-fade {
+  0% { opacity: 0.3; }
+  100% { opacity: 0.7; }
+}
+
+/* Large ambient glow behind logo */
+.loading-ambient-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -55%);
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(
+    circle,
+    rgba(59, 130, 246, 0.15) 0%,
+    rgba(59, 130, 246, 0.05) 40%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  z-index: 1;
+  animation: loading-ambient-pulse 3s ease-in-out infinite;
+}
+
+@keyframes loading-ambient-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: translate(-50%, -55%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -55%) scale(1.1);
+  }
+}
+
+/* Logo container */
+.loading-logo-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 140px;
+  height: 140px;
+}
+
+/* Glow behind logo */
+.loading-logo-glow {
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(
+    circle,
+    rgba(59, 130, 246, 0.4) 0%,
+    rgba(59, 130, 246, 0.1) 50%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  animation: loading-logo-glow-pulse 2s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes loading-logo-glow-pulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+/* Rotating ring around logo */
+.loading-logo-ring {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: rgba(59, 130, 246, 0.5);
+  border-right-color: rgba(59, 130, 246, 0.2);
+  animation: loading-ring-spin 2.5s linear infinite;
+  z-index: 2;
+}
+
+@keyframes loading-ring-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Logo image animation */
+.loading-logo {
+  animation: loading-logo-float 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));
+}
+
+@keyframes loading-logo-float {
+  0%, 100% {
+    transform: translateY(0);
+    filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));
+  }
+  50% {
+    transform: translateY(-6px);
+    filter: drop-shadow(0 8px 25px rgba(59, 130, 246, 0.5));
+  }
+}
+
+/* Title fade in */
+.loading-title {
+  animation: loading-text-in 0.8s ease-out 0.3s both;
+}
+
+.loading-subtitle {
+  animation: loading-text-in 0.8s ease-out 0.6s both;
+}
+
+@keyframes loading-text-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* Progress bar track */
+.loading-progress-track {
+  position: relative;
+  height: 3px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+/* Progress bar fill */
+.loading-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg,
+    rgba(59, 130, 246, 0.6) 0%,
+    rgba(96, 165, 250, 0.9) 50%,
+    rgba(59, 130, 246, 0.6) 100%
+  );
+  border-radius: 4px;
+  transition: width 0.15s ease-out;
+  position: relative;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+}
+
+/* Shine sweep on progress bar */
+.loading-progress-shine {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent 100%
+  );
+  animation: loading-shine-sweep 2s ease-in-out infinite;
+}
+
+@keyframes loading-shine-sweep {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Cycling message fade-in */
+.loading-message-cycle {
+  animation: loading-message-in 0.4s ease-out both;
+}
+
+@keyframes loading-message-in {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Bottom dots animation */
+.loading-dot {
+  width: 4px;
+  height: 4px;
+  background: rgba(59, 130, 246, 0.5);
+  border-radius: 50%;
+  animation: loading-dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes loading-dot-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* ============================================================
+   Pixel Symbols Background - 8-bit Floating Token Aesthetic
+   ============================================================ */
+
+@keyframes pixelFloat {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(
+      calc(var(--drift-x) * 0.5),
+      calc(var(--drift-y) * 0.4)
+    ) rotate(2deg);
+  }
+  50% {
+    transform: translate(
+      var(--drift-x),
+      var(--drift-y)
+    ) rotate(0deg);
+  }
+  75% {
+    transform: translate(
+      calc(var(--drift-x) * 0.5),
+      calc(var(--drift-y) * 0.6)
+    ) rotate(-2deg);
+  }
+}
+
+.pixel-sym {
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+  font-smooth: never;
+  will-change: transform, opacity;
+}
+
+/* ============================================================
+   Status Dot Indicator — Slow Aesthetic Glow
+   ============================================================ */
+
+@keyframes status-dot-glow {
+  0%, 100% {
+    box-shadow: 0 0 3px 0px currentColor;
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 8px 2px currentColor;
+    opacity: 0.8;
+  }
+}
+
+.status-dot-live {
+  color: rgb(16 185 129); /* emerald-500 */
+  animation: status-dot-glow 3s ease-in-out infinite;
+}
+
+.status-dot-offline {
+  color: rgb(239 68 68); /* red-500 */
+  animation: status-dot-glow 3s ease-in-out infinite;
+}
+
+.status-dot-connecting {
+  color: rgb(245 158 11); /* amber-500 */
+  animation: status-dot-glow 1.5s ease-in-out infinite;
+}
+
+/* ============================================================
+   Mini Spinner — iOS / SwiftUI Activity Indicator
+   ============================================================ */
+
+.mini-spinner {
+  animation: mini-spinner-step 0.8s steps(8, end) infinite;
+}
+
+@keyframes mini-spinner-step {
+  to {
+    transform: rotate(360deg);
+  }
 }

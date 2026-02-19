@@ -1,7 +1,9 @@
 import type { Metadata } from "next"
 import { Inter, Press_Start_2P } from "next/font/google"
+import { GeistPixelCircle, GeistPixelSquare } from "geist/font/pixel"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import ContextProvider from '@/context'
 
 const inter = Inter({ subsets: ["latin"] })
@@ -12,10 +14,12 @@ const pressStart2P = Press_Start_2P({
 })
 
 export const metadata: Metadata = {
-  title: "HODL Exchange",
+  title: "HODL: Bittensor's #1 Native Exchange",
   description: "",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/hodl-logo.png",
+    shortcut: "/hodl-logo.png",
+    apple: "/hodl-logo.png",
   },
 }
 
@@ -26,10 +30,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${inter.className} ${pressStart2P.variable}`} suppressHydrationWarning>
+      <body className={`${inter.className} ${pressStart2P.variable} ${GeistPixelCircle.variable} ${GeistPixelSquare.variable}`} suppressHydrationWarning>
         <ContextProvider>
           <ThemeProvider defaultTheme="dark">
-            {children}
+            <TooltipProvider delayDuration={200}>
+              {children}
+            </TooltipProvider>
           </ThemeProvider>
         </ContextProvider>
       </body>

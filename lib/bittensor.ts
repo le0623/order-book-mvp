@@ -273,6 +273,57 @@ export async function resolveHotkey(
 }
 
 // ---------------------------------------------------------------------------
+// On-chain price query
+// ---------------------------------------------------------------------------
+
+/**
+ * Query the Bittensor chain directly for a subnet's alpha token spot price.
+ *
+ * Reads SubnetTAO and SubnetAlphaIn from the subtensor pallet storage
+ * (both in RAO, 1 TAO = 1 000 000 000 RAO) and computes:
+ *   spot_price = (tao_reserve_rao / 1e9) / (alpha_reserve_rao / 1e9)
+ *
+ * Args:
+ *   netuid (number): The subnet network UID.
+ *
+ * Returns:
+ *   number: Spot price of one alpha token in TAO. Returns 0 if pool is empty.
+ */
+export async function fetchSubnetPrice(netuid: number): Promise<number> {
+  const api = await getApi();
+
+  // Reason: Use the same dynamic-access pattern as transferStake because
+  // the chain's storage types aren't fully generated in the TS bindings.
+  const queryModule = (
+    api.query as Record<
+      string,
+      Record<string, (...args: unknown[]) => Promise<{ toString(): string }>>
+    >
+  )['subtensorModule'];
+
+  if (!queryModule?.['subnetTAO'] || !queryModule?.['subnetAlphaIn']) {
+    throw new Error('Pool storage keys not available on this chain runtime');
+  }
+
+  const [taoReserveCodec, alphaReserveCodec] = await Promise.all([
+    queryModule['subnetTAO'](netuid),
+    queryModule['subnetAlphaIn'](netuid),
+  ]);
+
+  // Values are in RAO (1 TAO = 1,000,000,000 RAO)
+  const taoReserveRao = BigInt(taoReserveCodec.toString());
+  const alphaReserveRao = BigInt(alphaReserveCodec.toString());
+
+  if (alphaReserveRao === BigInt(0)) return 0;
+
+  // Convert RAO → TAO, then compute spot price (TAO per Alpha)
+  const taoInPool = Number(taoReserveRao) / 1e9;
+  const alphaInPool = Number(alphaReserveRao) / 1e9;
+
+  return taoInPool / alphaInPool;
+}
+
+// ---------------------------------------------------------------------------
 // Alpha (stake) transfer
 // ---------------------------------------------------------------------------
 

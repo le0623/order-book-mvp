@@ -45,8 +45,201 @@ import { ConnectButton } from "@/components/walletkit/connect";
 import { parseWsMessage } from "@/lib/websocket-utils";
 import { postJson, extractResponseError, readResponseBody, parseRecResponse } from "@/lib/api-utils";
 import { useBittensorTransfer } from "@/hooks/useBittensorTransfer";
+import { useSubnetPrice } from "@/hooks/useSubnetPrice";
 import { resolveHotkey } from "@/lib/bittensor";
+import { useTMCSubnets } from "@/hooks/useTMCSubnets";
+import { Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
+
+/**
+ * Searchable asset (subnet) selector dropdown.
+ * Shows netuid and subnet name, supports filtering by text search.
+ */
+function AssetSelector({
+  value,
+  onChange,
+  disabled = false,
+  httpPrices = {},
+}: {
+  value?: number;
+  onChange: (netuid: number | undefined) => void;
+  disabled?: boolean;
+  httpPrices?: Record<number, number>;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState("");
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const { subnetNames, getLabel } = useTMCSubnets();
+
+  // Reason: Combine netuids from live price data and TMC subnet names
+  const subnetOptions = React.useMemo(() => {
+    const netuids = new Set<number>();
+    Object.keys(httpPrices).forEach((k) => {
+      const n = Number(k);
+      if (n > 0) netuids.add(n);
+    });
+    Object.keys(subnetNames).forEach((k) => {
+      const n = Number(k);
+      if (n > 0) netuids.add(n);
+    });
+    return Array.from(netuids)
+      .sort((a, b) => a - b)
+      .map((netuid) => ({
+        netuid,
+        label: getLabel(netuid),
+        name: subnetNames[netuid] || "",
+      }));
+  }, [httpPrices, subnetNames, getLabel]);
+
+  const filteredOptions = React.useMemo(() => {
+    if (!search.trim()) return subnetOptions;
+    const q = search.toLowerCase().trim();
+    return subnetOptions.filter(
+      (opt) =>
+        String(opt.netuid).includes(q) ||
+        opt.label.toLowerCase().includes(q) ||
+        opt.name.toLowerCase().includes(q)
+    );
+  }, [search, subnetOptions]);
+
+  const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
+  const listRef = React.useRef<HTMLDivElement>(null);
+
+  // Focus search input when popover opens
+  React.useEffect(() => {
+    if (open) {
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+      setHighlightedIndex(-1);
+    } else {
+      setSearch("");
+      setHighlightedIndex(-1);
+    }
+  }, [open]);
+
+  // Reset highlight when filtered list changes
+  React.useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [filteredOptions.length]);
+
+  // Scroll highlighted item into view
+  React.useEffect(() => {
+    if (highlightedIndex < 0 || !listRef.current) return;
+    const items = listRef.current.querySelectorAll("button");
+    items[highlightedIndex]?.scrollIntoView({ block: "nearest" });
+  }, [highlightedIndex]);
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex((prev) =>
+        prev < filteredOptions.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((prev) =>
+        prev > 0 ? prev - 1 : filteredOptions.length - 1
+      );
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      // Reason: If nothing is highlighted, default to the first filtered option so the user can just type and press Enter.
+      const idx = highlightedIndex >= 0 ? highlightedIndex : 0;
+      const opt = filteredOptions[idx];
+      if (opt) {
+        onChange(opt.netuid);
+        setOpen(false);
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(false);
+    }
+  };
+
+  const displayLabel = value !== undefined ? getLabel(value) : null;
+
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor="asset">Asset (NETUID)</Label>
+      <Popover open={open} onOpenChange={disabled ? undefined : setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            id="asset"
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            disabled={disabled}
+            className={cn(
+              "w-full justify-between font-normal focus:ring-1 focus:ring-blue-500/30 focus:ring-offset-0 focus:border-blue-500/40",
+              !value && "text-muted-foreground opacity-60"
+            )}
+          >
+            {displayLabel || "Select asset..."}
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-[--radix-popover-trigger-width] p-0 bg-background border-border/60"
+          align="start"
+          sideOffset={4}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <div className="p-2 border-b border-border/40">
+            <Input
+              ref={searchInputRef}
+              placeholder="Search by name or netuid..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className="h-8 text-sm focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40"
+            />
+          </div>
+          <div
+            ref={listRef}
+            className="max-h-[260px] overflow-y-auto overscroll-contain"
+            onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+          >
+            {filteredOptions.length === 0 ? (
+              <div className="py-4 text-center text-sm text-muted-foreground">
+                No subnets found
+              </div>
+            ) : (
+              filteredOptions.map((opt, idx) => (
+                <button
+                  key={opt.netuid}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.netuid);
+                    setOpen(false);
+                  }}
+                  onMouseEnter={() => setHighlightedIndex(idx)}
+                  className={cn(
+                    "w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between",
+                    value === opt.netuid && "bg-muted/60 font-medium",
+                    highlightedIndex === idx
+                      ? "bg-muted"
+                      : "hover:bg-muted"
+                  )}
+                >
+                  <span>{opt.label}</span>
+                  {value === opt.netuid && (
+                    <CheckIcon className="h-3.5 w-3.5 text-emerald-500" />
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
 
 interface NewOrderModalProps {
   open: boolean;
@@ -88,6 +281,7 @@ export function NewOrderModal({
     partial: true,
     public: true,
   });
+  const { price: chainPrice } = useSubnetPrice(formData.asset);
   const [escrowWallet, setEscrowWallet] = React.useState<string>("");
   const [originWallet, setOriginWallet] = React.useState<string>("");
   const [orderUuid, setOrderUuid] = React.useState<string>("");
@@ -112,7 +306,6 @@ export function NewOrderModal({
   const [httpPrices, setHttpPrices] = React.useState<Record<number, number>>({});
   const [poolData, setPoolData] = React.useState<Record<number, { tao_in: number; alpha_in: number }>>({});
 
-  const [assetInputEditing, setAssetInputEditing] = React.useState<string | null>(null);
   const pendingEscrowRef = React.useRef<string>("");
 
   const WS_URL = React.useMemo(() => {
@@ -284,7 +477,6 @@ export function NewOrderModal({
     setCopiedEscrow(false);
     setPriceData(null);
     setTransferInputMode("tao");
-    setAssetInputEditing(null);
     pendingEscrowRef.current = "";
     resetTransfer();
   };
@@ -411,6 +603,10 @@ export function NewOrderModal({
     }
   };
 
+  /** Check if an error message indicates the user deliberately cancelled the transaction. */
+  const isUserCancellation = (msg: string) =>
+    /cancel/i.test(msg) || /rejected/i.test(msg) || /denied/i.test(msg);
+
   const handleFinalPlaceOrder = async () => {
     try {
       setLoading(true);
@@ -446,6 +642,10 @@ export function NewOrderModal({
             if (!taoOutcome.result) {
               const reason = taoOutcome.error || "TAO transfer to escrow failed or was cancelled";
               resetTransfer();
+              if (isUserCancellation(reason)) {
+                console.log("[PlaceOrder] TAO transfer cancelled by user");
+                return;
+              }
               throw new Error(reason);
             }
             const txResult = taoOutcome.result;
@@ -468,6 +668,10 @@ export function NewOrderModal({
             if (!alphaOutcome.result) {
               const reason = alphaOutcome.error || "Alpha transfer failed";
               resetTransfer();
+              if (isUserCancellation(reason)) {
+                console.log("[PlaceOrder] Alpha transfer cancelled by user");
+                return;
+              }
               throw new Error(reason);
             }
             console.log(`[PlaceOrder] Alpha transfer confirmed: ${alphaOutcome.result.txHash}`);
@@ -776,19 +980,21 @@ export function NewOrderModal({
                 aria-label="Switch between TAO and Alpha"
                 title="Switch unit (TAO ↔ Alpha)"
               >
-                <span className="text-xs">τ/α</span>
+                <span className="text-xs">{transferInputMode === "tao" ? "τ/α" : "α/τ"}</span>
               </button>
             </div>
             <div className="relative flex items-center">
               <Input
                 id="transfer-amount"
                 type="number"
+                min="0"
                 step="1"
                 value={(transferInputMode === "tao" ? formData.tao : formData.alpha) ?? ""}
                 onChange={(e) => {
                   const value = e.target.value.trim();
                   const parsed = parseFloat(value);
-                  const v = value === "" ? undefined : (isNaN(parsed) ? undefined : parsed);
+                  // Reason: Clamp to 0 so negative order sizes are never accepted.
+                  const v = value === "" ? undefined : (isNaN(parsed) ? undefined : Math.max(0, parsed));
                   const field = transferInputMode === "tao" ? "tao" : "alpha";
                   setFormData((prev) => ({ ...prev, [field]: v }));
                 }}
@@ -864,81 +1070,24 @@ export function NewOrderModal({
 
 
 
+          <AssetSelector
+            value={formData.asset}
+            onChange={(netuid) => setFormData({ ...formData, asset: netuid })}
+            disabled={escrowGenerated && !isInReviewMode}
+            httpPrices={httpPrices}
+          />
           <div className="grid gap-2">
-            <Label htmlFor="asset">Asset (NETUID)</Label>
-            <div className="relative flex items-center">
-              <Input
-                id="asset"
-                type="text"
-                value={
-                  assetInputEditing !== null
-                    ? assetInputEditing
-                    : formData.asset != null
-                      ? (subnetNames[formData.asset]
-                        ? `${formData.asset} - ${subnetNames[formData.asset]}`
-                        : String(formData.asset))
-                      : ""
-                }
-                onFocus={() =>
-                  setAssetInputEditing(formData.asset != null ? String(formData.asset) : "")
-                }
-                onBlur={() => {
-                  const raw = (assetInputEditing ?? "").trim();
-                  if (raw === "") {
-                    setFormData((prev) => ({ ...prev, asset: undefined }));
-                  } else {
-                    const n = parseInt(raw, 10);
-                    setFormData((prev) => ({
-                      ...prev,
-                      asset: Number.isNaN(n) ? undefined : n,
-                    }));
-                  }
-                  setAssetInputEditing(null);
-                }}
-                onChange={(e) => setAssetInputEditing(e.target.value)}
-                disabled={escrowGenerated && !isInReviewMode}
-                placeholder="Enter asset"
-                className="focus-visible:ring-1 focus-visible:ring-blue-500/30 focus-visible:ring-offset-0 focus-visible:border-blue-500/40 pr-10"
-              />
-              <div className="absolute right-1 flex flex-col gap-0.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!escrowGenerated || isInReviewMode) {
-                      setFormData({
-                        ...formData,
-                        asset: Math.max(1, (formData.asset ?? 0) + 1),
-                      });
-                    }
-                  }}
-                  disabled={escrowGenerated && !isInReviewMode}
-                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Increase asset"
-                >
-                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!escrowGenerated || isInReviewMode) {
-                      const currentAsset = formData.asset ?? 1;
-                      setFormData({
-                        ...formData,
-                        asset: currentAsset > 1 ? currentAsset - 1 : undefined,
-                      });
-                    }
-                  }}
-                  disabled={escrowGenerated && !isInReviewMode}
-                  className="h-4 w-6 flex items-center justify-center rounded-sm border border-border bg-background hover:bg-muted active:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Decrease asset"
-                >
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                </button>
-              </div>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="stp">Stop Price (TAO)</Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help opacity-60 hover:opacity-100 transition-opacity" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[280px]">
+                  <p>Optional. For Buy orders, only stop prices above market have an effect. For Sell orders, only stop prices below market have an effect.</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="stp">Stop Price (TAO)</Label>
             <div className="relative flex items-center">
               <Input
                 id="stp"
@@ -1122,6 +1271,14 @@ export function NewOrderModal({
             >
               Public order (visible to everyone)
             </Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help opacity-60 hover:opacity-100 transition-opacity" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[260px]">
+                <p>When unchecked, this order is <strong>private</strong> — it will only be visible to you through the &quot;My Orders&quot; filter. Other users will not see it in the order book.</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
@@ -1136,9 +1293,9 @@ export function NewOrderModal({
                 Cancel
               </Button>
               <Button
-                variant="outline"
                 onClick={handleNext}
                 disabled={loading}
+                className="bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.4)]"
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Escrow

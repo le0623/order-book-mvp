@@ -24,6 +24,12 @@ import {
 import { getWebSocketBookUrl, getWebSocketPriceUrl, getWebSocketTapUrl, API_URL } from "../lib/config";
 import { parseWsMessage } from "../lib/websocket-utils";
 import { parseRecResponse, postJson, extractResponseError } from "../lib/api-utils";
+import { LoadingScreen } from "../components/loading-screen";
+import { PixelSymbolsBackground } from "../components/pixel-symbols-background";
+import { useTMCSubnets } from "../hooks/useTMCSubnets";
+import { useTaoPrice } from "../contexts/taoPrice";
+import { useBlockHeight } from "../hooks/useBlockHeight";
+import { MiniSpinner } from "../components/ui/mini-spinner";
 
 const WS_URL = getWebSocketBookUrl();
 const WS_PRICE_URL = getWebSocketPriceUrl();
@@ -31,7 +37,12 @@ const WS_TAP_URL = getWebSocketTapUrl();
 
 export default function Home() {
   const { selectedAccount, walletModalOpen, closeWalletModal } = useWallet();
+  // Reason: Warm the TMC subnet names cache on app load so it's ready
+  // before the user opens any modal or navigates to a page that needs names.
+  useTMCSubnets();
   const { theme } = useTheme();
+  const { price: taoPrice, loading: taoPriceLoading } = useTaoPrice();
+  const { height: blockHeight, loading: blockLoading } = useBlockHeight();
   const [mounted, setMounted] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [newOrderModalOpen, setNewOrderModalOpen] = useState(false);
@@ -43,10 +54,28 @@ export default function Home() {
   const [showWalletConnectDialog, setShowWalletConnectDialog] = useState(false);
   const [ofm, setOfm] = useState<[number, number, number]>([10, 0.01, 0.001]); // [open_max, open_min, fill_min]
   const [recPopupMessage, setRecPopupMessage] = useState<string>("");
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  const [showLoading, setShowLoading] = useState(true);
+  const headerRef = useRef<HTMLElement | null>(null);
   const [subnetNames, setSubnetNames] = useState<Record<number, string>>({});
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Reason: Expose page header height as CSS variable so the order-book
+  // card header can compute its own sticky offset dynamically.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const update = () => {
+      const h = el.getBoundingClientRect().height;
+      document.documentElement.style.setProperty("--page-header-height", `${h}px`);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   // Fetch OFM settings from backend
@@ -411,6 +440,7 @@ export default function Home() {
 
         if (!response.ok) {
           console.error("Failed to fetch initial orders:", response.statusText);
+          setInitialDataLoaded(true);
           return;
         }
 
@@ -420,6 +450,7 @@ export default function Home() {
 
         if (!Array.isArray(ordersArray)) {
           console.error("Invalid orders data format");
+          setInitialDataLoaded(true);
           return;
         }
 
@@ -431,6 +462,8 @@ export default function Home() {
         }
       } catch (error) {
         console.error("Error fetching initial orders:", error);
+      } finally {
+        setInitialDataLoaded(true);
       }
     };
 
@@ -581,14 +614,25 @@ export default function Home() {
   }, [orders, openOrders, showMyOrdersOnly, selectedAccount?.address]);
 
   return (
-    <main className="min-h-screen bg-white dark:bg-background">
+    <>
+      {showLoading && (
+        <LoadingScreen
+          minDisplayTime={2400}
+          isReady={initialDataLoaded && mounted}
+          onComplete={() => setShowLoading(false)}
+        />
+      )}
+    {/* 8-bit pixel symbols floating background */}
+    <PixelSymbolsBackground />
+    <main className="min-h-screen relative z-10">
       <div className="container mx-auto px-4 max-w-7xl pt-4">
-        <header className="mb-6 border-b border-slate-200 dark:border-border/40 sticky top-0 z-50 bg-white dark:bg-background h-[105.2px] pt-8 pb-6 flex items-center">
-          <div className="flex items-center justify-between w-full">
+        <header ref={headerRef} className="mb-6 sticky top-0 z-50 bg-white/80 dark:bg-background/80 backdrop-blur-md">
+          {/* Primary nav row */}
+          <div className="flex items-center justify-between w-full pt-6 pb-3">
             <div className="flex items-center gap-[2px]">
               <button
                 onClick={handleLogoClick}
-                className="px-1.5 pt-2 dark:shadow-sm hover:bg-white dark:hover:bg-background transition-colors cursor-pointer"
+                className="px-1.5 pt-2 hover:opacity-80 transition-opacity cursor-pointer"
                 aria-label="Return to main page"
               >
                 <Image
@@ -606,9 +650,14 @@ export default function Home() {
                   </h1>
                 </div>
                 <div className="flex items-center gap-3">
-                  <p className="text-muted-foreground text-[15px] font-medium tracking-tight leading-[0.75rem]">
+                  <a
+                    href="https://taomarketcap.com/subnets/118"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground text-[15px] font-medium tracking-tight leading-[0.75rem] font-[family-name:var(--font-geist-pixel-square)] hover:text-foreground transition-colors"
+                  >
                     Powered by Subnet 118
-                  </p>
+                  </a>
                 </div>
               </div>
             </div>
@@ -644,6 +693,77 @@ export default function Home() {
                 <span className="hidden sm:inline">My Orders</span>
               </Button>
               <ConnectButton />
+            </div>
+          </div>
+
+          {/* Stats ticker strip */}
+          <div className="flex items-center gap-6 pb-3 border-b border-slate-200 dark:border-border/40 overflow-x-auto scrollbar-hide">
+            {/* TAO Price */}
+            <a
+              href="https://taomarketcap.com/subnets/0"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 shrink-0 hover:opacity-70 transition-opacity"
+            >
+              {taoPriceLoading ? (
+                <>
+                  <span className="text-[12px] font-mono font-medium tracking-tight text-foreground tabular-nums">τ</span>
+                  <MiniSpinner size={12} className="text-muted-foreground" />
+                </>
+              ) : (
+                <span className="text-[12px] font-mono font-medium tracking-tight text-foreground tabular-nums">
+                  {taoPrice !== null
+                    ? `τ $${taoPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    : "τ —"}
+                </span>
+              )}
+            </a>
+
+            {/* Separator */}
+            <div className="w-px h-3 bg-border/60 shrink-0" />
+
+            {/* Block Height */}
+            <a
+              href="https://taomarketcap.com/blockchain/blocks"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 shrink-0 hover:opacity-70 transition-opacity"
+            >
+              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                Block
+              </span>
+              {blockLoading ? (
+                <MiniSpinner size={12} className="text-muted-foreground" />
+              ) : (
+                <span className="text-[12px] font-mono font-medium tracking-tight text-foreground tabular-nums">
+                  {blockHeight !== null
+                    ? `#${blockHeight.toLocaleString()}`
+                    : "—"}
+                </span>
+              )}
+            </a>
+
+            {/* Separator */}
+            <div className="w-px h-3 bg-border/60 shrink-0" />
+
+            {/* Connection status dot */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <div
+                className={`w-[6px] h-[6px] rounded-full ${
+                  connectionState === "connected"
+                    ? "bg-emerald-500 status-dot-live"
+                    : connectionState === "connecting"
+                      ? "bg-amber-500 status-dot-connecting"
+                      : "bg-red-500 status-dot-offline"
+                }`}
+              />
+              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                {connectionState === "connected"
+                  ? "Live"
+                  : connectionState === "connecting"
+                    ? "Connecting"
+                    : "Offline"}
+              </span>
             </div>
           </div>
         </header>
@@ -712,6 +832,7 @@ export default function Home() {
         </Dialog>
       </div>
     </main>
+    </>
   );
 }
 

@@ -14,8 +14,6 @@ import {
   Row,
   ExpandedState,
 } from "@tanstack/react-table";
-import { ConnectionState } from "@/lib/websocket-types";
-
 import {
   Table,
   TableBody,
@@ -40,8 +38,6 @@ import {
   ArrowLeft,
   X,
   ArrowUp,
-  Wifi,
-  WifiOff,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -150,7 +146,10 @@ export function DataTable<TData, TValue>({
     const setTopVar = () => {
       const cardHeaderHeight =
         cardHeaderRef.current?.getBoundingClientRect().height ?? 0;
-      const pageHeaderHeight = 105.2;
+      // Reason: Dynamically read page header height so the sticky offset
+      // stays correct regardless of header content / viewport width.
+      const pageHeader = document.querySelector("header");
+      const pageHeaderHeight = pageHeader?.getBoundingClientRect().height ?? 114;
       const totalOffset = pageHeaderHeight + cardHeaderHeight;
 
       if (isMobileView && headerScrollRef.current) {
@@ -346,11 +345,12 @@ export function DataTable<TData, TValue>({
       <Card className="w-full border-slate-200 dark:border-border/60 shadow-sm bg-white dark:bg-card/50 backdrop-blur-sm mb-3">
         <CardHeader
           ref={cardHeaderRef as any}
-          className="sticky top-[105.2px] z-30 rounded-t-md bg-white dark:bg-background h-[93.07px] pt-[0.4rem]  sm:pt-6 sm:px-6 px-3 pb-4 border-b border-slate-200 dark:border-border/40"
+          className="sticky z-30 rounded-t-md bg-white dark:bg-background h-[93.07px] py-2 sm:px-6 px-3 border-b border-slate-200 dark:border-border/40 flex flex-row items-center justify-between"
+          style={{ top: "var(--page-header-height, 114px)" }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
-              <CardTitle className="text-xl font-bold tracking-tight text-foreground">
+              <CardTitle className="text-[3.5rem] sm:text-[4.25rem] font-normal tracking-wide leading-none text-foreground font-[family-name:var(--font-geist-pixel-circle)]">
                 {isSearchActive ? "Order History" : showMyOrdersOnly ? "My Orders" : "Order Book"}
               </CardTitle>
               <div className="flex items-center gap-2 px-3 py rounded-[6px] border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm">
@@ -656,10 +656,10 @@ export function DataTable<TData, TValue>({
               </div>
             </>
           ) : (
-            <Table noWrapper className="w-full table-fixed">
+            <Table noWrapper className="w-full table-fixed border-separate border-spacing-0 [&_tbody_td]:border-b [&_tbody_td]:border-slate-100 dark:[&_tbody_td]:border-border/40 [&_tbody_tr:last-child_td]:border-b-0">
               <TableHeader
                 ref={tableHeaderRef as any}
-                className="sticky z-40 bg-slate-50 dark:bg-background border-b border-slate-200 dark:border-border/40"
+                className="sticky z-40 bg-slate-50 dark:bg-background"
               >
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>

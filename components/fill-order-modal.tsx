@@ -854,13 +854,17 @@ export function FillOrderModal({
             </Button>
           ) : !escrowGenerated ? (
             <>
-              <Button variant="outline" onClick={handleClose} disabled={loading}>
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                disabled={loading}
+              >
                 Cancel
               </Button>
               <Button
                 onClick={handleFillOrder}
                 disabled={loading}
-                variant="outline"
+                className="bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-semibold shadow-[0_4px_14px_0_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_0_rgba(37,99,235,0.4)]"
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Escrow
