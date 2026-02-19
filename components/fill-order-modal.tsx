@@ -728,7 +728,7 @@ export function FillOrderModal({
                 disabled={(escrowGenerated && !isInReviewMode) || (order.type === 1 ? fixedValues.alpha <= 0 : fixedValues.tao <= 0)}
                 className="h-[1.5rem] px-[0.35rem] flex items-center rounded-md justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0 text-xs"
                 aria-label="Fill entire parent order (all remaining)"
-                title={order.type === 1 ? "Fill all remaining Alpha from order" : "Fill all remaining TAO from order"}
+                title={order.type === 1 ? "Fill all remaining Alpha" : "Fill all remaining TAO"}
               >
                 Max Fill
               </button>

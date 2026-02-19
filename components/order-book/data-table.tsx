@@ -28,6 +28,10 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "@/components/ui/button";
+import { RiDiscordFill } from "react-icons/ri";
+import { BsTwitterX } from "react-icons/bs";
+import { PiGithubLogoFill } from "react-icons/pi";
+
 import {
   Plus,
   Search,
@@ -349,7 +353,7 @@ export function DataTable<TData, TValue>({
               <CardTitle className="text-xl font-bold tracking-tight text-foreground">
                 {isSearchActive ? "Order History" : showMyOrdersOnly ? "My Orders" : "Order Book"}
               </CardTitle>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-[6px] border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm">
+              <div className="flex items-center gap-2 px-3 py rounded-[6px] border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm">
                 {connectionState === "connected" ? (
                   <>
                     <Wifi className="h-3.5 w-3.5 text-emerald-500" />
@@ -733,39 +737,54 @@ export function DataTable<TData, TValue>({
         </CardContent>
       </Card>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-b-md bg-background dark:bg-background mb-12">
-        <div className="text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-b-md bg-background dark:bg-background mb-12 text-[0.8125rem]">
+        <div className="text-muted-foreground">
           Showing {table.getRowModel().rows.length} rows
         </div>
-        <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+        <div className="text-muted-foreground flex items-center gap-1.5 flex-wrap">
           <a
             href="https://x.com/Subnet118"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-foreground transition-colors"
+            className="inline-flex items-center text-black dark:text-white hover:opacity-80 transition-opacity"
+            aria-label="X (Twitter)"
           >
-            X
+            <BsTwitterX className="h-[0.8125rem] w-[0.8125rem]" />
           </a>
-          <span aria-hidden>|</span>
+          <span aria-hidden> </span>
+          <a
+            href="https://github.com/mobiusfund"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center text-black dark:text-white hover:opacity-80 transition-opacity"
+            aria-label="GitHub"
+          >
+            <PiGithubLogoFill className="h-[1rem] w-[1rem]" />
+          </a>
+          <span aria-hidden> </span>
+
           <a
             href="https://discord.gg/bittensor"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-foreground transition-colors"
+            className="inline-flex items-center text-black dark:text-white hover:opacity-80 transition-opacity"
+            aria-label="Discord"
           >
-            Discord
+            <RiDiscordFill className="h-[1rem] w-[1rem]" />
           </a>
-          <span aria-hidden>|</span>
+          <span aria-hidden> </span>
           <a
             href="https://subnet-118-dashboard.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-foreground transition-colors"
+            className="inline-flex items-center hover:opacity-80 transition-opacity"
+            aria-label="Miners"
           >
-            Miners
+            <img src="/pick_light.png" alt="" className="h-[1.25rem] w-[1.25rem] dark:hidden object-contain" />
+            <img src="/pick_dark.png" alt="" className="h-[1.25rem] w-[1.25rem] hidden dark:block object-contain" />
           </a>
-          <span aria-hidden>|</span>
-          <span>© Subnet 118</span>
+          <span aria-hidden> </span>
+          <span className="text-[0.8125rem]">© Subnet 118</span>
         </div>
       </div>
 
