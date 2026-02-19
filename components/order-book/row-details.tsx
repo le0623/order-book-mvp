@@ -61,7 +61,7 @@ import { format } from "date-fns";
 
 interface OrderBookRowDetailsProps {
   order: Order;
-  filledOrders?: Order[]; // Orders with same UUID and status=2
+  filledOrders?: Order[]; // Orders with same parent UUID: status 2 (Filled) and 3 (Closed)
   prices?: Record<number, number>; // netuid -> price mapping for live prices
   newlyAddedOrderIds?: Map<string, number>; // Track newly added orders for flash animation
   onUpdateOrder?: (uuid: string, updates: Partial<Order>) => void;
@@ -207,7 +207,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
   };
 
   return (
-    <div className="bg-slate-50 dark:bg-muted/30 p-6 space-y-6 border-t border-slate-200 dark:border-border/50">
+    <div className="bg-slate-50 dark:bg-muted/30 px-6  pt-6 pb-2 space-y-6 border-t border-slate-200 dark:border-border/50">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <h3 className="text-base font-semibold tracking-tight text-foreground">
@@ -227,7 +227,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-9 gap-2 bg-white dark:!bg-[#293641] text-slate-900 dark:text-foreground hover:bg-slate-50 dark:hover:!bg-accent hover:shadow-md transition-all"
+                            className="h-9 gap-2 bg-white dark:!bg-[#293641] text-slate-900 dark:text-foreground hover:bg-slate-50 dark:hover:!bg-accent transition-all"
                             disabled={!isOwner}
                           >
                             <Edit2 className="h-3.5 w-3.5" />
@@ -418,7 +418,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                           variant="outline"
                           size="sm"
                           onClick={() => setIsCloseConfirmOpen(true)}
-                          className="dark:!bg-[#293641] h-9 gap-2 text-slate-900 dark:text-foreground hover:bg-slate-50 dark:hover:!bg-accent hover:shadow-md transition-all"
+                          className="dark:!bg-[#293641] h-9 gap-2 text-slate-900 dark:text-foreground hover:bg-slate-50 dark:hover:!bg-accent transition-all"
                           disabled
                         >
                           <span className="text-base leading-none">✗</span>
@@ -434,7 +434,7 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="dark:!bg-[#293641] h-9 gap-2 text-slate-900 dark:text-foreground hover:bg-slate-50 dark:hover:!bg-accent hover:shadow-md transition-all"
+                    className="dark:!bg-[#293641] h-9 gap-2 text-slate-900 dark:text-foreground hover:bg-slate-50 dark:hover:!bg-accent transition-all"
                     onClick={() => setIsCloseConfirmOpen(true)}
                   >
                     <span className="text-base leading-none">✗</span>
@@ -630,14 +630,12 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
 
       {filledOrders.length > 0 && (
         <>
-          <div className="space-y-3">
-            <h3 className="text-base font-semibold tracking-tight text-foreground">
-              Filled Orders
-            </h3>
+          <div className="!my-2">
             <div className="overflow-x-auto">
               <table className="w-full text-sm table-fixed">
                 <tbody>
                   {filledOrders.map((filledOrder, index) => {
+                    const isClosed = filledOrder.status === 3;
                     const orderTypeLabel = getOrderType(filledOrder.type);
                     const uniqueKey = `${filledOrder.uuid}-${filledOrder.escrow}-${index}`;
 
@@ -744,20 +742,22 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                           className="pr-3 pt-3 pb-3 pl-[0.5rem] text-right font-mono text-sm"
                           style={{ width: 70 }}
                         >
-                          {formatTao(order.bid || 0)}
+                          {formatTao(Number(filledOrder.tao ?? 0))}
                         </td>
                         <td
                           className="py-3 pr-2 pl-[2rem] text-right font-mono text-sm"
                           style={{ width: 70 }}
                         >
-                          {formatNumber(order.ask || 0)}
+                          {formatNumber(Number(filledOrder.alpha ?? 0))}
                         </td>
                         <td
                           className="pr-4 pt-3 pb-3 pl-[1.5rem] font-mono text-sm"
                           style={{ width: 90 }}
                         >
                           <div className="flex justify-end">
-                            {formatPrice(filledOrder.stp || 0)}
+                            {filledOrder.price != null && Number(filledOrder.price) > 0
+                              ? formatPrice(Number(filledOrder.price))
+                              : formatPrice(filledOrder.stp || 0)}
                           </div>
                         </td>
 
@@ -766,8 +766,11 @@ export const OrderBookRowDetails = React.memo(function OrderBookRowDetails({
                           style={{ width: 90 }}
                         >
                           <div className="flex justify-center">
-                            <Badge variant="outline" className="font-medium">
-                              Filled
+                            <Badge
+                              variant="outline"
+                              className="font-medium text-gray-600 dark:text-gray-400 border-gray-200 dark:border-border"
+                            >
+                              {isClosed ? "Closed" : "Filled"}
                             </Badge>
                           </div>
                         </td>

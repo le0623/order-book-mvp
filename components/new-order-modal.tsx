@@ -1058,7 +1058,7 @@ export function NewOrderModal({
                 variant="outline"
                 className={`flex-1 h-10 font-medium ${formData.type === 2
                   ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600 dark:hover:bg-emerald-950/30 dark:hover:border-emerald-800 dark:hover:text-emerald-400"
-                  : "text-muted-foreground bg-background hover:bg-muted/50"
+                  : "text-muted-foreground bg-background hover:bg-muted/50 "
                   }`}
                 onClick={() => setFormData({ ...formData, type: 2 })}
                 disabled={escrowGenerated && !isInReviewMode}
@@ -1163,13 +1163,9 @@ export function NewOrderModal({
                 </button>
               </div>
             </div>
-            {/* Dynamic market-price hint: chain query → backend HTTP fallback */}
-            {formData.asset != null && formData.asset > 0 &&
-              (chainPrice > 0 || httpPrices[formData.asset] > 0) && (
-              <p className="text-sm text-muted-foreground opacity-60">
-                Current market: {(chainPrice > 0 ? chainPrice : httpPrices[formData.asset]).toFixed(4)} τ
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground opacity-60">
+              Market Price {priceForConversion > 0 ? priceForConversion.toFixed(6) : "0.000000"}
+            </p>
           </div>
 
           <div className="grid gap-2">

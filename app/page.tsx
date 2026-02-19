@@ -322,11 +322,9 @@ export default function Home() {
   }, []);
 
   const handlePriceMessage = useCallback((message: unknown) => {
-    console.log("[Home] ws/price response:", message);
     try {
       const priceData = parseWsMessage<Record<string, unknown>>(message);
       if (!priceData || typeof priceData !== "object") return;
-      console.log("[Home] ws/price parsed:", priceData);
 
       // Format: { subnet_name: { "0": "root", ... }, price: { "0": 1.0, ... }, tao_in, alpha_in }
       const priceObj = priceData.price;
@@ -561,12 +559,12 @@ export default function Home() {
 
   const { openOrders, filledOrdersMap } = useMemo(() => {
     const open: Order[] = [];
-    const filled: Record<string, Order[]> = {}; // Parent UUID -> filled orders array
+    const filled: Record<string, Order[]> = {}; // Parent UUID -> filled + closed orders array
 
     orders.forEach((order) => {
       if (order.status === 1 && order.public === true) {
         open.push(order);
-      } else if (order.status === 2) {
+      } else if (order.status === 2 || order.status === 3) {
         const parentUuid = order.origin || order.uuid;
         if (!filled[parentUuid]) {
           filled[parentUuid] = [];

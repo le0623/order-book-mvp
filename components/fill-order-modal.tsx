@@ -72,8 +72,13 @@ export function FillOrderModal({
     price: number;
   } | null>(null);
   const [poolData, setPoolData] = React.useState<Record<number, { tao_in: number; alpha_in: number }>>({});
+  const [fillAttemptFailed, setFillAttemptFailed] = React.useState(false);
 
   const pendingEscrowRef = React.useRef<string>("");
+
+  React.useEffect(() => {
+    if (open) setFillAttemptFailed(false);
+  }, [open]);
 
   const WS_URL = React.useMemo(() => {
     return getWebSocketBookUrl();
@@ -135,16 +140,6 @@ export function FillOrderModal({
   React.useEffect(() => {
     if (error) {
       setErrorVisible(true);
-      const fadeOutTimer = setTimeout(() => {
-        setErrorVisible(false);
-        setTimeout(() => {
-          setError("");
-        }, 300);
-      }, 5000);
-
-      return () => {
-        clearTimeout(fadeOutTimer);
-      };
     } else {
       setErrorVisible(false);
     }
@@ -184,22 +179,25 @@ export function FillOrderModal({
     return 0;
   };
 
-  // Max fill = take all remaining from parent order (from order book / ws tap)
+  // Max fill = take all remaining from parent, in the user's current unit (don't switch unit)
   const handleMaxFill = React.useCallback(() => {
-    if (order.type === 1) {
-      // Parent Sell: remaining is Alpha — grab all Alpha
-      const alpha = fixedValues.alpha > 0 ? fixedValues.alpha : undefined;
-      setTransferAlpha(alpha);
-      setTransferInputMode("alpha");
-      if (alpha != null) setTransferTao(undefined);
-    } else {
-      // Parent Buy: remaining is TAO — grab all TAO
-      const tao = fixedValues.tao > 0 ? fixedValues.tao : undefined;
+    const price = priceForConversion;
+    if (transferInputMode === "tao") {
+      const tao =
+        order.type === 1
+          ? (fixedValues.alpha > 0 && price > 0 ? fixedValues.alpha * price : undefined)
+          : (fixedValues.tao > 0 ? fixedValues.tao : undefined);
       setTransferTao(tao);
-      setTransferInputMode("tao");
-      if (tao != null) setTransferAlpha(undefined);
+      setTransferAlpha(undefined);
+    } else {
+      const alpha =
+        order.type === 1
+          ? (fixedValues.alpha > 0 ? fixedValues.alpha : undefined)
+          : (fixedValues.tao > 0 && price > 0 ? fixedValues.tao / price : undefined);
+      setTransferAlpha(alpha);
+      setTransferTao(undefined);
     }
-  }, [order.type, fixedValues.alpha, fixedValues.tao]);
+  }, [order.type, transferInputMode, fixedValues.alpha, fixedValues.tao, priceForConversion]);
 
   React.useEffect(() => {
     if (!open) {
@@ -221,9 +219,9 @@ export function FillOrderModal({
 
   React.useEffect(() => {
     if (open) {
-      setTransferInputMode(fixedValues.type === 2 ? "tao" : "alpha");
+      setTransferInputMode(order.type === 1 ? "tao" : "alpha");
     }
-  }, [open, fixedValues.type]);
+  }, [open, order.type]);
 
   // Fetch pool data (tao_in, alpha_in) for slippage when modal opens
   React.useEffect(() => {
@@ -493,6 +491,7 @@ export function FillOrderModal({
       console.log(`[FillOrder] Filling order with data:`, fillOrderData);
       const backendUrl = apiUrl || API_URL;
       const response = await postJson(`${backendUrl}/rec`, fillOrderData);
+      console.log(`[FillOrder] Fill order response:`, response);
 
       if (!response.ok) {
         throw new Error(await extractResponseError(response));
@@ -532,8 +531,8 @@ export function FillOrderModal({
           resetTransfer();
           onRecMessage?.(recMessage);
         } else {
-          // Other message — show in modal (original style)
           setError(recMessage);
+          setFillAttemptFailed(true);
         }
       } else {
         // Success — close modal and reset
@@ -553,6 +552,7 @@ export function FillOrderModal({
     } catch (err) {
       console.error("Error filling order:", err);
       setError(err instanceof Error ? err.message : "Failed to fill order. Please try again");
+      setFillAttemptFailed(true);
     } finally {
       setLoading(false);
     }
@@ -568,6 +568,7 @@ export function FillOrderModal({
       setEscrowGenerated(false);
       setIsInReviewMode(false);
       setError("");
+      setFillAttemptFailed(false);
       setLiveParentPrice(null);
       setTransferAlpha(undefined);
       setTransferTao(undefined);
@@ -585,6 +586,12 @@ export function FillOrderModal({
           </div>
           <ConnectButton />
         </DialogHeader>
+
+        {order.status === 3 && (
+          <div className="p-3 rounded-md bg-slate-50 dark:bg-muted/50 border border-slate-200 dark:border-border text-slate-700 dark:text-foreground text-sm">
+            Order closed. Wallet refunded.
+          </div>
+        )}
 
         {error && (
           <div
@@ -721,7 +728,7 @@ export function FillOrderModal({
                 disabled={(escrowGenerated && !isInReviewMode) || (order.type === 1 ? fixedValues.alpha <= 0 : fixedValues.tao <= 0)}
                 className="h-[1.5rem] px-[0.35rem] flex items-center rounded-md justify-center border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm hover:bg-slate-50 dark:hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0 text-xs"
                 aria-label="Fill entire parent order (all remaining)"
-                title={order.type === 1 ? "Fill all remaining Alpha from order" : "Fill all remaining TAO from order"}
+                title={order.type === 1 ? "Fill all remaining Alpha" : "Fill all remaining TAO"}
               >
                 Max Fill
               </button>
@@ -841,7 +848,11 @@ export function FillOrderModal({
         </div>
 
         <DialogFooter>
-          {!escrowGenerated ? (
+          {order.status === 3 || fillAttemptFailed ? (
+            <Button variant="outline" onClick={handleClose}>
+              Close
+            </Button>
+          ) : !escrowGenerated ? (
             <>
               <Button
                 variant="outline"
