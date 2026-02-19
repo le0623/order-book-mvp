@@ -749,7 +749,7 @@ export function DataTable<TData, TValue>({
             className="inline-flex items-center text-black dark:text-white hover:opacity-80 transition-opacity"
             aria-label="X (Twitter)"
           >
-            <BsTwitterX className="h-[0.8125rem] w-[0.8125rem]" />
+            <BsTwitterX className="h-[0.7rem] w-[0.7rem]" />
           </a>
           <span aria-hidden> </span>
           <a
@@ -759,7 +759,7 @@ export function DataTable<TData, TValue>({
             className="inline-flex items-center text-black dark:text-white hover:opacity-80 transition-opacity"
             aria-label="GitHub"
           >
-            <PiGithubLogoFill className="h-[1rem] w-[1rem]" />
+            <PiGithubLogoFill className="h-[0.8125rem] w-[0.8125rem]" />
           </a>
           <span aria-hidden> </span>
 
