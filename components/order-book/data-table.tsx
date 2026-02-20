@@ -753,17 +753,6 @@ export function DataTable<TData, TValue>({
           </a>
           <span aria-hidden> </span>
           <a
-            href="https://github.com/mobiusfund"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center text-black dark:text-white hover:opacity-80 transition-opacity"
-            aria-label="GitHub"
-          >
-            <PiGithubLogoFill className="h-[0.8125rem] w-[0.8125rem]" />
-          </a>
-          <span aria-hidden> </span>
-
-          <a
             href="https://discord.gg/bittensor"
             target="_blank"
             rel="noopener noreferrer"
