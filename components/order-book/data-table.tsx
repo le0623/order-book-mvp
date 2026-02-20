@@ -38,6 +38,8 @@ import {
   ArrowLeft,
   X,
   ArrowUp,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -352,31 +354,7 @@ export function DataTable<TData, TValue>({
             <div className="flex items-center gap-3">
               <CardTitle className="text-[3.5rem] sm:text-[4.25rem] font-normal tracking-wide leading-none text-foreground font-[family-name:var(--font-geist-pixel-circle)]">
                 {isSearchActive ? "Order History" : showMyOrdersOnly ? "My Orders" : "Order Book"}
-              </CardTitle>
-              <div className="flex items-center gap-2 px-3 py rounded-[6px] border border-slate-200 dark:border-border/60 bg-white dark:bg-card/50 shadow-sm">
-                {connectionState === "connected" ? (
-                  <>
-                    <Wifi className="h-3.5 w-3.5 text-emerald-500" />
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400 hidden md:inline">
-                      Live
-                    </span>
-                  </>
-                ) : connectionState === "connecting" ? (
-                  <>
-                    <Wifi className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 hidden md:inline">
-                      Connecting...
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <WifiOff className="h-3.5 w-3.5 text-red-500" />
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-red-600 dark:text-red-400 hidden md:inline">
-                      Offline
-                    </span>
-                  </>
-                )}
-              </div>
+              </CardTitle>            
             </div>
 
             <div className="flex flex-col min-[550px]:flex-row items-end min-[550px]:items-center gap-2">
@@ -766,7 +744,7 @@ export function DataTable<TData, TValue>({
             href="https://subnet-118-dashboard.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center hover:opacity-80 transition-opacity"
+            className="inline-flex items-center hover:opacity-80 transition-opacity ml-[-5px]"
             aria-label="Miners"
           >
             <img src="/pick_light.png" alt="" className="h-[1.25rem] w-[1.25rem] dark:hidden object-contain" />
