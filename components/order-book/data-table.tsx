@@ -744,7 +744,7 @@ export function DataTable<TData, TValue>({
             href="https://subnet-118-dashboard.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center hover:opacity-80 transition-opacity ml-[-5px]"
+            className="inline-flex items-center hover:opacity-80 transition-opacity mx-[-5px]"
             aria-label="Miners"
           >
             <img src="/pick_light.png" alt="" className="h-[1.25rem] w-[1.25rem] dark:hidden object-contain" />
